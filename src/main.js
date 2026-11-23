@@ -4,6 +4,14 @@ import { sb, rpc } from './api.js';
 import { $, esc, toast, closeLayer, closeAll, layerCount, loading, openLayer } from './ui.js';
 import { ICON, NICON, LOGO } from './icons.js';
 import { S, A, F, C, VIEWS, NAV, go, onRoute, refreshMe, renderBell } from './state.js';
+// role chips anywhere in a form toggle on and off
+A['pick-role'] = (el) => {
+  const form = el.closest('form');
+  const on = el.getAttribute('aria-pressed') === 'true';
+  if (on && form?.id === 'f-profile' && form.querySelectorAll('[data-a=pick-role][aria-pressed=true]').length === 1) return toast('Keep at least one thing you do');
+  el.setAttribute('aria-pressed', !on);
+  form?.dispatchEvent(new Event('roles-changed', { bubbles: true }));
+};
 import './views/auth.js';
 import './views/brand.js';
 import './views/talent.js';

@@ -1,10 +1,10 @@
 // Brand screens: board (to-dos and talent search), jobs/briefs with Embr's
 // best-fit ranking, the offer form, shortlist and account.
 import { VIEWS, A, F, C, S, go, refreshMe, rerender } from '../state.js';
-import { rpc, photoUrl } from '../api.js';
-import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CATS, CITIES, USAGE, TERMS, toast, openLayer, closeLayer, replaceLayer, formData, loading, plural, first, whenTxt } from '../ui.js';
+import { rpc, photoUrl, roleRules } from '../api.js';
+import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CATS, CITIES, USAGE, TERMS, toast, openLayer, closeLayer, replaceLayer, formData, loading, plural, first, whenTxt, rolesOf, rolesTxt, rolePlural } from '../ui.js';
 import { ICON } from '../icons.js';
-import { comp, thumb, bookingItem, groupBookings, calendar, gallery, stHTML } from './common.js';
+import { comp, thumb, bookingItem, groupBookings, calendar, gallery, stHTML, workByRole } from './common.js';
 
 const V = VIEWS.brand;
 const f = { category: '', city: '', date: '', max_rate: '', q: '' };
@@ -22,7 +22,7 @@ V.board = async () => {
   ${todo.length ? `<section class="todo" aria-label="Needs you">${todo.slice(0, 6).map(([b, txt, btn, a, primary]) => `<div class="item">${thumb(b.talent)}<div class="grow"><div class="ttl">${esc(b.title)}</div><div class="meta"><span>${esc(txt)}</span></div></div><button class="btn ${primary ? 'primary' : ''} sm" data-a="${a}" data-id="${b.id}">${btn}</button></div>`).join('')}</section>` : ''}
   <h1 class="display t-72">Find talent</h1>
   <form class="sentence mt24" id="f-search" aria-label="Search talent">Show me
-    <select name="category" data-change="search" aria-label="Category"><option value="">everyone</option>${CATS.map((c) => `<option value="${c}" ${f.category === c ? 'selected' : ''}>${c.toLowerCase()}s</option>`).join('')}</select>
+    <select name="category" data-change="search" aria-label="Category"><option value="">everyone</option>${CATS.map((c) => `<option value="${c}" ${f.category === c ? 'selected' : ''}>${rolePlural(c)}</option>`).join('')}</select>
     in <select name="city" data-change="search" aria-label="City"><option value="">anywhere</option>${CITIES.map((c) => `<option ${f.city === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
     free on <input type="date" name="date" value="${f.date}" min="${today()}" data-change="search" aria-label="Date">
     up to £<input type="number" name="max_rate" value="${f.max_rate}" placeholder="any" min="0" step="10" data-change="search" aria-label="Maximum day rate" style="width:4em"> a day.
@@ -58,21 +58,22 @@ A.save = async (el) => {
 
 // ---------------------------------------------------------------- talent profile sheet
 export async function talentSheet(id, extra = {}) {
-  const t = await rpc('talent_detail', { p_id: id });
+  const [t, rules] = await Promise.all([rpc('talent_detail', { p_id: id }), roleRules().catch(() => ({}))]);
   const isB = S.me?.role === 'brand';
   const st = S.me.settings;
   const rate = t.booked_before >= st.loyal_after ? st.fee_loyal : t.booked_before >= 1 ? st.fee_repeat : st.fee_first;
   return {
     kind: 'sheet', label: t.name,
-    head: `<div class="grow"><div class="s g">${esc(t.category)}, ${esc(t.city)}</div></div>`,
+    head: `<div class="grow"><div class="s g">${esc(rolesTxt(t))}, ${esc(t.city)}</div></div>`,
     body: `${gallery(t)}<div class="mt32"><h2 class="pname">${esc(t.name)}${t.verified ? ICON.tick : ''}</h2>
+      <div class="rolebadges mt12" aria-label="What they do">${rolesOf(t).map((r) => `<span>${esc(r)}</span>`).join('')}</div>
       ${t.verified ? '<p class="s g mt8">ID checked: 18+</p>' : '<p class="s g mt8">ID check not done yet. They\'ll need to pass it before they can accept.</p>'}
       <dl class="statline">${t.height ? `<div><dt>Height</dt><dd>${esc(t.height)}</dd></div>` : ''}<div><dt>Day rate</dt><dd>${t.day_rate ? pounds(t.day_rate) : '–'}</dd></div>${t.half_rate ? `<div><dt>Half day</dt><dd>${pounds(t.half_rate)}</dd></div>` : ''}<div><dt>Travel</dt><dd>${t.travels ? 'Anywhere in the UK' : 'Local work only'}</dd></div>${t.completed ? `<div><dt>Jobs on Embr</dt><dd>${t.completed}</dd></div>` : ''}</dl></div>
       <div class="cs-grid"><div><p class="measure">${esc(t.bio) || '<span class="g">No bio yet.</span>'}</p>
         ${t.tags?.length ? `<div class="chips mt16">${t.tags.map((x) => `<span class="chip" style="cursor:default">${esc(x)}</span>`).join('')}</div>` : ''}
         ${t.comfort ? `<h3 class="mt24 mb8">Comfortable with</h3><p class="s">${esc(t.comfort)}</p>` : ''}
-        ${t.instagram ? `<p class="s g mt16">Instagram: ${esc(t.instagram)}</p>` : ''}
-        ${t.photos?.length > 6 ? `<div class="phs mt24">${t.photos.slice(6).map((p) => `<div class="p" style="background-image:url('${photoUrl(p.path)}')"></div>`).join('')}</div>` : ''}
+        ${t.instagram ? `<p class="s g mt16">Instagram / TikTok: ${esc(t.instagram)}</p>` : ''}
+        ${workByRole(t, rules)}
       </div><div><h3 class="mb12">Next six weeks</h3>${calendar(t)}</div></div>`,
     foot: isB ? `<div class="grow"><div><b class="money">${t.day_rate ? pounds(t.day_rate) : ''}</b> <span class="s g">/ day + ${pct(rate)} Embr fee</span></div><div class="xs g">50% deposit when they accept · free cancellation until ${st.free_cancel_days} days before</div></div>
       <button class="btn" data-a="save" data-id="${t.id}" aria-pressed="${t.saved}">${t.saved ? 'Saved' : 'Save'}</button>
@@ -89,12 +90,15 @@ A.offer = async (el) => {
   if (el.dataset.brief) brief = (await rpc('brief_detail', { p_id: el.dataset.brief }));
   const d = brief ? { title: brief.title, date: brief.shoot_date, days: brief.days, rate: brief.day_rate, usage: brief.usage, notes: brief.description }
     : { title: '', date: addDays(14), days: 1, rate: t.day_rate || 200, usage: '' };
+  const rs = rolesOf(t);
+  const asRole = rs.includes(brief?.category) ? brief.category : rs[0];
   const layer = {
     kind: 'sheet', label: 'Book ' + t.name,
     head: `<div class="grow s g">You set the terms. ${esc(first(t.name))} accepts or declines.</div>`,
     body: `<h2 class="display t-48">Book ${esc(t.name)}</h2>
     <form id="f-offer" data-t="${t.id}" data-brief="${brief?.id || ''}" class="mt24" style="max-width:720px"><div class="fgrid">
-      <label class="field span">What's the job?<input class="in" name="title" required value="${esc(d.title)}" placeholder="Summer drop lookbook"></label>
+      <label class="field ${rs.length > 1 ? '' : 'span'}">What's the job?<input class="in" name="title" required value="${esc(d.title)}" placeholder="Summer drop lookbook"></label>
+      ${rs.length > 1 ? `<label class="field">Booking them as<select class="in" name="role">${opts(rs, asRole)}</select></label>` : `<input type="hidden" name="role" value="${esc(asRole || '')}">`}
       <label class="field">Shoot date<input class="in" type="date" name="shoot_date" required min="${today()}" value="${d.date}" data-change="quote"></label>
       <label class="field">Days<input class="in" type="number" name="days" min="1" max="14" value="${d.days}" data-input="quote"></label>
       <label class="field">Day rate, £<input class="in" type="number" name="day_rate" min="5" step="5" required value="${d.rate}" data-input="quote">${t.day_rate ? `<span class="hint">${esc(first(t.name))}'s usual rate is ${pounds(t.day_rate)}</span>` : ''}</label>
@@ -143,7 +147,7 @@ F['f-offer'] = async (form) => {
   const usage = d.usage_where ? `${d.usage_where}, ${d.usage_term}` : '';
   const id = await rpc('create_offer', { p: {
     talent_id: form.dataset.t, brief_id: form.dataset.brief || null, title: d.title, shoot_date: d.shoot_date, days: +d.days, day_rate: +d.day_rate,
-    usage, usage_fee: +d.usage_fee || 0, location: d.location, call_time: d.call_time, content_agreed: d.content_agreed, notes: d.notes, agree: !!d.agree,
+    usage, usage_fee: +d.usage_fee || 0, location: d.location, call_time: d.call_time, content_agreed: d.content_agreed, notes: d.notes, agree: !!d.agree, role: d.role || null,
   } });
   closeLayer();
   toast('Offer sent. You\'ll be told when they answer.');

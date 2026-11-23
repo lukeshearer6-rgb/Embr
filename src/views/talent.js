@@ -2,10 +2,10 @@
 // and booking links. Talent never see briefs and can't apply for work:
 // brands find them and send offers. "Let work find you".
 import { VIEWS, A, F, C, S, go, refreshMe, rerender } from '../state.js';
-import { rpc, action, uploadPhoto, deletePhoto, photoUrl } from '../api.js';
-import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CATS, CITIES, USAGE, TERMS, toast, openLayer, closeLayer, formData, plural, first, busy, confirmDialog } from '../ui.js';
+import { rpc, action, uploadPhoto, deletePhoto, photoUrl, roleRules } from '../api.js';
+import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CITIES, rolesOf, rolesTxt, roleChips, pickedRoles, USAGE, TERMS, toast, openLayer, closeLayer, formData, plural, first, busy, confirmDialog } from '../ui.js';
 import { ICON } from '../icons.js';
-import { thumb, calendar, groupBookings, bookingItem } from './common.js';
+import { thumb, calendar, groupBookings, bookingItem, linkCards } from './common.js';
 import { bookingsView, inboxView } from './brand.js';
 
 const V = VIEWS.talent;
@@ -15,7 +15,10 @@ const appOrigin = () => location.origin;
 function readiness(t) {
   const steps = [
     ['Add your name, rate and a Book-me name', !!(t.name && t.day_rate && t.handle), 'profile'],
-    ['Add at least one photo', (t.photos || []).length > 0, 'profile'],
+    ...((t.gaps && rolesOf(t).length) ? rolesOf(t).map((r) => {
+      const g = t.gaps.find((x) => x.role === r);
+      return [`${r} section${g ? ': add ' + g.missing.join(', ') : ''}`, !g, 'work'];
+    }) : [['Add at least one photo', (t.photos || []).length > 0, 'profile']]),
     ['Verify your ID (18+)', !!t.verified, 'verify'],
     ['Set up payouts with Stripe', !!t.payouts_enabled, 'payouts'],
   ];
@@ -26,8 +29,8 @@ function readyPanel(t) {
   const left = s.filter((x) => !x[1]);
   if (!left.length) return '';
   return `<section class="panel mb24"><div class="row between"><h3>Get ready to be booked</h3><span class="s g">${s.length - left.length} of ${s.length}</span></div>
-    <div class="list mt12" style="border:0">${s.map(([l, ok, a]) => `<div class="item" style="padding:10px 0"><span class="st ${ok ? 'ok' : 'wait'}">${ok ? 'Done' : 'To do'}</span><span class="grow s">${l}</span>${ok ? '' : a === 'profile' ? '<button class="btn sm" data-tab="profile">Open profile</button>' : `<button class="btn sm ${a === 'verify' ? 'primary' : ''}" data-a="${a}">${a === 'verify' ? 'Verify ID' : 'Set up payouts'}</button>`}</div>`).join('')}</div>
-    <p class="xs g mt8">${!t.published ? 'Your profile is hidden from brands until it has your name, rate, Book-me name and a photo.' : 'Brands can see your profile. You need the ID check and payouts before you can accept an offer.'}</p></section>`;
+    <div class="list mt12" style="border:0">${s.map(([l, ok, a]) => `<div class="item" style="padding:10px 0"><span class="st ${ok ? 'ok' : 'wait'}">${ok ? 'Done' : 'To do'}</span><span class="grow s">${l}</span>${ok ? '' : a === 'work' ? `<button class="btn sm" data-a="towork">${location.pathname === '/profile' ? 'Fill it in' : 'Open profile'}</button>` : a === 'profile' ? '<button class="btn sm" data-tab="profile">Open profile</button>' : `<button class="btn sm ${a === 'verify' ? 'primary' : ''}" data-a="${a}">${a === 'verify' ? 'Verify ID' : 'Set up payouts'}</button>`}</div>`).join('')}</div>
+    <p class="xs g mt8">${!t.published ? 'Your profile is hidden from brands until it has your name, rate, Book-me name and every section for the things you do.' : 'Brands can see your profile. You need the ID check and payouts before you can accept an offer.'}</p></section>`;
 }
 
 // ---------------------------------------------------------------- Today
@@ -96,56 +99,111 @@ A.verify = async (el) => {
 };
 
 // ---------------------------------------------------------------- Profile
+// One person can do several things (Model, UGC creator, Actor…). Each role they
+// pick gets its own section of work, and the profile only goes live once every
+// section has what brands need to see (rules come from role_rules()).
 V.profile = async () => {
   const q = new URLSearchParams(location.search);
   if (q.get('id')) { await action('identity_refresh').catch(() => null); history.replaceState({}, '', '/profile'); }
-  await refreshMe();
+  const [, rules] = await Promise.all([refreshMe(), roleRules()]);
   const t = T();
   const idStatus = t.verified ? '<span class="st ok">Verified 18+</span>'
     : t.identity_status === 'processing' ? '<span class="st wait">Checking your ID…</span>'
       : t.identity_status === 'under_18' ? '<span class="st bad">Under 18</span>'
         : t.identity_status === 'requires_input' ? '<span class="st warn">Needs another try</span>' : '<span class="st wait">Not done</span>';
   return `<div class="row between top-al wrap mb24"><h1 class="display t-48">Profile</h1>${t.handle && t.published ? `<a class="btn" href="/@${esc(t.handle)}" target="_blank" rel="noopener">See your Book-me page</a>` : ''}</div>
-  ${readyPanel(t)}
-  <div class="cols" style="grid-template-columns:minmax(0,1fr) 400px"><form id="f-profile"><div class="fgrid">
-    <label class="field">Name<input class="in" name="name" required value="${esc(t.name)}"></label>
-    <label class="field">What you do<select class="in" name="category">${opts(CATS, t.category)}</select></label>
+  <div id="ready">${readyPanel(t)}</div>
+  <div class="cols" style="grid-template-columns:minmax(0,1fr) 400px"><div><form id="f-profile"><div class="fgrid">
+    <label class="field span">Name<input class="in" name="name" required value="${esc(t.name)}"></label>
+    ${roleChips(rolesOf(t), 'What you do')}
     <label class="field">Based in<select class="in" name="city">${opts(CITIES, t.city)}</select></label>
-    <label class="field">Height <span class="hint">Models only</span><input class="in" name="height" value="${esc(t.height)}" placeholder="5'9&quot;"></label>
+    <label class="field">Height <span class="hint">${rolesOf(t).includes('Model') ? 'Needed for modelling' : 'Optional'}</span><input class="in" name="height" value="${esc(t.height)}" placeholder="5'9&quot;"></label>
     <label class="field">Day rate, £<input class="in" type="number" name="day_rate" min="5" step="5" required value="${t.day_rate ?? ''}"></label>
     <label class="field">Half-day rate, £<input class="in" type="number" name="half_rate" min="5" step="5" value="${t.half_rate ?? ''}"></label>
     <label class="field span">Travel<select class="in" name="travels"><option value="true" ${t.travels ? 'selected' : ''}>I'll travel anywhere in the UK, with travel paid</option><option value="false" ${!t.travels ? 'selected' : ''}>Local work only</option></select><span class="hint">Talent who travel also appear when brands search other cities.</span></label>
     <label class="field">Book-me name<input class="in" name="handle" required pattern="[A-Za-z0-9_.]{2,30}" value="${esc(t.handle)}" placeholder="yourname"><span class="hint">Your page: ${esc(appOrigin().replace(/^https?:\/\//, ''))}/@${esc(t.handle || 'yourname')}</span></label>
-    <label class="field">Instagram<input class="in" name="instagram" value="${esc(t.instagram)}" placeholder="@handle"></label>
-    <label class="field span">Bio<textarea class="in" name="bio" maxlength="1200" placeholder="Your look, experience, what you love shooting">${esc(t.bio)}</textarea></label>
+    <label class="field">Instagram or TikTok<input class="in" name="instagram" value="${esc(t.instagram)}" placeholder="@handle"></label>
+    <label class="field span">Bio<textarea class="in" name="bio" maxlength="1200" placeholder="Who you are, your experience, and what you love working on">${esc(t.bio)}</textarea></label>
     <label class="field span">Tags <span class="hint">Comma separated, for example: streetwear, beauty, tattoos</span><input class="in" name="tags" value="${esc((t.tags || []).join(', '))}"></label>
     <label class="field span">Content you're comfortable with <span class="hint">Brands see this before they book. For example: no lingerie or swimwear</span><textarea class="in" name="comfort" rows="2" maxlength="600">${esc(t.comfort)}</textarea></label>
   </div><button class="btn ink mt24" type="submit">Save profile</button></form>
+  <section id="work" class="mt48" aria-label="Your work">${workHTML(t, rules)}</section></div>
   <aside class="stack">
-    <div><h3 class="mb12">Photos</h3><div class="phs">${(t.photos || []).map((p, i) => `<div class="p" style="background-image:url('${photoUrl(p.path)}')">${i === 0 ? '<span class="xs" style="position:absolute;left:6px;bottom:6px;background:#fff;padding:1px 6px;border-radius:2px;font-weight:600">Cover</span>' : `<button type="button" data-a="cover" data-id="${p.id}" aria-label="Make cover photo" style="left:6px;right:auto;font-size:11px;width:auto;padding:0 6px;border-radius:2px">Cover</button>`}<button type="button" data-a="rmphoto" data-id="${p.id}" data-path="${esc(p.path)}" aria-label="Remove photo">×</button></div>`).join('')}
-      ${(t.photos || []).length < 12 ? '<label class="p" tabindex="0">+ Add photos<input type="file" accept="image/*" multiple hidden data-change="photos"></label>' : ''}</div>
-      <p class="xs g mt8">Up to 12. Use photos you have the rights to, and credit photographers in your bio.</p></div>
     <div class="panel"><div class="row between"><h3>ID check</h3>${idStatus}</div><p class="s g mt8">Embr is for talent aged 18 and over. Stripe checks your passport, driving licence or ID card and a selfie. Embr only receives the result and your date of birth.</p>${t.verified ? '' : `<button class="btn ${t.identity_status === 'processing' ? '' : 'primary'} sm mt12" data-a="verify">${t.identity_status ? 'Try again' : 'Verify ID'}</button>`}</div>
     <div><h3 class="mb8">When you're free</h3><p class="s g mb12">Tap a day to mark it unavailable. Brands only see you for dates you're free.</p><div id="cal">${calendar(t, true)}</div></div>
   </aside></div>`;
 };
+
+const MAXP = 24;
+function workHTML(t, rules) {
+  const roles = rolesOf(t);
+  const photos = t.photos || [];
+  const links = t.links || [];
+  const cover = photos[0]?.id;
+  return `<h2 class="t-24">Your work</h2>
+  <p class="s g mt8 measure">A section for each thing you do. Brands see all of them on your profile, and Embr uses them to match you to briefs. Use work you have the rights to, and credit photographers in your bio.</p>
+  ${roles.map((r) => {
+    const rule = rules[r] || {};
+    const gap = (t.gaps || []).find((g) => g.role === r);
+    const ph = photos.filter((p) => p.role === r);
+    const ln = links.filter((l) => l.role === r);
+    return `<section class="role-sec" data-role-sec="${esc(r)}"><h3>${esc(r)} ${gap ? `<span class="need">Needs ${esc(gap.missing.join(', '))}</span>` : '<span class="done">Complete</span>'}</h3>
+      <p class="s g mt8">${esc(rule.hint || '')}</p>
+      <h4 class="s mt16 mb8">${esc(rule.photo_label || 'Photos')}${rule.photos ? ` <span class="g">(at least ${rule.photos})</span>` : ''}</h4>
+      <div class="phs">${ph.map((p) => `<div class="p" style="background-image:url('${photoUrl(p.path)}')">${p.id === cover ? '<span class="xs" style="position:absolute;left:6px;bottom:6px;background:#fff;padding:1px 6px;border-radius:2px;font-weight:600">Cover</span>' : `<button type="button" data-a="cover" data-id="${p.id}" aria-label="Make cover photo" style="left:6px;right:auto;font-size:11px;width:auto;padding:0 6px;border-radius:2px">Cover</button>`}<button type="button" data-a="rmphoto" data-id="${p.id}" data-path="${esc(p.path)}" aria-label="Remove photo">×</button></div>`).join('')}
+        ${photos.length < MAXP ? `<label class="p" tabindex="0">+ Add<input type="file" accept="image/*" multiple hidden data-change="photos" data-role="${esc(r)}" aria-label="Add ${esc(rule.photo_label || 'photos')}"></label>` : ''}</div>
+      <h4 class="s mt16 mb8">${esc(rule.link_label || 'Links')}${rule.links ? ` <span class="g">(at least ${rule.links})</span>` : ''}</h4>
+      ${ln.length ? linkCards(ln, true) : ''}
+      <form class="addlink" data-addlink="${esc(r)}"><input class="in" name="url" type="url" required placeholder="https://… (TikTok, Instagram, YouTube, Vimeo, Drive)" aria-label="Link for ${esc(r)}"><input class="in" name="title" maxlength="120" placeholder="What it is, e.g. Skincare ad" aria-label="Title"><button class="btn sm" type="submit">Add link</button></form>
+    </section>`;
+  }).join('')}`;
+}
+async function refreshWork() {
+  const rules = await roleRules();
+  $('#work').innerHTML = workHTML(T(), rules);
+  $('#ready').innerHTML = readyPanel(T());
+}
+A.towork = () => {
+  if (location.pathname !== '/profile') return go('/profile');
+  const gap = T().gaps?.[0];
+  const el = (gap && document.querySelector(`[data-role-sec="${CSS.escape(gap.role)}"]`)) || $('#work');
+  el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+// role chips on the profile save straight away and redraw the sections
+document.addEventListener('roles-changed', async (e) => {
+  if (e.target.id !== 'f-profile') return;
+  const roles = pickedRoles(e.target);
+  try { S.me = await rpc('save_talent', { p: { roles } }); await refreshWork(); toast('Saved: ' + rolesTxt(S.me.talent)); }
+  catch (err) { toast(err.message); }
+});
+// add a video, showreel or channel link to a role's section
+document.addEventListener('submit', async (e) => {
+  const form = e.target.closest('form[data-addlink]');
+  if (!form) return;
+  e.preventDefault();
+  const d = formData(form);
+  try { S.me = await rpc('add_link', { p_role: form.dataset.addlink, p_url: d.url, p_title: d.title || null }); await refreshWork(); toast(S.me.talent.published ? 'Added. Your profile is live.' : 'Link added'); }
+  catch (err) { toast(err.message, 5000); }
+}, true);
+A.rmlink = async (el) => { S.me = await rpc('remove_link', { p_id: el.dataset.id }); await refreshWork(); };
 F['f-profile'] = async (form) => {
   const d = formData(form);
   d.travels = d.travels === 'true';
   d.tags = (d.tags || '').split(',').map((x) => x.trim()).filter(Boolean);
+  d.roles = pickedRoles(form);
   S.me = await rpc('save_talent', { p: d });
-  toast(S.me.talent.published ? 'Saved. Brands can see your profile.' : 'Saved');
+  toast(S.me.talent.published ? 'Saved. Brands can see your profile.' : 'Saved. Fill in your work sections to go live.');
   rerender();
 };
 C.photos = async (input) => {
-  const files = [...input.files].slice(0, 12 - (T().photos || []).length);
+  const files = [...input.files].slice(0, MAXP - (T().photos || []).length);
   if (!files.length) return;
   toast(`Uploading ${plural(files.length, 'photo')}…`, 20000);
   for (const f of files) {
     if (f.size > 25 * 1024 * 1024) { toast(f.name + ' is too big'); continue; }
-    S.me = await uploadPhoto(S.me.id, f);
+    S.me = await uploadPhoto(S.me.id, f, input.dataset.role || null);
   }
-  toast('Photos added');
+  toast(S.me.talent.published ? 'Photos added. Your profile is live.' : 'Photos added');
   rerender();
 };
 A.rmphoto = async (el) => {
@@ -183,7 +241,8 @@ V.invite = async () => {
 A.linknew = () => openLayer({
   kind: 'sheet', label: 'Create booking link', head: '<div class="grow s g">You set the terms. The brand accepts and pays the deposit.</div>',
   body: `<h2 class="display t-48">Create a booking link</h2><form id="f-link" class="mt24" style="max-width:640px"><div class="fgrid">
-    <label class="field span">What's the job?<input class="in" name="title" required placeholder="Café menu shoot"></label>
+    <label class="field ${rolesOf(T()).length > 1 ? '' : 'span'}">What's the job?<input class="in" name="title" required placeholder="Café menu shoot"></label>
+    ${rolesOf(T()).length > 1 ? `<label class="field">Booked as<select class="in" name="role">${opts(rolesOf(T()))}</select></label>` : `<input type="hidden" name="role" value="${esc(rolesOf(T())[0] || '')}">`}
     <label class="field">Date<input class="in" type="date" name="shoot_date" required min="${today()}" value="${addDays(14)}"></label>
     <label class="field">Days<input class="in" type="number" name="days" min="1" max="14" value="1"></label>
     <label class="field">Day rate, £<input class="in" type="number" name="day_rate" min="5" step="5" required value="${T().day_rate || 200}"></label>

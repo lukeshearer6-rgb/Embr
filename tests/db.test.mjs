@@ -69,34 +69,57 @@ async function main() {
   ok('under-18 date of birth is refused at sign-up');
   await fails(call(amara, 'create_profile', 'talent', bInv, null, null, { name: 'A', dob: '1999-04-02' }), /for a brand account/);
   ok('a brand invite can\'t make a talent account');
-  let me = await call(amara, 'create_profile', 'talent', tInv, null, null, { name: 'Amara Okafor', dob: '1999-04-02', city: 'Manchester' });
-  assert.equal(me.role, 'talent');
-  await fails(call(jay, 'create_profile', 'talent', tInv, null, null, { name: 'J', dob: '1999-01-01' }), /used/);
+  let me = await call(amara, 'create_profile', 'talent', tInv, null, null, { name: 'Amara Okafor', dob: '1999-04-02', city: 'Manchester', roles: ['Model', 'UGC creator', 'Juggler'] });
+  assert.equal(me.role, 'talent'); assert.deepEqual(me.talent.roles, ['Model', 'UGC creator']);
+  ok('sign-up keeps every role picked, ignoring unknown ones');
+  await fails(call(jay, 'create_profile', 'talent', tInv, null, null, { name: 'J', dob: '1999-01-01', roles: ['Model'] }), /used/);
   ok('an invite code works once');
-  await call(jay, 'create_profile', 'talent', tInv2, null, null, { name: 'Jay Patel', dob: '1997-01-01', city: 'London' });
+  await call(jay, 'create_profile', 'talent', tInv2, null, null, { name: 'Jay Patel', dob: '1997-01-01', city: 'London', category: 'Model' });
+  ok('older single-category sign-up still works');
   await call(rivet, 'create_profile', 'brand', bInv, null, null, { name: 'Rivet Studio', contact_name: 'Sam', city: 'Manchester' });
   ok('talent and brand accounts created with invites');
 
   // --- profiles and photos
-  me = await call(amara, 'save_talent', { handle: 'amara', category: 'Model', city: 'Manchester', day_rate: '250', half_rate: '150', height: '5\'10"', bio: 'Manchester model', tags: ['streetwear', 'beauty'] });
-  assert.equal(me.talent.published, false); ok('profile stays hidden until it has a photo');
-  await fails(call(amara, 'add_photo', jay.id + '/x.jpg'), /own folder/); ok('talent can only add photos from their own folder');
-  me = await call(amara, 'add_photo', amara.id + '/1.jpg');
-  me = await call(amara, 'add_photo', amara.id + '/2.jpg');
-  assert.equal(me.talent.published, true); assert.equal(me.talent.photos.length, 2); ok('profile goes live with a photo');
+  me = await call(amara, 'save_talent', { handle: 'amara', city: 'Manchester', day_rate: '250', half_rate: '150', bio: 'Manchester model', tags: ['streetwear', 'beauty'] });
+  assert.equal(me.talent.published, false);
+  assert.deepEqual(me.talent.gaps.map((g) => g.role), ['Model', 'UGC creator']); ok('profile stays hidden while any role section is empty');
+  await fails(call(amara, 'add_photo', jay.id + '/x.jpg', 'Model'), /own folder/); ok('talent can only add photos from their own folder');
+  await fails(call(amara, 'add_photo', amara.id + '/x.jpg', 'Actor'), /things you do/); ok('photos only go in sections for roles they picked');
+  for (const n of [1, 2, 3]) me = await call(amara, 'add_photo', amara.id + `/${n}.jpg`, 'Model');
+  assert.equal(me.talent.published, false);
+  assert.ok(me.talent.gaps.find((g) => g.role === 'Model').missing.some((m) => /height/i.test(m))); ok('modelling needs height as well as photos');
+  me = await call(amara, 'save_talent', { height: '5\'10"' });
+  assert.deepEqual(me.talent.gaps.map((g) => g.role), ['UGC creator']);
+  await fails(call(amara, 'add_link', 'UGC creator', 'my tiktok', 'x'), /https/); ok('video links must be full web addresses');
+  await fails(call(amara, 'add_link', 'Actor', 'https://example.com/v', 'x'), /things you do/);
+  me = await call(amara, 'add_link', 'UGC creator', 'https://www.tiktok.com/@amara/video/1', 'Skincare ad');
+  assert.equal(me.talent.published, false);
+  me = await call(amara, 'add_link', 'UGC creator', 'https://vimeo.com/2', 'Trainers unboxing');
+  assert.equal(me.talent.published, true); assert.equal(me.talent.gaps.length, 0); ok('profile goes live once every role section is filled');
+  me = await call(amara, 'remove_link', me.talent.links[1].id);
+  assert.equal(me.talent.published, false); ok('removing work below the minimum hides the profile again');
+  me = await call(amara, 'add_link', 'UGC creator', 'https://vimeo.com/3', 'Coffee ad');
+  assert.equal(me.talent.published, true);
   await fails(call(jay, 'save_talent', { handle: 'Amara' }), /taken/); ok('Book-me names are unique, ignoring case');
-  await call(jay, 'save_talent', { handle: 'jay', category: 'Model', day_rate: '200', travels: true });
-  await call(jay, 'add_photo', jay.id + '/1.jpg');
+  await fails(call(jay, 'save_talent', { roles: [] }), /at least one/); ok('talent must keep at least one role');
+  await call(jay, 'save_talent', { handle: 'jay', height: '6\'0"', day_rate: '200', travels: true });
+  for (const n of [1, 2, 3]) await call(jay, 'add_photo', jay.id + `/${n}.jpg`, 'Model');
 
   // --- brand search and agency rules
   let res = await call(rivet, 'search_talent', { city: 'Manchester' });
   assert.deepEqual(res.map((t) => t.name), ['Amara Okafor', 'Jay Patel']);
   assert.equal(res[1].away, true); ok('brand search: local talent first, travelling talent after');
+  res = await call(rivet, 'search_talent', { category: 'UGC creator' });
+  assert.deepEqual(res.map((t) => t.name), ['Amara Okafor']); assert.deepEqual(res[0].roles, ['Model', 'UGC creator']);
+  ok('searching one role finds everyone who does it, alongside their other roles');
   await fails(call(amara, 'search_talent', {}), /not allowed/i); ok('talent can\'t search other talent');
 
   const briefId = await call(rivet, 'create_brief', { title: 'Drop 4 lookbook', category: 'Model', city: 'Manchester', shoot_date: today(10), days: 1, day_rate: 240, travel: 'local', description: 'Studio, streetwear' });
   let brief = await call(rivet, 'brief_detail', briefId);
   assert.deepEqual(brief.ranked.map((t) => t.name), ['Amara Okafor']); ok('ranking respects "local talent only"');
+  const ugcBrief = await call(rivet, 'create_brief', { title: 'Skincare UGC', category: 'UGC creator', city: 'Manchester', shoot_date: today(11), days: 1, day_rate: 200, travel: 'covered', description: '3 videos' });
+  assert.deepEqual((await call(rivet, 'brief_detail', ugcBrief)).ranked.map((t) => t.name), ['Amara Okafor']);
+  ok('a brief for one role ranks only people who do that role');
   await as(rivet, (q) => q("update briefs set travel = 'covered'"))
     .then(() => assert.fail('direct table write should be blocked'), (e) => assert.match(e.message, /permission denied/));
   ok('brands can\'t write to tables directly');
@@ -117,6 +140,10 @@ async function main() {
   let bk = await call(amara, 'booking_detail', b1);
   assert.equal(bk.status, 'offer'); assert.match(bk.agreement_text, /Embr takes no commission from the Talent/);
   assert.match(bk.agreement_text, /£330/); ok('offer created with the booking agreement snapshot');
+  assert.equal(bk.role, 'Model'); assert.match(bk.agreement_text, /booked as: Model/); ok('the role they are booked for is on the offer and the agreement');
+  const bUgc = await call(rivet, 'create_offer', { talent_id: amara.id, title: 'UGC test', shoot_date: today(30), day_rate: 200, role: 'UGC creator', agree: true });
+  assert.equal((await call(rivet, 'booking_detail', bUgc)).role, 'UGC creator');
+  await call(rivet, 'withdraw_offer', bUgc); ok('a brand can book the same person for a different role');
   await fails(call(jay, 'booking_detail', b1), /not found/); ok('other talent can\'t see the booking');
   brief = await call(rivet, 'brief_detail', briefId);
   assert.equal(brief.ranked[0].offered, true);
@@ -212,7 +239,7 @@ async function main() {
   // --- ops
   const people = await call(ops, 'ops_people');
   assert.equal(people.talent.length, 2); assert.equal(people.brands.length, 2);
-  const ob = await call(ops, 'ops_briefs'); assert.equal(ob.length, 1);
+  const ob = await call(ops, 'ops_briefs'); assert.equal(ob.length, 2);
   await fails(call(rivet, 'ops_people'), /not allowed/i); ok('admin view is for Embr staff only');
 
   console.log(`\n${passed} checks passed`);

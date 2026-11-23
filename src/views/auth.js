@@ -1,7 +1,7 @@
 // Welcome, sign-in by emailed code, and first-time account setup.
 import { VIEWS, F, A, S, go, refreshMe } from '../state.js';
 import { sendCode, verifyCode, rpc, sb } from '../api.js';
-import { $, esc, toast, opts, CATS, CITIES, formData } from '../ui.js';
+import { $, esc, toast, opts, CITIES, formData, roleChips, pickedRoles } from '../ui.js';
 import { LOGO } from '../icons.js';
 
 const VIA = 'embr-via';
@@ -108,8 +108,8 @@ function obForm(as, v) {
   }
   return `<form id="f-onboard" data-role="talent"><div class="fgrid">${invite}
     <label class="field span">Your name<input class="in" name="name" required autocomplete="name"></label>
-    <label class="field">What you do<select class="in" name="category">${opts(CATS)}</select></label>
-    <label class="field">Based in<select class="in" name="city">${opts(CITIES, 'Manchester')}</select></label>
+    ${roleChips([], 'What do you do?')}
+    <label class="field span">Based in<select class="in" name="city">${opts(CITIES, 'Manchester')}</select></label>
     <label class="field span">Date of birth<input class="in" type="date" name="dob" required max="${new Date(Date.now() - 18 * 365.25 * 864e5).toISOString().slice(0, 10)}">
       <span class="hint">Embr is for talent aged 18 and over. You'll confirm it with a quick ID check before your first booking.</span></label></div>
     <button class="btn primary full mt24" type="submit">Create talent account</button></form>`;
@@ -123,6 +123,10 @@ F['f-onboard'] = async (form) => {
   const d = formData(form);
   const v = via();
   let role = form.dataset.role;
+  if (role === 'talent') {
+    d.roles = pickedRoles(form);
+    if (!d.roles.length) throw new Error('Pick at least one thing you do');
+  }
   if (d.invite) {
     const inv = await rpc('check_invite', { p_code: d.invite });
     if (inv.ok && inv.role === 'ops') role = 'ops';

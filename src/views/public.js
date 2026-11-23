@@ -2,10 +2,10 @@
 //  /@handle   a talent's Book-me page (for their Instagram bio)
 //  /l/CODE    a booking link a talent sent to a brand
 import { VIEWS, A, F, S, go, refreshMe } from '../state.js';
-import { rpc, action, photoUrl } from '../api.js';
-import { $, esc, gbp, pounds, pct, dLong, dMed, toast, formData, first, openLayer } from '../ui.js';
+import { rpc, action, photoUrl, roleRules } from '../api.js';
+import { $, esc, gbp, pounds, pct, dLong, dMed, toast, formData, first, openLayer, rolesOf, rolesTxt } from '../ui.js';
 import { ICON, LOGO } from '../icons.js';
-import { calendar } from './common.js';
+import { calendar, workByRole } from './common.js';
 import { setVia, via } from './auth.js';
 
 const frame = (inner) => `<header class="top"><div class="shell topbar"><a class="brandmark" href="/" data-go="/"><img src="${LOGO}" alt="Embr"></a>
@@ -17,7 +17,7 @@ async function ensureMe() { if (S.session && !S.me) await refreshMe().catch(() =
 VIEWS.public.bookme = async (app, handle) => {
   app.dataset.role = '';
   app.innerHTML = frame('<div class="empty">Loading…</div>');
-  const [t] = await Promise.all([rpc('public_talent', { p_handle: handle }), ensureMe()]);
+  const [t, , rules] = await Promise.all([rpc('public_talent', { p_handle: handle }), ensureMe(), roleRules().catch(() => ({}))]);
   if (S.session && S.me && !S.me.role) return go('/', { replace: true });
   if (!t) { app.innerHTML = frame('<h1 class="display t-48">Page not found</h1><p class="g mt16">This Book-me page doesn\'t exist or isn\'t live yet.</p>'); return; }
   const ph = (t.photos || []).map((p) => photoUrl(p.path));
@@ -25,9 +25,12 @@ VIEWS.public.bookme = async (app, handle) => {
   const act = role === 'brand' ? `<button class="btn primary full" data-a="pub-book" data-id="${t.id}">Book ${esc(first(t.name))}</button><p class="xs g mt8">Booking as ${esc(S.me.brand?.name || S.me.email)}.</p>`
     : role ? `<p class="s g">Brands see a button here to book ${esc(first(t.name))}.</p>`
       : `<button class="btn primary full" data-a="pub-join" data-handle="${esc(t.handle)}">Book ${esc(first(t.name))}</button><p class="xs g mt8">You'll sign in with your email and set up a free brand account. No invite needed.</p>`;
-  app.innerHTML = frame(`<div class="cs-grid" style="margin-top:0;grid-template-columns:minmax(0,1fr) 340px">
-    <div>${ph.length ? `<div class="gallery">${ph.slice(0, 6).map((u) => `<div style="background-image:url('${u}')"></div>`).join('')}</div>` : ''}</div>
-    <aside><p class="s g">${esc(t.category)}, based in ${esc(t.city)}</p><h1 class="pname mt8">${esc(t.name)}${t.verified ? ICON.tick : ''}</h1>
+  app.innerHTML = frame(`<div class="cs-grid bm-grid">
+    <div>${ph.length ? `<div class="gallery">${ph.slice(0, 6).map((u) => `<div style="background-image:url('${u}')"></div>`).join('')}</div>` : ''}
+</div>
+    <div class="bm-work">${workByRole(t, rules)}</div>
+    <aside class="bm-side"><p class="s g">Based in ${esc(t.city)}</p><h1 class="pname mt8">${esc(t.name)}${t.verified ? ICON.tick : ''}</h1>
+      <div class="rolebadges mt12" aria-label="What ${esc(first(t.name))} does">${rolesOf(t).map((r) => `<span>${esc(r)}</span>`).join('')}</div>
       <dl class="statline">${t.height ? `<div><dt>Height</dt><dd>${esc(t.height)}</dd></div>` : ''}<div><dt>Day rate</dt><dd>${t.day_rate ? pounds(t.day_rate) : '–'}</dd></div><div><dt>Travel</dt><dd>${t.travels ? 'UK-wide' : 'Local'}</dd></div></dl>
       ${t.bio ? `<p class="mt24">${esc(t.bio)}</p>` : ''}
       <div class="mt24">${act}</div>
@@ -55,9 +58,9 @@ VIEWS.public.link = async (app, code) => {
   else act = `<button class="btn primary full" data-a="pub-join" data-link="${esc(l.code)}">Book ${esc(first(t.name))}</button><p class="xs g mt8">Sign in with your email and set up a free brand account. No invite needed.</p>`;
   app.innerHTML = frame(`<div class="cs-grid" style="margin-top:0"><div>
     <div class="row top-al" style="gap:20px"><div style="width:120px;flex-shrink:0;aspect-ratio:4/5;background:var(--backdrop) center/cover;${ph ? `background-image:url('${ph}')` : ''}"></div>
-      <div><p class="s g">${esc(first(t.name))} has invited you to book through Embr</p><h1 class="pname mt8" style="font-size:40px">${esc(t.name)}${t.verified ? ICON.tick : ''}</h1><p class="s g mt8">${esc(t.category)}, based in ${esc(t.city)}</p></div></div>
+      <div><p class="s g">${esc(first(t.name))} has invited you to book through Embr</p><h1 class="pname mt8" style="font-size:40px">${esc(t.name)}${t.verified ? ICON.tick : ''}</h1><p class="s g mt8">${esc(rolesTxt(t))}, based in ${esc(t.city)}</p></div></div>
     ${l.note ? `<div class="callout mt24">“${esc(l.note)}”<div class="xs g mt4">${esc(first(t.name))}</div></div>` : ''}
-    <h3 class="mt32 mb8">The booking</h3><dl class="kv"><dt>Job</dt><dd>${esc(l.title)}</dd><dt>Date</dt><dd>${dLong(l.shoot_date)}${l.days > 1 ? ' for ' + l.days + ' days' : ''}</dd><dt>Day rate</dt><dd>${pounds(l.day_rate)}</dd>${l.usage ? `<dt>Usage</dt><dd>${esc(l.usage)}${l.usage_fee ? ' (' + pounds(l.usage_fee) + ')' : ' (included)'}</dd>` : ''}</dl>
+    <h3 class="mt32 mb8">The booking</h3><dl class="kv"><dt>Job</dt><dd>${esc(l.title)}</dd>${l.role ? `<dt>Booked as</dt><dd>${esc(l.role)}</dd>` : ''}<dt>Date</dt><dd>${dLong(l.shoot_date)}${l.days > 1 ? ' for ' + l.days + ' days' : ''}</dd><dt>Day rate</dt><dd>${pounds(l.day_rate)}</dd>${l.usage ? `<dt>Usage</dt><dd>${esc(l.usage)}${l.usage_fee ? ' (' + pounds(l.usage_fee) + ')' : ' (included)'}</dd>` : ''}</dl>
     <h3 class="mt32 mb8">Why ${esc(first(t.name))} books through Embr</h3><ul class="s" style="padding-left:18px;line-height:1.9"><li><b>Everything is agreed in writing</b>: the job, usage and cancellation terms.</li><li><b>Your deposit is held by Stripe</b>, Embr's payment provider, until you sign off after the shoot.</li><li><b>${esc(first(t.name))} keeps 100%</b> of the fee. You pay a ${pct(l.fee_rate)} Embr fee.</li></ul>
   </div><aside><div class="panel"><div class="ledger"><div class="r"><span>Talent fee</span><span>${gbp(l.talent_fee_p)}</span></div><div class="r"><span>Embr fee, ${pct(l.fee_rate)}</span><span>${gbp(l.embr_fee_p)}</span></div><div class="r t"><span>Total</span><span>${gbp(l.total_p)}</span></div><div class="r sub"><span>Deposit now</span><span>${gbp(l.deposit_p)}</span></div><div class="r sub"><span>Balance at sign-off</span><span>${gbp(l.balance_p)}</span></div></div>
     <div class="mt24">${act}</div></div></aside></div>`);

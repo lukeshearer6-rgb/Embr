@@ -57,15 +57,19 @@ async function compress(file, max = 1600, quality = 0.82) {
   return new Promise((ok) => c.toBlob(ok, 'image/jpeg', quality));
 }
 
-export async function uploadPhoto(userId, file) {
+export async function uploadPhoto(userId, file, role = null) {
   const blob = await compress(file);
   const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
   const { error } = await sb.storage.from('photos').upload(path, blob, { contentType: 'image/jpeg', upsert: false, cacheControl: '31536000' });
   if (error) throw new ApiError(error.message);
-  return rpc('add_photo', { p_path: path });
+  return rpc('add_photo', { p_path: path, p_role: role });
 }
 export async function deletePhoto(id, path) {
   const me = await rpc('remove_photo', { p_id: id });
   await sb.storage.from('photos').remove([path]).catch(() => {});
   return me;
 }
+
+// what each role needs before a profile goes live (cached: it never changes mid-session)
+let rulesP;
+export const roleRules = () => (rulesP ||= rpc('role_rules').catch((e) => { rulesP = null; throw e; }));

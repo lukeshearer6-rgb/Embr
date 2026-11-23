@@ -1,20 +1,41 @@
 // Pieces used on several screens: talent cards, booking rows, status labels, calendar.
 import { S } from '../state.js';
 import { photoUrl } from '../api.js';
-import { esc, gbp, pounds, pct, dMed, dLong, addDays, iso, initials, plural, whenTxt } from '../ui.js';
+import { esc, gbp, pounds, pct, dMed, dLong, addDays, iso, initials, plural, whenTxt, rolesOf, rolesTxt } from '../ui.js';
 import { ICON } from '../icons.js';
 
 export const role = () => S.me?.role;
 
 export function comp(t, { save = true } = {}) {
   const ph = photoUrl(t.photo);
-  const stat2 = t.category === 'Model' && t.height ? ['Height', t.height] : ['Category', t.category];
-  return `<div class="comp-wrap" style="position:relative"><button class="comp" data-a="talent" data-id="${t.id}" aria-label="${esc(t.name)}, ${esc(t.category)}, ${esc(t.city)}">
-    <div class="shot" style="${ph ? `background-image:url('${ph}')` : ''}">${ph ? '' : `<span class="cat">${esc(t.category)}</span><span class="tname">${esc(t.name).replace(' ', '<br>')}</span>`}</div>
+  const rs = rolesOf(t);
+  const stat2 = rs.includes('Model') && t.height ? ['Height', t.height] : ['Does', rs.length > 1 ? `${rs[0]} +${rs.length - 1}` : rs[0] || '–'];
+  return `<div class="comp-wrap" style="position:relative"><button class="comp" data-a="talent" data-id="${t.id}" aria-label="${esc(t.name)}, ${esc(rolesTxt(t))}, ${esc(t.city)}">
+    <div class="shot" style="${ph ? `background-image:url('${ph}')` : ''}">${ph ? '' : `<span class="cat">${esc(rs[0] || '')}</span><span class="tname">${esc(t.name).replace(' ', '<br>')}</span>`}</div>
     <div class="nm">${esc(t.name)}${t.verified ? ICON.tick : ''}</div>
+    <div class="xs g" style="margin-top:2px">${esc(rolesTxt(t))}</div>
     ${t.rebooked_by ? `<div class="xs" style="font-weight:600;color:var(--ok);margin-top:2px">Rebooked by ${plural(t.rebooked_by, 'brand')}</div>` : ''}
     <dl class="meas"><div><dt>Based</dt><dd>${esc(t.city)}</dd></div><div><dt>${stat2[0]}</dt><dd>${esc(stat2[1])}</dd></div><div><dt>Day rate</dt><dd>${t.day_rate ? pounds(t.day_rate) : '–'}</dd></div></dl></button>
     ${save && role() === 'brand' ? `<button class="save" data-a="save" data-id="${t.id}" aria-pressed="${!!t.saved}" aria-label="${t.saved ? 'Remove from shortlist' : 'Save to shortlist'}" style="position:absolute;top:10px;right:10px">${ICON.heart}</button>` : ''}</div>`;
+}
+
+// video, showreel and channel links; edit=true adds a remove button (talent's own profile)
+const host = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
+export function linkCards(links, edit = false) {
+  return `<div class="links">${links.map((l) => `<div class="row" style="gap:8px"><a class="linkcard grow" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"><span class="play" aria-hidden="true">▶</span><span class="grow"><span class="lt" style="display:block">${esc(l.title || host(l.url) || 'Video')}</span><span class="lu" style="display:block">${esc(host(l.url))}</span></span></a>${edit ? `<button type="button" class="btn sm quiet" data-a="rmlink" data-id="${l.id}" aria-label="Remove ${esc(l.title || 'link')}">Remove</button>` : ''}</div>`).join('')}</div>`;
+}
+// a profile's work grouped by role: photos then links under each role heading
+export function workByRole(t, rules = {}) {
+  const photos = t.photos || [];
+  const links = t.links || [];
+  return rolesOf(t).map((r) => {
+    const ph = photos.filter((p) => (p.role || rolesOf(t)[0]) === r);
+    const ln = links.filter((l) => l.role === r);
+    if (!ph.length && !ln.length) return '';
+    return `<section class="role-sec"><h3>${esc(r)}</h3>
+      ${ph.length ? `<div class="gal mt12">${ph.map((p) => `<div class="gi" style="background-image:url('${photoUrl(p.path)}')" role="img" aria-label="${esc(t.name)}, ${esc(r)}"></div>`).join('')}</div>` : ''}
+      ${ln.length ? `<h4 class="s mt16 mb8">${esc(rules[r]?.link_label || 'Videos')}</h4>${linkCards(ln)}` : ''}</section>`;
+  }).join('');
 }
 
 export function thumb(p, isBrand) {

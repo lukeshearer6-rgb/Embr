@@ -2,7 +2,7 @@
 // their rankings (Luke checks each list by eye in the pilot), and invites.
 import { VIEWS, A, F, S, rerender } from '../state.js';
 import { rpc } from '../api.js';
-import { esc, gbp, pounds, dMed, ago, toast, opts, formData, plural } from '../ui.js';
+import { esc, gbp, pounds, dMed, ago, toast, opts, formData, plural, rolesTxt } from '../ui.js';
 import { bookingItem, thumb, comp } from './common.js';
 
 const V = VIEWS.ops;
@@ -32,7 +32,7 @@ V.people = async () => {
   const p = await rpc('ops_people');
   const idSt = (t) => (t.verified ? '<span class="st ok">18+ verified</span>' : t.identity_status === 'under_18' ? '<span class="st bad">Under 18</span>' : t.identity_status ? `<span class="st wait">${esc(t.identity_status)}</span>` : '<span class="st off">No ID check</span>');
   return `<h1 class="display t-48 mb24">People</h1>
-  <h2 class="sec">Talent (${p.talent.length})</h2>${p.talent.length ? `<div class="list mb48">${p.talent.map((t) => `<button class="item" data-a="talent" data-id="${t.id}">${thumb(t)}<div class="grow"><div class="ttl">${esc(t.name || '(no name yet)')}${t.handle ? ' <span class="s g">@' + esc(t.handle) + '</span>' : ''}</div><div class="meta"><span>${esc(t.email)}</span><span>${esc(t.category)}, ${esc(t.city)}</span><span>${t.day_rate ? pounds(t.day_rate) + ' a day' : 'No rate'}</span><span>Joined ${dMed(t.joined)}</span><span>${plural(t.bookings, 'booking')}</span></div></div>
+  <h2 class="sec">Talent (${p.talent.length})</h2>${p.talent.length ? `<div class="list mb48">${p.talent.map((t) => `<button class="item" data-a="talent" data-id="${t.id}">${thumb(t)}<div class="grow"><div class="ttl">${esc(t.name || '(no name yet)')}${t.handle ? ' <span class="s g">@' + esc(t.handle) + '</span>' : ''}</div><div class="meta"><span>${esc(t.email)}</span><span>${esc(rolesTxt(t))}, ${esc(t.city)}</span>${t.published ? "" : "<span>Hidden: profile not finished</span>"}<span>${t.day_rate ? pounds(t.day_rate) + ' a day' : 'No rate'}</span><span>Joined ${dMed(t.joined)}</span><span>${plural(t.bookings, 'booking')}</span></div></div>
     <div class="amt"><div>${idSt(t)}</div><div class="mt4">${t.payouts_enabled ? '<span class="st ok">Payouts</span>' : '<span class="st off">No payouts</span>'}</div><div class="mt4">${t.published ? '<span class="st ok">Live</span>' : '<span class="st off">Hidden</span>'}</div></div></button>`).join('')}</div>` : '<div class="empty">No talent yet. Send some invites.</div>'}
   <h2 class="sec">Brands (${p.brands.length})</h2>${p.brands.length ? `<div class="list">${p.brands.map((b) => `<div class="item">${thumb(b, true)}<div class="grow"><div class="ttl">${esc(b.name || '(no name yet)')}</div><div class="meta"><span>${esc(b.contact_name || '')}</span><span>${esc(b.email)}</span><span>${esc(b.city)}</span><span>Joined ${dMed(b.joined)}</span><span>${plural(b.briefs, 'brief')}, ${plural(b.bookings, 'booking')}</span></div></div></div>`).join('')}</div>` : '<div class="empty">No brands yet.</div>'}`;
 };

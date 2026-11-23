@@ -38,7 +38,17 @@ export function whenTxt(t) {
 export const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
 export const opts = (arr, v) => arr.map((x) => `<option ${x === v ? 'selected' : ''}>${esc(x)}</option>`).join('');
 
-export const CATS = ['Model', 'Content creator', 'Photographer', 'Videographer', 'Make-up artist', 'Stylist'];
+// the roles a person can pick (the same list as role_rules() in the database)
+export const CATS = ['Model', 'UGC creator', 'Actor', 'Content creator', 'Photographer', 'Videographer', 'Make-up artist', 'Stylist'];
+export const rolesOf = (t) => (t?.roles?.length ? t.roles : t?.category ? [t.category] : []);
+// "Model, UGC creator and Actor"
+export const rolesTxt = (t) => { const r = rolesOf(t); return r.length < 2 ? r.join('') : r.slice(0, -1).join(', ') + ' and ' + r.at(-1); };
+// role chips for a form: pressed chips are read back with pickedRoles(form)
+export const roleChips = (picked = [], label = 'What you do') => `<fieldset class="field span roles-pick"><legend>${esc(label)} <span class="hint">Pick everything that applies</span></legend>
+  <div class="chips mt8">${CATS.map((c) => `<button type="button" class="chip" data-a="pick-role" data-role="${esc(c)}" aria-pressed="${picked.includes(c)}">${esc(c)}</button>`).join('')}</div></fieldset>`;
+// "UGC creators", "models": for sentences like "Show me models in Leeds"
+export const rolePlural = (c) => (c === 'UGC creator' ? 'UGC creators' : c.toLowerCase() + 's');
+export const pickedRoles = (form) => [...form.querySelectorAll('[data-a=pick-role][aria-pressed=true]')].map((b) => b.dataset.role);
 export const CITIES = ['Manchester', 'London', 'Birmingham', 'Leeds', 'Glasgow', 'Bristol', 'Liverpool'];
 export const USAGE = ['Instagram and TikTok', 'Paid social ads', 'Website and online shop', 'Email newsletters', 'Posters and print', 'All of it'];
 export const TERMS = ['3 months', '6 months', '12 months', '24 months'];
