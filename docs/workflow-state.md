@@ -76,6 +76,6 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 Newest first. One line per session: date, agent, what happened.
 
-- 2026-11-23 marketer: drafted M1 positioning pack (marketing/positioning/positioning-pack.md) with messaging house, gated proof points and a "Crew" comparison; waiting on Luke's review.
 - 2026-11-23 marketer: made "book now, pay later" the lead brand pillar at Luke's request; logged it in decisions.md and added R7 and D5.
+- 2026-11-23 marketer: drafted M1 positioning pack (marketing/positioning/positioning-pack.md) with messaging house, gated proof points and a "Crew" comparison; waiting on Luke's review.
 - 2026-11-23 orchestrator: created the workspace (CLAUDE.md, four agents, decisions, backlog, CI, dashboard); pilot app moved to the repo root; local tests passed.
