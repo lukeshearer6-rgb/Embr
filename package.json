@@ -8,8 +8,10 @@
     "test:db": "node tests/db.test.mjs",
     "test:e2e": "node tests/e2e.test.mjs",
     "local-server": "node --import tsx scripts/dev-server.mjs",
-    "dashboard": "node scripts/dashboard.mjs",
-    "db:reset": "sh scripts/db-reset.sh"
+    "dashboard": "node scripts/dashboard.mjs && node scripts/office.mjs",
+    "db:reset": "sh scripts/db-reset.sh",
+    "office": "node scripts/office.mjs",
+    "test:office": "node tests/office.test.mjs"
   },
   "keywords": [],
   "author": "",

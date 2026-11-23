@@ -29,7 +29,7 @@
       {
         "matcher": "Edit|Write",
         "hooks": [
-          { "type": "command", "command": "cd \"$CLAUDE_PROJECT_DIR\" && node scripts/dashboard.mjs >/dev/null 2>&1 || true" }
+          { "type": "command", "command": "cd \"$CLAUDE_PROJECT_DIR\" && node scripts/dashboard.mjs >/dev/null 2>&1; node scripts/office.mjs >/dev/null 2>&1 || true" }
         ]
       }
     ]
