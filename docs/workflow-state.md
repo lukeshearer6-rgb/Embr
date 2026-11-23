@@ -25,7 +25,6 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 |---|---|---|
 | B1 | Create an empty private GitHub repo and send me its name, then approve the first push | The code needs a home before CI and deploys can work |
 | B2 | Create Supabase, Stripe (test mode), Resend and Cloudflare accounts (docs/builds/SETUP.md) | Only Luke can sign up and hold the passwords |
-| R1 | Approve pushing the Cloudflare free-plan brief to GitHub (branch claude/project-thread-j0ytr6) | Pushing is an external action |
 
 ## Backlog
 
