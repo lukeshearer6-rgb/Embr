@@ -22,6 +22,7 @@ Locked decisions from Luke. Change one only when Luke says so, and record the da
 - Pilot brand fee: 10% on the first booking with a person, 7% from the 2nd, 5% from the 5th, 5% on booking links. Talent get 100% of the fee. (Pilot app, 2026-11-23; the tiers still need Luke's final confirmation for launch.)
 - Automatic sign-off 72 hours after wrap. Free cancellation until 7 days before the shoot. After that, talent get 50% of the session fee.
 - Usage applies only if the talent makes the final cut.
+- Book now, pay later is a lead brand feature: brands book and pay on their usual invoice terms, and creatives are still paid on completion. Not built yet; the provider, cost and fit with the 50% deposit are open. (2026-11-23)
 - Booking link and Book-me page (`/@name`) move Instagram enquiries onto Embr.
 - Multi-role profiles: talent pick every role they do, each role has a portfolio section, and the profile goes live only when every section is filled. (2026-11-23)
 - The Model role needs full comp-card measurements. (2026-11-23)

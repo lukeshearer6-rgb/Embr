@@ -37,6 +37,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | R3 | Routes to a specialist agency-law opinion at zero or low cost (law clinics, pro bono, founder schemes) | researcher | todo | Each route linked with eligibility | Write brief; Luke chooses who to contact |
 | R4 | Competitor brief: UK platforms where brands book unsigned models and creatives | researcher | todo | Every claim linked to the platform's own pages | Write brief; hand to marketer |
 | R5 | Brand interview kit: Manchester independent brand target list and interview script | researcher | todo | Public sources for each brand | Draft only; Luke makes contact |
+| R7 | B2B pay-later providers for "book now, pay later": who funds invoice terms, eligibility for a new company, costs, Stripe fit | researcher | todo | Each provider's own pages cited | Write brief; Luke picks a route |
 | R6 | CAP Code checklist for launch claims ("0% of your earnings", fee claims) | researcher | todo | CAP Code sections cited | Hand to marketer |
 
 ### Development
@@ -47,6 +48,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | D1 | Check CI passes on the first GitHub push | developer | blocked | GitHub Actions run is green | Waits on B1 |
 | D2 | Test server functions against real Supabase and Stripe test mode | developer | blocked | Test-mode payments, payouts and ID check work | Waits on B3 |
 | D3 | Fix anything found in the five test bookings | developer | blocked | Tests added for each fix | Waits on B4 |
+| D5 | Book now, pay later: brands pay on invoice terms, talent paid on completion | developer | blocked | Tests cover the money flow in payments.ts | Waits on R7 and Luke's choice |
 | D4 | Export the booking agreement text for solicitor review | developer | todo | Text matches the `_agreement` function | Write docs/dev/booking-agreement.md |
 
 ### App build
@@ -64,7 +66,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 | ID | Task | Agent | Status | Verify by | Next action |
 |---|---|---|---|---|---|
-| M1 | Positioning pack: "Unsigned, not unseen" messaging for brands and talent | marketer | needs-approval | Drafted in marketing/positioning/positioning-pack.md; every claim traced to decisions.md, CHANGELOG or app code; banned phrases checked 2026-11-23 | Luke to review and approve the 7 flagged claims and the Crew note |
+| M1 | Positioning pack: "Unsigned, not unseen" messaging for brands and talent | marketer | needs-approval | Drafted in marketing/positioning/positioning-pack.md; every claim traced to decisions.md, CHANGELOG or app code; banned phrases checked 2026-11-23 | Luke to review and approve the 8 flagged claims and the Crew note; pay-later added as lead brand pillar |
 | M2 | Founding talent invite DMs and brand invite emails | marketer | todo | Copy rules checked | Drafts only; Luke sends |
 | M3 | Landing and waitlist copy (not public until B5) | marketer | todo | Claims checked against R6 | Draft in marketing/landing/ |
 | M4 | Instagram launch posts for Luke's account | marketer | todo | Canva drafts, claims checked | Drafts only; Luke posts |
@@ -75,4 +77,5 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 Newest first. One line per session: date, agent, what happened.
 
 - 2026-11-23 marketer: drafted M1 positioning pack (marketing/positioning/positioning-pack.md) with messaging house, gated proof points and a "Crew" comparison; waiting on Luke's review.
+- 2026-11-23 marketer: made "book now, pay later" the lead brand pillar at Luke's request; logged it in decisions.md and added R7 and D5.
 - 2026-11-23 orchestrator: created the workspace (CLAUDE.md, four agents, decisions, backlog, CI, dashboard); pilot app moved to the repo root; local tests passed.

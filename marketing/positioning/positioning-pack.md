@@ -10,7 +10,7 @@ Word choice: this pack says **talent** throughout, because Luke has not picked a
 
 ## 1. Positioning in one breath
 
-**For brands:** Embr is the UK board of unsigned models and creatives. Post a brief, Embr ranks who fits, and you choose who gets an offer. The booking, agreement, deposit and usage terms live in one place.
+**For brands:** Embr is the UK board of unsigned models and creatives. Book now and pay later on the invoice terms you already use, while the people you book are paid on completion. Post a brief, Embr ranks who fits, and you choose who gets an offer. The booking, agreement, deposit and usage terms live in one place.
 
 **For talent:** Embr is where your bookings live. Offers, terms, usage, travel and pay in one place, and Embr takes 0% of your earnings. Let work find you.
 
@@ -18,7 +18,7 @@ Word choice: this pack says **talent** throughout, because Luke has not picked a
 
 ### Positioning statement (internal, not copy)
 
-For independent UK brands who want faces and creatives that look like their own customers, Embr is a booking board of unsigned models and creative talent where the brand searches, Embr ranks talent against the brief, and the brand makes the offer. Unlike booking through DMs and WhatsApp, every Embr booking has a written agreement, a held deposit and agreed usage. *(Sources: decisions.md, Product and money, Agency position, Campaign; Decision (Luke, 2026-11-20 and 2026-11-23). Shipped in the pilot app: CHANGELOG 2026-11-23. The app is tested locally and is not live yet.)*
+For independent UK brands who want faces and creatives that look like their own customers, Embr is a booking board of unsigned models and creative talent where the brand searches, Embr ranks talent against the brief, and the brand makes the offer. Unlike booking through DMs and WhatsApp, Embr lets a brand book now and pay later on its usual invoice terms, while the talent are paid on completion, and every booking has a written agreement and agreed usage. *(Sources: decisions.md, Product and money, Agency position, Campaign; Decision (Luke, 2026-11-20 and 2026-11-23). Shipped in the pilot app: CHANGELOG 2026-11-23. The app is tested locally and is not live yet.)*
 
 Note what the statement does not say: it does not compare Embr with agencies, and it does not say talent find or get work.
 
@@ -61,10 +61,10 @@ Roles are the eight in the app: Model, UGC creator, Actor, Content creator, Phot
   "The faces your customers                "Let work find you."
    actually look like."
 
-  Pillar B1  Independent faces             Pillar T1  Your bookings, in one place
-  Pillar B2  Embr ranks. You choose.       Pillar T2  0% of your earnings
-  Pillar B3  Booked properly               Pillar T3  Your profile, every role
-                                           Pillar T4  Safety tools you can see
+  Pillar B1  Book now, pay later           Pillar T1  Your bookings, in one place
+  Pillar B2  Independent faces             Pillar T2  0% of your earnings
+  Pillar B3  Embr ranks. You choose.       Pillar T3  Your profile, every role
+  Pillar B4  Booked properly               Pillar T4  Safety tools you can see
 
   Foundations: UK, invite-only, Manchester first · premium and independent ·
   never agency-like · every claim sourced
@@ -72,17 +72,25 @@ Roles are the eight in the app: Model, UGC creator, Actor, Content creator, Phot
 
 ### Brand pillars
 
-**B1. Independent faces.**
+**B1. Book now, pay later.** *(lead brand pillar)*
+Book the shoot today and pay on the invoice terms your business already runs on. The people you book don't wait for your payment run: they're paid when the booking is signed off.
+- Why it leads: it lets a brand organise shoots without breaking its usual invoicing cycle, and it means the creatives are still paid on completion *(Decision (Luke, 2026-11-23))*. Brands paying later through a plugged-in B2B pay-later provider was first set out by Luke earlier *(imported project memory, areas/embr.md)*.
+- **Not built yet.** The pilot app takes a 50% deposit by card and the balance at sign-off *(README.md, "What's in it"; decisions.md, Product and money)*. There is no pay-later option in the code (checked 2026-11-23).
+- Open questions before it can be offered: which provider funds it and on what terms, whether that provider works with an unincorporated or newly incorporated company, what it costs (zero-cash budget), and how it fits with the 50% deposit rule. **Unverified: needs research** (suggested new task R7).
+- Wording: say "paid on completion" or "paid when the booking is signed off", not "paid instantly". Sign-off is automatic 72 hours after wrap *(decisions.md)*, and payout timing depends on Stripe, which is unconfirmed *(campaign plan, section 2)*.
+- Gated: no public or 1:1 promise of pay-later terms until the app supports it and the funding is in place.
+
+**B2. Independent faces.**
 Unsigned models and creatives, many of them local, on one board. Models, UGC creators, actors, photographers and more, so a small shoot can be booked from one place.
 - Proof: multi-role profiles, live only when every role's portfolio is filled *(Decision (Luke, 2026-11-23); CHANGELOG 2026-11-23)*. The Model role carries full comp-card measurements and briefs filter on them *(CHANGELOG 2026-11-23, migration 3)*.
 - Not yet: any number of talent on the board. **Unverified: needs measuring** once the pilot opens.
 
-**B2. Embr ranks. You choose.**
+**B3. Embr ranks. You choose.**
 Post a brief with a date, place, budget and usage. Embr ranks the talent who fit it. You decide who gets an offer.
 - Proof: brands search the board and Embr ranks talent against the brief *(decisions.md, Agency position, 2026-11-20)*. Best-fit ranking is built in the pilot app *(src/views/brand.js)*.
 - Don't say "the best talent", "perfect match" or "we find them for you". Embr ranks; the brand picks.
 
-**B3. Booked properly.**
+**B4. Booked properly.**
 One fee shown before you book. A 50% deposit held through Stripe, the balance on completion. Usage agreed in writing. Automatic sign-off 72 hours after wrap.
 - Proof: *decisions.md, Product and money*. Quote, deposit and usage fields are built *(src/views/brand.js, src/views/booking.js)*.
 - Gated: payment and sign-off claims can't go public until test-mode bookings pass (B4) and payments run live. Never say "escrow" *(campaign plan, section 2)*.
@@ -119,6 +127,8 @@ Status key: **Approved** = locked by Luke. **Proposed** = for Luke to approve. *
 
 | Line | Use | Status |
 |---|---|---|
+| Book now, pay later. | Lead brand benefit | Proposed, gated: not built, no funding provider yet |
+| Book today. Pay on your usual terms. Your crew is paid on completion. | Brand explainer | Proposed, gated as above ("crew" here is the everyday word, not the talent rename) |
 | Unsigned, not unseen. | Platform, every channel | Approved (Luke, 2026-11-23) |
 | Let work find you. | Talent product line. Never next to a price | Approved (Luke, 2026-11-20) |
 | The faces your customers actually look like. | Brand hook | Proposed (campaign plan, Territory A; to test in E2) |
@@ -128,8 +138,8 @@ Status key: **Approved** = locked by Luke. **Proposed** = for Luke to approve. *
 
 ### Brand copy (short and long)
 
-- **Short:** Unsigned, not unseen. Book independent models and creatives for your next shoot. Post a brief, see who fits, make the offer.
-- **Long:** Embr is a board of unsigned models and creatives in the UK, starting in Manchester. Post a brief with your date, location, budget and usage. Embr ranks the talent who fit, and you choose who gets an offer. The agreement, deposit and usage terms sit in one place, and you see the fee before you book. *(Fee and deposit wording gated on B4.)*
+- **Short:** Unsigned, not unseen. Book independent models and creatives now, pay on your usual terms. Post a brief, see who fits, make the offer. *(Pay-later part gated.)*
+- **Long:** Embr is a board of unsigned models and creatives in the UK, starting in Manchester. Post a brief with your date, location, budget and usage. Embr ranks the talent who fit, and you choose who gets an offer. The agreement, deposit and usage terms sit in one place, and you see the fee before you book. Book now and pay later on your usual invoice terms, while the people you book are paid on completion. *(Fee and deposit wording gated on B4. Pay-later gated on build and funding.)*
 
 ### Talent copy (short and long)
 
@@ -173,6 +183,7 @@ These are for 1:1 conversations and the FAQ draft (M3). Each answer uses only de
 | Talent: "Is it safe?" | "Everyone booked is 18+ and ID-checked, every booking has a written agreement, and the brand pays a deposit before the shoot." (Gated on D2 and B4 for public copy.) |
 | Talent: "I already get enquiries on Instagram." | "Keep them. Send your Embr booking link and the enquiry becomes a proper booking with agreed terms and a deposit." |
 | Brand: "Why not just DM models?" | "You can. Embr puts the agreement, deposit and usage in one place and shows you who fits your brief." (Don't criticise DMs or agencies.) |
+| Brand: "We pay suppliers on 30 or 60 days. Can we still use it?" | Once it's built: "Yes. Book now and pay on your usual terms; the talent are paid on completion." Until then: "That's something we're building. Today it's a 50% deposit and the balance at sign-off." Don't quote any number of days. |
 | Brand: "What does it cost?" | "A booking fee on top of the talent's fee, shown before you book." Tiers (10%, 7%, 5%) are in the pilot app but still need Luke's final confirmation for launch *(decisions.md)*. Don't quote them publicly yet. |
 | Anyone: "Is Embr an agency?" | "No. Embr is a booking app. Brands search and choose; Embr doesn't represent anyone." (Keep it short; specialist opinion still pending, R3.) |
 
@@ -188,6 +199,7 @@ These are for 1:1 conversations and the FAQ draft (M3). Each answer uses only de
 | Embr ranks talent against the brief | Decision + pilot app | Yes | App live (B3) |
 | 50% deposit, balance on completion, 72-hour sign-off | Decision + pilot app | Yes, as "how it will work" | B4 test bookings pass + live payments |
 | 18+, ID-checked | Decision + Stripe Identity code | Yes, as "how it will work" | D2 passes against Stripe |
+| Book now, pay later on invoice terms; talent paid on completion | Decision (Luke, 2026-11-23); **not in the app** | No, only as "we're building it" | Pay-later built and tested in the app (new task D5) **and** a funding provider in place (new task R7) |
 | Brand fee tiers | Pilot app | Only as "draft" | Luke confirms tiers |
 | Any count of talent, brands, bookings | None | No | Real counts from the database |
 | Testimonials, booking stories | None | No | Real pilot users, written consent |
@@ -234,6 +246,9 @@ Luke is weighing a word to replace "talent". Nothing changes until he chooses. H
 - Campaign plan (provisional), https://claude.ai/artifact/CzJgtfXvCefoRdZ3AnNKHC (read 2026-11-23): audience segments, Territory A lines, message hierarchy, Burn Agency Fees assessment, CAP 3.41 and 3.32–3.34 references, "never call it escrow".
 - `docs/research/`: **empty as of 2026-11-23.** No market figures are used in this pack for that reason. R4 (competitors) and R6 (CAP checklist) will feed the next revision.
 
+- `README.md` and app code (checked 2026-11-23): no pay-later or invoice-terms payment in the pilot app.
+- Imported project memory `areas/embr.md`: Luke's earlier note that brand pay-later would be a plugged-in B2B Klarna-style provider.
+
 Claims for Luke to approve before any public use:
 1. "0% of your earnings" / "keep 100% of your fee" (pricing claim; R6).
 2. Deposit, sign-off and payment wording (gated on B4 and live payments).
@@ -242,3 +257,4 @@ Claims for Luke to approve before any public use:
 5. "Founded by a model" (unverified; Luke to confirm or drop).
 6. "The faces your customers actually look like" (subjective brand line; to test in E2).
 7. "Is Embr an agency? No." answer (legal-adjacent; specialist opinion pending, R3).
+8. "Book now, pay later" and "paid on completion" (gated on D5 build and R7 funding; never "paid instantly" until payout timing is confirmed).
