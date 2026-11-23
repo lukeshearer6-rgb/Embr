@@ -66,7 +66,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 | ID | Task | Agent | Status | Verify by | Next action |
 |---|---|---|---|---|---|
-| M1 | Positioning pack: "Unsigned, not unseen" messaging for brands and talent | marketer | needs-approval | Drafted in marketing/positioning/positioning-pack.md; every claim traced to decisions.md, CHANGELOG or app code; banned phrases checked 2026-11-23 | Luke to review and approve the 8 flagged claims and the Crew note; pay-later added as lead brand pillar |
+| M1 | Positioning pack: "Unsigned, not unseen" messaging for brands and talent | marketer | needs-approval | Drafted in marketing/positioning/positioning-pack.md; every claim traced to decisions.md, CHANGELOG or app code; banned phrases checked 2026-11-23 | Luke to review and approve the 7 remaining flagged claims and the Crew note; pay-later added as lead brand pillar |
 | M2 | Founding talent invite DMs and brand invite emails | marketer | todo | Copy rules checked | Drafts only; Luke sends |
 | M3 | Landing and waitlist copy (not public until B5) | marketer | todo | Claims checked against R6 | Draft in marketing/landing/ |
 | M4 | Instagram launch posts for Luke's account | marketer | todo | Canva drafts, claims checked | Drafts only; Luke posts |

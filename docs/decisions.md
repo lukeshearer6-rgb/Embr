@@ -34,6 +34,7 @@ Locked decisions from Luke. Change one only when Luke says so, and record the da
 - "Unsigned, not unseen" is the campaign platform. (2026-11-23)
 - "Let work find you" is the talent line. (2026-11-20)
 - "Burn Agency Fees" is not a headline.
+- "Founded by a model" can be used in campaign copy. (2026-11-23)
 - Invite-only, brand-led pilot in Manchester first. No public teaser until the app can take a real paid booking. (2026-11-23)
 - Founding talent are free during the pilot.
 - Still open: pilot city confirmation, a fee-free first booking for founding brands, the founder on camera, and the brand fee tiers.

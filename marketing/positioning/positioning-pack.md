@@ -115,6 +115,8 @@ Pick every role you do. Each gets its own portfolio section. Your Book-me page a
 **T4. Safety tools you can see.**
 18+ only, with an ID check through Stripe Identity. Written agreement on every booking. Messages stay on the booking.
 - Proof: 18+ rule *(decisions.md)*; Stripe Identity *(CLAUDE.md, Tech stack)*.
+
+**Talent proof point: Founded by a model.** Approved for use *(Decision (Luke, 2026-11-23))*.
 - Gated: "ID-checked" can't be public until Stripe Identity runs live (D2). Describe safety as tools Embr provides, never as protection or representation *(campaign plan, section 2: Luke, 2026-11-17)*.
 
 ---
@@ -203,7 +205,7 @@ These are for 1:1 conversations and the FAQ draft (M3). Each answer uses only de
 | Brand fee tiers | Pilot app | Only as "draft" | Luke confirms tiers |
 | Any count of talent, brands, bookings | None | No | Real counts from the database |
 | Testimonials, booking stories | None | No | Real pilot users, written consent |
-| "Founded by a model" (campaign plan, message hierarchy) | **Unverified** | Luke to confirm | Luke confirms |
+| "Founded by a model" | Decision (Luke, 2026-11-23) | Yes | Approved by Luke; use with the pilot copy |
 
 ---
 
@@ -254,7 +256,7 @@ Claims for Luke to approve before any public use:
 2. Deposit, sign-off and payment wording (gated on B4 and live payments).
 3. "ID-checked" (gated on D2).
 4. Brand fee tiers (Luke to confirm).
-5. "Founded by a model" (unverified; Luke to confirm or drop).
+5. ~~"Founded by a model"~~ Approved: Decision (Luke, 2026-11-23).
 6. "The faces your customers actually look like" (subjective brand line; to test in E2).
 7. "Is Embr an agency? No." answer (legal-adjacent; specialist opinion pending, R3).
 8. "Book now, pay later" and "paid on completion" (gated on D5 build and R7 funding; never "paid instantly" until payout timing is confirmed).
