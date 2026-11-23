@@ -24,7 +24,6 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | ID | What Luke needs to do | Why |
 |---|---|---|
 | B2 | Create Supabase, Stripe (test mode), Resend and Cloudflare accounts (docs/builds/SETUP.md) | Only Luke can sign up and hold the passwords |
-| O1 | Approve pushing the animated office view (branch claude/project-thread-h5a6a3) to GitHub | Pushing is an external action |
 
 ## Backlog
 
@@ -76,7 +75,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 Newest first. One line per session: date, agent, what happened.
 
-- 2026-11-23 orchestrator: added the animated office view (docs/office.html, npm run office) driven by this file; 13 office checks pass; committed locally, push waits on Luke (O1).
+- 2026-11-23 orchestrator: added the animated office view (docs/office.html, npm run office) driven by this file; 13 office checks pass; Luke approved push and pull request (2026-11-23).
 - 2026-11-23 orchestrator: added book now, pay later to README and decisions (planned, not built); new tasks R7 and D5.
 - 2026-11-23 orchestrator: pushed to github.com/lukeshearer6-rgb/Embr (Luke approved); CI tests green on first run.
 - 2026-11-23 orchestrator: created the workspace (CLAUDE.md, four agents, decisions, backlog, CI, dashboard); pilot app moved to the repo root; local tests passed.
