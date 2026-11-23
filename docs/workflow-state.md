@@ -15,15 +15,14 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | Agent | Working on | Status |
 |---|---|---|
 | researcher | R1 Cloudflare Pages free-plan terms | todo |
-| developer | D1 Check CI passes on the first push | blocked |
-| app-builder | B1 Push the workspace to GitHub | needs-approval |
+| developer | D4 Export the booking agreement for solicitor review | todo |
+| app-builder | B5 Release checklist for the invite-only pilot | todo |
 | marketer | M1 Positioning pack | todo |
 
 ## Waiting on Luke
 
 | ID | What Luke needs to do | Why |
 |---|---|---|
-| B1 | Create an empty private GitHub repo and send me its name, then approve the first push | The code needs a home before CI and deploys can work |
 | B2 | Create Supabase, Stripe (test mode), Resend and Cloudflare accounts (docs/builds/SETUP.md) | Only Luke can sign up and hold the passwords |
 
 ## Backlog
@@ -44,7 +43,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | ID | Task | Agent | Status | Verify by | Next action |
 |---|---|---|---|---|---|
 | D0 | Restructure pilot into the workspace layout, add CI, dashboard and agent docs | orchestrator | done | db and e2e tests passed locally on 2026-11-23 | None |
-| D1 | Check CI passes on the first GitHub push | developer | blocked | GitHub Actions run is green | Waits on B1 |
+| D1 | Check CI passes on the first GitHub push | developer | done | Run 45287047084 green on 2026-11-23 | None |
 | D2 | Test server functions against real Supabase and Stripe test mode | developer | blocked | Test-mode payments, payouts and ID check work | Waits on B3 |
 | D3 | Fix anything found in the five test bookings | developer | blocked | Tests added for each fix | Waits on B4 |
 | D4 | Export the booking agreement text for solicitor review | developer | todo | Text matches the `_agreement` function | Write docs/dev/booking-agreement.md |
@@ -53,7 +52,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 | ID | Task | Agent | Status | Verify by | Next action |
 |---|---|---|---|---|---|
-| B1 | Push the workspace to a private GitHub repo | app-builder | needs-approval | Repo shows all commits | Luke creates repo and approves push |
+| B1 | Push the workspace to a private GitHub repo | app-builder | done | github.com/lukeshearer6-rgb/Embr main at 53aa598 | None |
 | B2 | Luke creates Supabase, Stripe test, Resend and Cloudflare accounts | luke | todo | Values collected per SETUP.md | Luke follows docs/builds/SETUP.md steps 1–3 |
 | B3 | Deploy database, functions and app in test mode | app-builder | blocked | Build log saved, admin site loads | Waits on B2; needs approval |
 | B4 | Run five full test-mode bookings, including a cancellation and a refund | app-builder | blocked | Build log with each booking's result | Waits on B3 |
@@ -74,4 +73,5 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 Newest first. One line per session: date, agent, what happened.
 
+- 2026-11-23 orchestrator: pushed to github.com/lukeshearer6-rgb/Embr (Luke approved); CI tests green on first run.
 - 2026-11-23 orchestrator: created the workspace (CLAUDE.md, four agents, decisions, backlog, CI, dashboard); pilot app moved to the repo root; local tests passed.
