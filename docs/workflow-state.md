@@ -36,6 +36,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | R3 | Routes to a specialist agency-law opinion at zero or low cost (law clinics, pro bono, founder schemes) | researcher | todo | Each route linked with eligibility | Write brief; Luke chooses who to contact |
 | R4 | Competitor brief: UK platforms where brands book unsigned models and creatives | researcher | todo | Every claim linked to the platform's own pages | Write brief; hand to marketer |
 | R5 | Brand interview kit: Manchester independent brand target list and interview script | researcher | todo | Public sources for each brand | Draft only; Luke makes contact |
+| R7 | Book now, pay later: how talent get paid at sign-off before the brand pays. Cover credit risk and who carries it, Embr's cash position (zero), UK B2B pay-later and invoice-finance partners (e.g. Kriya, Two) and their terms, fit with Stripe Connect, whether it's FCA-regulated, and partner fees and who absorbs them | researcher | todo | Every figure and rule cited to the provider's pages, FCA or legislation.gov.uk | Write brief; Luke picks a partner to approach |
 | R6 | CAP Code checklist for launch claims ("0% of your earnings", fee claims) | researcher | todo | CAP Code sections cited | Hand to marketer |
 
 ### Development
@@ -46,6 +47,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | D1 | Check CI passes on the first GitHub push | developer | done | Run 45287047084 green on 2026-11-23 | None |
 | D2 | Test server functions against real Supabase and Stripe test mode | developer | blocked | Test-mode payments, payouts and ID check work | Waits on B3 |
 | D3 | Fix anything found in the five test bookings | developer | blocked | Tests added for each fix | Waits on B4 |
+| D5 | Build book now, pay later at the balance step with the chosen partner | developer | blocked | Tests cover on-terms balance and instant talent payout | Waits on R7 and Luke's partner choice |
 | D4 | Export the booking agreement text for solicitor review | developer | todo | Text matches the `_agreement` function | Write docs/dev/booking-agreement.md |
 
 ### App build
@@ -73,5 +75,6 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 Newest first. One line per session: date, agent, what happened.
 
+- 2026-11-23 orchestrator: added book now, pay later to README and decisions (planned, not built); new tasks R7 and D5.
 - 2026-11-23 orchestrator: pushed to github.com/lukeshearer6-rgb/Embr (Luke approved); CI tests green on first run.
 - 2026-11-23 orchestrator: created the workspace (CLAUDE.md, four agents, decisions, backlog, CI, dashboard); pilot app moved to the repo root; local tests passed.

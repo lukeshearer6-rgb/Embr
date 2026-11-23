@@ -19,6 +19,7 @@ Locked decisions from Luke. Change one only when Luke says so, and record the da
 
 ## Product and money
 - Brands pay a 50% deposit, held through Stripe, and the balance on completion. There is no reduced deposit for repeat brands.
+- **Book now, pay later** is one of the biggest brand features. Brands book on their traditional invoicing cycles, and creatives are paid instantly on completion. It would be delivered through a plugged-in B2B "Klarna-style" pay-later partner, not by Embr lending its own money. (Luke, 2026-11-17, confirmed 2026-11-23.) It is not built in the pilot yet (R7, D5).
 - Pilot brand fee: 10% on the first booking with a person, 7% from the 2nd, 5% from the 5th, 5% on booking links. Talent get 100% of the fee. (Pilot app, 2026-11-23; the tiers still need Luke's final confirmation for launch.)
 - Automatic sign-off 72 hours after wrap. Free cancellation until 7 days before the shoot. After that, talent get 50% of the session fee.
 - Usage applies only if the talent makes the final cut.
