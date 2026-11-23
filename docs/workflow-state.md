@@ -14,7 +14,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 | Agent | Working on | Status |
 |---|---|---|
-| researcher | R1 Cloudflare Pages free-plan terms | todo |
+| researcher | R1 Cloudflare Pages free-plan terms | done |
 | developer | D1 Check CI passes on the first push | blocked |
 | app-builder | B1 Push the workspace to GitHub | needs-approval |
 | marketer | M1 Positioning pack | todo |
@@ -25,6 +25,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 |---|---|---|
 | B1 | Create an empty private GitHub repo and send me its name, then approve the first push | The code needs a home before CI and deploys can work |
 | B2 | Create Supabase, Stripe (test mode), Resend and Cloudflare accounts (docs/builds/SETUP.md) | Only Luke can sign up and hold the passwords |
+| R1 | Approve pushing the Cloudflare free-plan brief to GitHub (branch claude/project-thread-j0ytr6) | Pushing is an external action |
 
 ## Backlog
 
@@ -32,7 +33,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 | ID | Task | Agent | Status | Verify by | Next action |
 |---|---|---|---|---|---|
-| R1 | Check Cloudflare Pages free-plan terms allow a commercial app | researcher | todo | Quote and link the current terms | Write docs/research brief |
+| R1 | Check Cloudflare Pages free-plan terms allow a commercial app | researcher | done | Brief docs/research/2026-11-23-cloudflare-pages-free-plan.md; every quote re-checked against the live Cloudflare page on 2026-11-23; pilot build measured locally | Keep card entry on Stripe-hosted pages while on the free plan; optional written check with Cloudflare (Luke) |
 | R2 | Incorporation and domain: steps, official fees, cheapest compliant option | researcher | todo | Companies House and registrar pages cited | Write brief for Luke to approve spend |
 | R3 | Routes to a specialist agency-law opinion at zero or low cost (law clinics, pro bono, founder schemes) | researcher | todo | Each route linked with eligibility | Write brief; Luke chooses who to contact |
 | R4 | Competitor brief: UK platforms where brands book unsigned models and creatives | researcher | todo | Every claim linked to the platform's own pages | Write brief; hand to marketer |
@@ -74,4 +75,5 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 Newest first. One line per session: date, agent, what happened.
 
+- 2026-11-23 researcher: R1 done. No free-plan ban on commercial use found; §2.2.1(h) bans collecting card details on a free-plan site, which Embr avoids by using Stripe-hosted pages; pilot is far inside Pages limits.
 - 2026-11-23 orchestrator: created the workspace (CLAUDE.md, four agents, decisions, backlog, CI, dashboard); pilot app moved to the repo root; local tests passed.

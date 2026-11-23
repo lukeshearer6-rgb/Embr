@@ -95,7 +95,7 @@ npx supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_... STRIPE_CONNECT_WEBHOOK_
 3. If that address differs from what you used for `APP_URL`, update the secret and the Supabase Site URL.
 4. Later, add your own domain in Pages → Custom domains.
 
-Check Cloudflare's current terms allow a commercial app on the free plan before launch (Vercel's free plan doesn't, which is why it isn't used here).
+Cloudflare's free-plan terms were checked on 2026-11-23 (`docs/research/2026-11-23-cloudflare-pages-free-plan.md`): no ban on commercial use was found, but a free-plan site must not collect card details itself. Keep all payments on Stripe-hosted Checkout pages, as the app does now, and never add an embedded card form while on the free plan.
 
 ## 7. First sign-in and a test booking
 
