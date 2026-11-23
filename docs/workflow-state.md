@@ -17,7 +17,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | researcher | R1 Cloudflare Pages free-plan terms | todo |
 | developer | D1 Check CI passes on the first push | blocked |
 | app-builder | B1 Push the workspace to GitHub | needs-approval |
-| marketer | M1 Positioning pack | todo |
+| marketer | M1 Positioning pack | needs-approval |
 
 ## Waiting on Luke
 
@@ -64,7 +64,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 | ID | Task | Agent | Status | Verify by | Next action |
 |---|---|---|---|---|---|
-| M1 | Positioning pack: "Unsigned, not unseen" messaging for brands and talent | marketer | todo | Every claim traced to decisions or research | Draft in marketing/positioning/ |
+| M1 | Positioning pack: "Unsigned, not unseen" messaging for brands and talent | marketer | needs-approval | Drafted in marketing/positioning/positioning-pack.md; every claim traced to decisions.md, CHANGELOG or app code; banned phrases checked 2026-11-23 | Luke to review and approve the 7 flagged claims and the Crew note |
 | M2 | Founding talent invite DMs and brand invite emails | marketer | todo | Copy rules checked | Drafts only; Luke sends |
 | M3 | Landing and waitlist copy (not public until B5) | marketer | todo | Claims checked against R6 | Draft in marketing/landing/ |
 | M4 | Instagram launch posts for Luke's account | marketer | todo | Canva drafts, claims checked | Drafts only; Luke posts |
@@ -74,4 +74,5 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 Newest first. One line per session: date, agent, what happened.
 
+- 2026-11-23 marketer: drafted M1 positioning pack (marketing/positioning/positioning-pack.md) with messaging house, gated proof points and a "Crew" comparison; waiting on Luke's review.
 - 2026-11-23 orchestrator: created the workspace (CLAUDE.md, four agents, decisions, backlog, CI, dashboard); pilot app moved to the repo root; local tests passed.
