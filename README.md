@@ -2,7 +2,9 @@
 
 The working, invite-only pilot of Embr: brands book models and creatives directly. Built from the v11 prototype's design.
 
-**Going online:** see [SETUP.md](SETUP.md).
+**Going online:** see [docs/builds/SETUP.md](docs/builds/SETUP.md).
+
+**Working on Embr with Claude:** start with [CLAUDE.md](CLAUDE.md). Status and backlog live in [docs/workflow-state.md](docs/workflow-state.md). Run `npm run dashboard` and open `docs/dashboard.html` to see them as a board. Locked decisions are in [docs/decisions.md](docs/decisions.md). The four agents (researcher, developer, app-builder, marketer) are in `.claude/agents/`.
 
 ## What's in it
 - **Logins:** email + 6-digit code (Supabase Auth). Invite-only; brands can also join from a talent's booking link or Book-me page.

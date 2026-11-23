@@ -1,13 +1,15 @@
 {
   "name": "embr-pilot",
   "version": "1.0.0",
-  "description": "",
+  "description": "Embr: brands book unsigned models and creatives directly. Invite-only pilot app.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "test:db": "node tests/db.test.mjs",
     "test:e2e": "node tests/e2e.test.mjs",
-    "local-server": "node --import tsx scripts/dev-server.mjs"
+    "local-server": "node --import tsx scripts/dev-server.mjs",
+    "dashboard": "node scripts/dashboard.mjs",
+    "db:reset": "sh scripts/db-reset.sh"
   },
   "keywords": [],
   "author": "",

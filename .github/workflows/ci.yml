@@ -1,0 +1,42 @@
+name: Tests
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["54329:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: "54329"
+      DB_URL: postgresql://postgres@localhost:54329/embr
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Database tests
+        run: sh scripts/db-reset.sh && npm run test:db
+      - name: Build
+        run: npm run build
+      - name: Browser test
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+          sh scripts/db-reset.sh
+          (npm run local-server > server.log 2>&1 &)
+          for i in $(seq 60); do curl -s -o /dev/null http://localhost:8787 && break; sleep 1; done
+          curl -s -o /dev/null http://localhost:8787 || (cat server.log; exit 1)
+          npm run test:e2e
+      - name: Dashboard builds
+        run: npm run dashboard

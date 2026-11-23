@@ -9,9 +9,11 @@ import { createRequire } from 'node:module';
 const { chromium } = createRequire(import.meta.url)('playwright');
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 const BASE = process.env.BASE || 'http://localhost:8787';
-const SHOTS = process.env.SHOTS || '/tmp/claude-0/shots';
+const SHOTS = process.env.SHOTS || path.join(os.tmpdir(), 'embr-shots');
 fs.mkdirSync(SHOTS, { recursive: true });
 let passed = 0;
 const ok = (n) => { passed++; console.log('  ✓ ' + n); };
@@ -20,6 +22,17 @@ const ledger = async () => (await fetch(BASE + '/__test/ledger')).json();
 const iso = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 
 const browser = await chromium.launch();
+
+// Test photos: made on the fly so the test needs no files outside the repo.
+const PHOTOS = [0, 1, 2].map((i) => path.join(os.tmpdir(), `embr-test-photo-${i}.jpg`));
+{
+  const p = await browser.newPage({ viewport: { width: 900, height: 1200 } });
+  for (const [i, file] of PHOTOS.entries()) {
+    await p.setContent(`<body style="margin:0;background:hsl(${i * 120 + 15},55%,55%)"><div style="font:bold 200px sans-serif;color:#fff;padding:400px 300px">${i + 1}</div></body>`);
+    await p.screenshot({ path: file, type: 'jpeg', quality: 80 });
+  }
+  await p.close();
+}
 const errors = [];
 async function person(name, mobile = false) {
   const base = { locale: 'en-GB', timezoneId: 'Europe/London', reducedMotion: 'reduce' };
@@ -112,7 +125,7 @@ try {
   await toastHas(amara, /Fill in your work sections/);
   await amara.waitForSelector('[data-role-sec="Model"] .need >> text=/which sizes you model/');
   ok('a section per role, and the profile stays hidden until each is filled');
-  await amara.setInputFiles('[data-role-sec="Model"] input[type=file]', ['/tmp/claude-0/test-photo-0.jpg', '/tmp/claude-0/test-photo-1.jpg', '/tmp/claude-0/test-photo-2.jpg']);
+  await amara.setInputFiles('[data-role-sec="Model"] input[type=file]', PHOTOS);
   await toastHas(amara, /Photos added/);
   await amara.waitForSelector('[data-role-sec="Model"] .phs .p >> nth=2');
   await amara.selectOption('#f-stats [name=sizing]', 'womenswear');
