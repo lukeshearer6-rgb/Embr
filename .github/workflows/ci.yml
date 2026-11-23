@@ -38,5 +38,5 @@ jobs:
           for i in $(seq 60); do curl -s -o /dev/null http://localhost:8787 && break; sleep 1; done
           curl -s -o /dev/null http://localhost:8787 || (cat server.log; exit 1)
           npm run test:e2e
-      - name: Dashboard builds
-        run: npm run dashboard
+      - name: Dashboard and office build
+        run: npm run dashboard && npm run test:office

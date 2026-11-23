@@ -3,30 +3,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseState } from './workflow-state.mjs';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const src = path.join(root, 'docs/workflow-state.md');
 const out = path.join(root, 'docs/dashboard.html');
 const md = fs.readFileSync(src, 'utf8');
 
-// Split into sections by ## / ### headings, and parse any markdown table inside each.
-const sections = {};
-let h2 = '', h3 = '';
-for (const line of md.split('\n')) {
-  const m2 = line.match(/^## (.+)/), m3 = line.match(/^### (.+)/);
-  if (m2) { h2 = m2[1].trim(); h3 = ''; continue; }
-  if (m3) { h3 = m3[1].trim(); continue; }
-  const key = h3 ? `${h2}/${h3}` : h2;
-  (sections[key] ??= []).push(line);
-}
-function table(key) {
-  const rows = (sections[key] || []).filter((l) => l.trim().startsWith('|'));
-  if (rows.length < 2) return [];
-  const cells = (l) => l.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
-  const head = cells(rows[0]).map((h) => h.toLowerCase());
-  return rows.slice(2).map((r) => Object.fromEntries(cells(r).map((c, i) => [head[i], c])));
-}
-const text = (key) => (sections[key] || []).join('\n').trim();
+const { sections, table, text, updated } = parseState(md);
 
 const esc = (s = '') => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const inline = (s = '') => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
@@ -37,7 +21,6 @@ const pill = (s) => {
   return `<span class="pill ${STATUSES.includes(k) ? k : 'todo'}">${esc(LABEL[k] || s)}</span>`;
 };
 
-const updated = (md.match(/Last updated:\s*(.+)/) || [])[1] || '';
 const focus = text('Current focus');
 const agents = table('Agents now');
 const waiting = table('Waiting on Luke');
@@ -90,7 +73,7 @@ code{font-size:12px;background:var(--todo-bg);padding:1px 4px;border-radius:3px}
 ul.log{list-style:none;padding:0}ul.log li{padding:6px 0;border-top:1px solid var(--line);font-size:14px}ul.log li:first-child{border-top:0}
 </style></head><body><main>
 <header><div><h1>Embr<span>.</span> workspace</h1><p class="muted">Generated from docs/workflow-state.md. Last updated ${esc(updated)}.</p></div>
-<p class="muted">Rebuild: <code>npm run dashboard</code></p></header>
+<p class="muted"><a href="office.html">Watch the office</a> · Rebuild: <code>npm run dashboard</code></p></header>
 
 <section class="card focus"><h2>Current focus</h2><p>${inline(focus)}</p></section>
 

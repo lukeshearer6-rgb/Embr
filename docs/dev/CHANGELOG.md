@@ -2,6 +2,11 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-23: Animated office view
+- New `docs/office.html`: a top-down office where the researcher, developer, app builder, marketer and orchestrator walk between rooms carrying their work, and take things to Luke's desk when they need his OK. Every walk comes from `docs/workflow-state.md` (waits-on links, "hand to" next actions, approval needs, "Agents now").
+- Built by `npm run office`, and also by `npm run dashboard` and the edit hook. The dashboard links to it. Parsing moved to `scripts/workflow-state.mjs`, shared by both pages (dashboard output unchanged).
+- Tests: `npm run test:office`, 13 checks pass. CI runs it.
+
 ## 2026-11-23: Workspace set up
 - The pilot app is now the repo root, with docs, agents, CI and a dashboard around it. The app's behaviour is unchanged.
 - `SETUP.md` moved to `docs/builds/SETUP.md`. `scripts/db-reset.sh` now reads `PGHOST`/`PGPORT`, so CI can use it.

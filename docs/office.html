@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head><body>
+<title>Embr Office</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<style>
+/* Layout: one top-down office floor (three rooms over a corridor over three rooms), then a log and room details under it. */
+:root{
+  --bg:#f5f5f6; --paper:#ffffff; --ink:#0b0b0c; --graphite:#5e6168; --line:#dcdde0;
+  --embr:#ff3b00; --embr-text:#c42d00; --tint:#fff1ec;
+  --ok:#0f7b3f; --ok-bg:#e8f5ed; --warn:#a15c00; --warn-bg:#fdf3e2; --bad:#c0281b; --bad-bg:#fbeceb; --todo-bg:#ecedee;
+  --floor:#fbfbfb; --floor-line:#efeff1; --hall:#e9eaec; --hall-line:#dedfe2; --wall:#1b1c1f;
+  --desk:#d9dadd; --desk-edge:#b9bbbf; --screen:#202125; --rug:#f1f2f4; --label:#0b0b0c;
+  --plant:#2f6b45; --plant2:#3f8a5a; --shadow:rgba(0,0,0,.14); --bubble:#ffffff;
+  --display:"Archivo",system-ui,sans-serif; --body:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b0b0c; --paper:#141416; --ink:#f4f4f5; --graphite:#a2a5ab; --line:#2c2d31; --embr-text:#ff7a4d; --tint:#2a1610;
+  --ok:#5cd08d; --ok-bg:#12271b; --warn:#f0b35a; --warn-bg:#2b2010; --bad:#ff8a7f; --bad-bg:#2d1513; --todo-bg:#232428;
+  --floor:#1a1b1e; --floor-line:#202125; --hall:#121315; --hall-line:#1b1c1f; --wall:#3a3c41;
+  --desk:#34363b; --desk-edge:#46484e; --screen:#0b0b0c; --rug:#222327; --label:#f4f4f5;
+  --plant:#2f6b45; --plant2:#3f8a5a; --shadow:rgba(0,0,0,.45); --bubble:#1f2023; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b0b0c; --paper:#141416; --ink:#f4f4f5; --graphite:#a2a5ab; --line:#2c2d31; --embr-text:#ff7a4d; --tint:#2a1610;
+  --ok:#5cd08d; --ok-bg:#12271b; --warn:#f0b35a; --warn-bg:#2b2010; --bad:#ff8a7f; --bad-bg:#2d1513; --todo-bg:#232428;
+  --floor:#1a1b1e; --floor-line:#202125; --hall:#121315; --hall-line:#1b1c1f; --wall:#3a3c41;
+  --desk:#34363b; --desk-edge:#46484e; --screen:#0b0b0c; --rug:#222327; --label:#f4f4f5;
+  --plant:#2f6b45; --plant2:#3f8a5a; --shadow:rgba(0,0,0,.45); --bubble:#1f2023; color-scheme:dark}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);-webkit-font-smoothing:antialiased;
+  padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:1200px;margin:0 auto;display:grid;gap:16px}
+header{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:end;justify-content:space-between}
+h1{font-family:var(--display);font-variation-settings:"wdth" 125;font-weight:850;font-size:clamp(26px,4vw,34px);letter-spacing:-.025em;line-height:1}
+h1 span{color:var(--embr)}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--graphite);font-weight:650;margin-bottom:10px}
+.muted{color:var(--graphite);font-size:13px}
+code{font-size:12px;background:var(--todo-bg);padding:1px 4px;border-radius:3px}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button{font:inherit;color:inherit;cursor:pointer}
+.btn{height:36px;padding:0 14px;border-radius:4px;border:1px solid var(--ink);background:var(--paper);font-weight:600;font-size:14px}
+.btn:hover{background:var(--todo-bg)}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.btn:focus-visible,.room-btn:focus-visible{outline:2px solid var(--embr);outline-offset:2px}
+.floor{background:var(--paper);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.floor svg{display:block;width:100%;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--graphite);padding:10px 14px;border-top:1px solid var(--line)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.cols{display:grid;gap:16px;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}
+@media (max-width:860px){.cols{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:16px;min-width:0}
+ol.log{list-style:none;padding:0;display:grid}
+ol.log li{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;animation:in .4s ease}
+ol.log li:first-child{border-top:0}
+ol.log li.empty{display:block;color:var(--graphite)}
+@keyframes in{from{background:var(--tint)}to{background:transparent}}
+.chip{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:2px 7px;border-radius:99px;height:fit-content;text-align:center}
+.k-handoff{background:var(--tint);color:var(--embr-text)}.k-approval{background:var(--warn-bg);color:var(--warn)}
+.k-pickup{background:var(--bad-bg);color:var(--bad)}.k-assign{background:var(--todo-bg);color:var(--graphite)}
+.rooms{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.room-btn{border:1px solid var(--line);background:var(--paper);border-radius:99px;padding:4px 12px;font-size:13px;font-weight:600}
+.room-btn[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--bg)}
+.detail h3{font-family:var(--display);font-variation-settings:"wdth" 112;font-size:20px;font-weight:800;letter-spacing:-.01em}
+.detail .now{margin:8px 0 12px;padding:10px 12px;background:var(--todo-bg);border-radius:4px;font-size:14px}
+.counts{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.pill.todo{background:var(--todo-bg);color:var(--graphite)}.pill.doing{background:var(--tint);color:var(--embr-text)}
+.pill.blocked{background:var(--bad-bg);color:var(--bad)}.pill.needs-approval{background:var(--warn-bg);color:var(--warn)}.pill.done{background:var(--ok-bg);color:var(--ok)}
+ul.tasks{list-style:none;padding:0}
+ul.tasks li{padding:8px 0;border-top:1px solid var(--line);font-size:14px;display:flex;gap:8px;justify-content:space-between;align-items:start}
+ul.tasks li b{color:var(--embr-text);margin-right:4px}
+ul.tasks small{display:block;color:var(--graphite);font-size:12px}
+.wait{border-color:var(--warn);background:var(--warn-bg)}
+.wait li{margin:4px 0 4px 18px;font-size:14px}
+svg text{font-family:var(--display)}
+.roomhit{cursor:pointer}
+.roomhit:hover .floorrect{stroke:var(--embr);stroke-width:3}
+@media (prefers-reduced-motion:reduce){ol.log li{animation:none}}
+</style>
+
+<main>
+  <header>
+    <div>
+      <h1>Embr<span>.</span> office</h1>
+      <p class="muted" id="sub">Built from <code>docs/workflow-state.md</code>.</p>
+    </div>
+    <div class="controls">
+      <button class="btn" id="pause" aria-pressed="false">Pause</button>
+      <button class="btn" id="speed" aria-pressed="false">Speed 1×</button>
+    </div>
+  </header>
+
+  <section class="floor" aria-label="Office floor">
+    <svg id="office" viewBox="0 0 1200 820" role="img" aria-labelledby="office-title">
+      <title id="office-title">Top-down office. Researcher, Approvals and Developer rooms along the top, Marketer, Meeting room and App builder along the bottom, joined by a corridor. Agents walk between rooms carrying their work.</title>
+      <defs>
+        <pattern id="tiles" width="40" height="40" patternUnits="userSpaceOnUse"><rect width="40" height="40" fill="var(--hall)"/><path d="M40 0H0V40" fill="none" stroke="var(--hall-line)" stroke-width="1.5"/></pattern>
+        <pattern id="boards" width="120" height="24" patternUnits="userSpaceOnUse"><rect width="120" height="24" fill="var(--floor)"/><path d="M0 24H120M60 0V12M0 12H120M20 12V24M100 12V24" fill="none" stroke="var(--floor-line)" stroke-width="1"/></pattern>
+      </defs>
+      <g id="g-floor"></g><g id="g-furn"></g><g id="g-papers"></g><g id="g-people"></g><g id="g-bubbles"></g>
+    </svg>
+    <div class="legend" aria-label="Key">
+      <span><i style="background:var(--embr)"></i>Carrying work to another room</span>
+      <span><i style="background:var(--warn)"></i>Taking something to Luke for an OK</span>
+      <span><i style="background:var(--bad)"></i>Checking on something Luke owns</span>
+      <span><i style="background:var(--graphite)"></i>Orchestrator handing out tasks</span>
+    </div>
+  </section>
+
+  <p class="muted">Each walk is a real link in the backlog: one task waiting on another, a "hand to" next action, something that needs Luke's OK, or a task in "Agents now". It shows how work flows between the agents, not a live feed of what they are doing this minute.</p>
+
+  <div class="cols">
+    <section class="card" aria-live="polite">
+      <h2>Happening on the floor</h2>
+      <ol class="log" id="log"><li class="empty">The agents are at their desks. The first walk starts in a moment.</li></ol>
+    </section>
+    <div style="display:grid;gap:16px;align-content:start;min-width:0">
+      <section class="card wait" id="waitcard"><h2>Waiting on Luke</h2><ul id="wait"></ul></section>
+      <section class="card detail">
+        <h2>Rooms</h2>
+        <div class="rooms" id="roombtns" role="group" aria-label="Choose a room"></div>
+        <div id="detail"></div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script>
+const DATA = {"updated":"2026-11-23","focus":"Get the pilot online in Stripe test mode, run five full test bookings, then open the invite-only Manchester pilot.","waiting":[{"id":"B2","what":"Create Supabase, Stripe (test mode), Resend and Cloudflare accounts (docs/builds/SETUP.md)","why":"Only Luke can sign up and hold the passwords"}],"trips":[{"kind":"approval","from":"researcher","to":"luke","item":"R2","says":"R2 needs your OK","note":"R2 Incorporation and domain: steps, official fees, c…: Write brief for Luke to approve spend"},{"kind":"approval","from":"researcher","to":"luke","item":"R3","says":"R3 needs your OK","note":"R3 Routes to a specialist agency-law opinion at zero…: Write brief; Luke chooses who to contact"},{"kind":"handoff","from":"researcher","to":"marketer","item":"R4","says":"R4 brief","note":"R4 Competitor brief: UK platforms where brands book…: next action is to hand it to marketer"},{"kind":"approval","from":"researcher","to":"luke","item":"R5","says":"R5 needs your OK","note":"R5 Brand interview kit: Manchester independent brand…: Draft only; Luke makes contact"},{"kind":"approval","from":"researcher","to":"luke","item":"R7","says":"R7 needs your OK","note":"R7 Book now, pay later: how talent get paid at sign-…: Write brief; Luke picks a partner to approach"},{"kind":"handoff","from":"researcher","to":"marketer","item":"R6","says":"R6 brief","note":"R6 CAP Code checklist for launch claims (\"0% of your…: next action is to hand it to marketer"},{"kind":"handoff","from":"app-builder","to":"developer","item":"B3","for":"D2","says":"B3 for D2","note":"B3 Deploy database, functions and app in t… goes to developer for D2 Test server functions against real Supa…"},{"kind":"handoff","from":"app-builder","to":"developer","item":"B4","for":"D3","says":"B4 for D3","note":"B4 Run five full test-mode bookings, inclu… goes to developer for D3 Fix anything found in the five test boo…"},{"kind":"handoff","from":"researcher","to":"developer","item":"R7","for":"D5","says":"R7 for D5","note":"R7 Book now, pay later: how talent get pai… goes to developer for D5 Build book now, pay later at the balanc…"},{"kind":"approval","from":"developer","to":"luke","item":"D5","says":"D5 needs your OK","note":"D5 Build book now, pay later at the balance step wit…: Waits on R7 and Luke's partner choice"},{"kind":"pickup","from":"app-builder","to":"luke","item":"B2","for":"B3","says":"B3 waits on B2","note":"B3 Deploy database, functions and app in t… is waiting on Luke: Luke creates Supabase, Stripe test, Resend and Cloudflare a…"},{"kind":"approval","from":"app-builder","to":"luke","item":"B3","says":"B3 needs your OK","note":"B3 Deploy database, functions and app in test mode: Waits on B2; needs approval"},{"kind":"handoff","from":"researcher","to":"app-builder","item":"R2","for":"B6","says":"R2 for B6","note":"R2 Incorporation and domain: steps, offici… goes to app-builder for B6 Domain and Resend sender on the domain"},{"kind":"approval","from":"marketer","to":"luke","item":"M2","says":"M2 needs your OK","note":"M2 Founding talent invite DMs and brand invite emails: Drafts only; Luke sends"},{"kind":"approval","from":"marketer","to":"luke","item":"M4","says":"M4 needs your OK","note":"M4 Instagram launch posts for Luke's account: Drafts only; Luke posts"},{"kind":"assign","from":"orchestrator","to":"researcher","item":"R1","says":"Over to you: R1","note":"Orchestrator gives researcher R1 Cloudflare Pages free-plan terms (todo)"},{"kind":"assign","from":"orchestrator","to":"developer","item":"D4","says":"Over to you: D4","note":"Orchestrator gives developer D4 Export the booking agreement for solicitor review (todo)"},{"kind":"assign","from":"orchestrator","to":"app-builder","item":"B5","says":"Over to you: B5","note":"Orchestrator gives app-builder B5 Release checklist for the invite-only pilot (todo)"},{"kind":"assign","from":"orchestrator","to":"marketer","item":"M1","says":"Over to you: M1","note":"Orchestrator gives marketer M1 Positioning pack (todo)"}],"desks":{"researcher":{"current":{"task":"R1 Cloudflare Pages free-plan terms","status":"todo"},"counts":{"todo":7,"doing":0,"blocked":0,"needs-approval":0,"done":0},"tasks":[{"id":"R1","title":"Check Cloudflare Pages free-plan terms allow a commercial app","status":"todo","next":"Write docs/research brief"},{"id":"R2","title":"Incorporation and domain: steps, official fees, cheapest compliant option","status":"todo","next":"Write brief for Luke to approve spend"},{"id":"R3","title":"Routes to a specialist agency-law opinion at zero or low cost (law clinics, pro bono, founder schemes)","status":"todo","next":"Write brief; Luke chooses who to contact"},{"id":"R4","title":"Competitor brief: UK platforms where brands book unsigned models and creatives","status":"todo","next":"Write brief; hand to marketer"},{"id":"R5","title":"Brand interview kit: Manchester independent brand target list and interview script","status":"todo","next":"Draft only; Luke makes contact"},{"id":"R7","title":"Book now, pay later: how talent get paid at sign-off before the brand pays. Cover credit risk and who carries it, Embr's cash position (zero), UK B2B pay-later and invoice-finance partners (e.g. Kriya, Two) and their terms, fit with Stripe Connect, whether it's FCA-regulated, and partner fees and who absorbs them","status":"todo","next":"Write brief; Luke picks a partner to approach"},{"id":"R6","title":"CAP Code checklist for launch claims (\"0% of your earnings\", fee claims)","status":"todo","next":"Hand to marketer"}]},"developer":{"current":{"task":"D4 Export the booking agreement for solicitor review","status":"todo"},"counts":{"todo":1,"doing":0,"blocked":3,"needs-approval":0,"done":1},"tasks":[{"id":"D1","title":"Check CI passes on the first GitHub push","status":"done","next":"None"},{"id":"D2","title":"Test server functions against real Supabase and Stripe test mode","status":"blocked","next":"Waits on B3"},{"id":"D3","title":"Fix anything found in the five test bookings","status":"blocked","next":"Waits on B4"},{"id":"D5","title":"Build book now, pay later at the balance step with the chosen partner","status":"blocked","next":"Waits on R7 and Luke's partner choice"},{"id":"D4","title":"Export the booking agreement text for solicitor review","status":"todo","next":"Write docs/dev/booking-agreement.md"}]},"app-builder":{"current":{"task":"B5 Release checklist for the invite-only pilot","status":"todo"},"counts":{"todo":1,"doing":0,"blocked":3,"needs-approval":0,"done":1},"tasks":[{"id":"B1","title":"Push the workspace to a private GitHub repo","status":"done","next":"None"},{"id":"B3","title":"Deploy database, functions and app in test mode","status":"blocked","next":"Waits on B2; needs approval"},{"id":"B4","title":"Run five full test-mode bookings, including a cancellation and a refund","status":"blocked","next":"Waits on B3"},{"id":"B5","title":"Release checklist for opening the invite-only pilot","status":"todo","next":"Write docs/builds/release-checklist.md"},{"id":"B6","title":"Domain and Resend sender on the domain","status":"blocked","next":"Waits on R2 and spend approval"}]},"marketer":{"current":{"task":"M1 Positioning pack","status":"todo"},"counts":{"todo":5,"doing":0,"blocked":0,"needs-approval":0,"done":0},"tasks":[{"id":"M1","title":"Positioning pack: \"Unsigned, not unseen\" messaging for brands and talent","status":"todo","next":"Draft in marketing/positioning/"},{"id":"M2","title":"Founding talent invite DMs and brand invite emails","status":"todo","next":"Drafts only; Luke sends"},{"id":"M3","title":"Landing and waitlist copy (not public until B5)","status":"todo","next":"Draft in marketing/landing/"},{"id":"M4","title":"Instagram launch posts for Luke's account","status":"todo","next":"Drafts only; Luke posts"},{"id":"M5","title":"Zero-cash growth experiments with one metric each","status":"todo","next":"Draft in marketing/experiments/"}]},"orchestrator":{"current":null,"counts":{"todo":0,"doing":0,"blocked":0,"needs-approval":0,"done":1},"tasks":[{"id":"D0","title":"Restructure pilot into the workspace layout, add CI, dashboard and agent docs","status":"done","next":"None"}]},"luke":{"current":null,"counts":{"todo":1,"doing":0,"blocked":0,"needs-approval":0,"done":0},"tasks":[{"id":"B2","title":"Luke creates Supabase, Stripe test, Resend and Cloudflare accounts","status":"todo","next":"Luke follows docs/builds/SETUP.md steps 1–3"}]}},"log":["2026-11-23 orchestrator: added the animated office view (docs/office.html, npm run office) driven by this file; 13 office checks pass; Luke approved push and pull request (2026-11-23).","2026-11-23 orchestrator: added book now, pay later to README and decisions (planned, not built); new tasks R7 and D5.","2026-11-23 orchestrator: pushed to github.com/lukeshearer6-rgb/Embr (Luke approved); CI tests green on first run.","2026-11-23 orchestrator: created the workspace (CLAUDE.md, four agents, decisions, backlog, CI, dashboard); pilot app moved to the repo root; local tests passed."]};
+const NS = 'http://www.w3.org/2000/svg';
+const $ = (id) => document.getElementById(id);
+const el = (tag, attrs = {}, parent) => {
+  const n = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  if (parent) parent.appendChild(n);
+  return n;
+};
+const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const inline = (s = '') => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+const LABEL = { todo: 'To do', doing: 'Doing', blocked: 'Blocked', 'needs-approval': 'Needs approval', done: 'Done' };
+const KIND = { handoff: 'Handoff', approval: 'Needs OK', pickup: 'Check-in', assign: 'Assigned' };
+const KIND_COLOUR = { handoff: 'var(--embr)', approval: 'var(--warn)', pickup: 'var(--bad)', assign: 'var(--graphite)' };
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- The floor plan ----------
+const HALL_Y = 390;
+// side: which wall the door is on ('bottom' wall for top rooms, 'top' wall for bottom rooms).
+const ROOMS = {
+  researcher:   { name: 'Researcher',  x: 20,  y: 20,  w: 420, h: 320, door: 300, side: 'bottom', seat: [170, 102], face: 0,   out: [[275, 102], [275, 262]], visit: [[170, 226], [118, 236], [222, 236]], via: [[300, 262]] },
+  luke:         { name: "Luke's desk", x: 460, y: 20,  w: 280, h: 320, door: 690, side: 'bottom', seat: [600, 98],  face: 0,   out: [], visit: [[600, 222], [548, 238], [652, 238], [600, 270], [530, 278], [670, 278]], via: [] },
+  developer:    { name: 'Developer',   x: 760, y: 20,  w: 420, h: 320, door: 900, side: 'bottom', seat: [1030, 102], face: 0,  out: [[925, 102], [925, 262]], visit: [[1030, 226], [978, 236], [1082, 236]], via: [[900, 262]] },
+  marketer:     { name: 'Marketer',    x: 20,  y: 440, w: 420, h: 360, door: 300, side: 'top',    seat: [170, 738], face: 180, out: [[275, 738], [275, 578]], visit: [[170, 614], [118, 604], [222, 604]], via: [[300, 578]] },
+  orchestrator: { name: 'Meeting room', x: 460, y: 440, w: 280, h: 360, door: 690, side: 'top',   seat: [540, 540], face: 0,   out: [[690, 520]], visit: [[640, 540], [600, 540]], via: [[690, 510]] },
+  'app-builder':{ name: 'App builder', x: 760, y: 440, w: 420, h: 360, door: 900, side: 'top',    seat: [1030, 738], face: 180, out: [[925, 738], [925, 578]], visit: [[1030, 614], [978, 604], [1082, 604]], via: [[900, 578]] },
+};
+const doorIn = (r) => [r.door, r.side === 'bottom' ? r.y + r.h - 16 : r.y + 16];
+const hall = (r) => [r.door, HALL_Y];
+
+const gFloor = $('g-floor'), gFurn = $('g-furn'), gPapers = $('g-papers'), gPeople = $('g-people'), gBubbles = $('g-bubbles');
+
+function drawFloor() {
+  el('rect', { x: 0, y: 0, width: 1200, height: 820, fill: 'url(#tiles)' }, gFloor);
+  el('text', { x: 600, y: 405, 'text-anchor': 'middle', 'font-size': 44, 'font-weight': 900, fill: 'var(--label)', opacity: .06, style: 'font-variation-settings:"wdth" 125;letter-spacing:-1px' }, gFloor).textContent = 'embr.';
+  for (const [key, r] of Object.entries(ROOMS)) {
+    const g = el('g', { class: 'roomhit', 'data-room': key }, gFloor);
+    el('rect', { class: 'floorrect', x: r.x, y: r.y, width: r.w, height: r.h, fill: 'url(#boards)', stroke: 'var(--wall)', 'stroke-width': 8, rx: 2 }, g);
+    // door gap with an orange door leaf
+    const wy = r.side === 'bottom' ? r.y + r.h : r.y;
+    el('rect', { x: r.door - 30, y: wy - 6, width: 60, height: 12, fill: 'var(--floor)' }, g);
+    const sign = r.side === 'bottom' ? -1 : 1;
+    el('path', { d: `M${r.door - 30} ${wy} L${r.door - 30} ${wy + sign * 52}`, stroke: 'var(--embr)', 'stroke-width': 4, 'stroke-linecap': 'round' }, g);
+    el('path', { d: `M${r.door - 30} ${wy + sign * 52} A52 52 0 0 ${sign > 0 ? 0 : 1} ${r.door + 22} ${wy}`, fill: 'none', stroke: 'var(--embr)', 'stroke-width': 1, 'stroke-dasharray': '3 4', opacity: .6 }, g);
+    const ly = r.y + r.h - 22;
+    const right = r.side === 'bottom' ? r.door < r.x + r.w / 2 : key === 'marketer';
+    const t = el('text', { x: right ? r.x + r.w - 20 : r.x + 20, y: ly, 'text-anchor': right ? 'end' : 'start', 'font-size': 15, 'font-weight': 850, fill: 'var(--label)', opacity: .5, style: 'font-variation-settings:"wdth" 125;letter-spacing:1.5px' }, g);
+    t.textContent = r.name.toUpperCase();
+    g.addEventListener('click', () => select(key));
+  }
+}
+
+const rect = (x, y, w, h, fill, extra = {}, p = gFurn) => el('rect', { x, y, width: w, height: h, fill, ...extra }, p);
+function plant(x, y, s = 1) {
+  el('circle', { cx: x, cy: y, r: 13 * s, fill: 'var(--desk-edge)' }, gFurn);
+  for (const [dx, dy, r] of [[-6, -4, 9], [6, -3, 9], [0, 6, 9], [0, -8, 7]]) el('circle', { cx: x + dx * s, cy: y + dy * s, r: r * s, fill: dx ? 'var(--plant)' : 'var(--plant2)' }, gFurn);
+}
+function chair(x, y) { el('circle', { cx: x, cy: y, r: 15, fill: 'var(--desk-edge)' }, gFurn); el('circle', { cx: x, cy: y, r: 11, fill: 'var(--desk)' }, gFurn); }
+function desk(cx, cy, facing, monitors = 1) {
+  // facing 0: person sits above the desk looking down; 180: sits below looking up
+  rect(cx - 78, cy - 30, 156, 60, 'var(--desk)', { rx: 4, stroke: 'var(--desk-edge)', 'stroke-width': 2 });
+  const my = facing === 0 ? cy - 22 : cy + 14;
+  for (let i = 0; i < monitors; i++) {
+    const mx = cx - (monitors - 1) * 26 + i * 52 - 22;
+    rect(mx, my, 44, 8, 'var(--screen)', { rx: 2 });
+  }
+  const ky = facing === 0 ? cy - 8 : cy + 2;
+  rect(cx - 18, ky, 36, 7, 'var(--desk-edge)', { rx: 2 });
+  el('circle', { cx: cx + 52, cy: cy + (facing === 0 ? -6 : 6), r: 6, fill: 'var(--paper)', stroke: 'var(--desk-edge)', 'stroke-width': 2 }, gFurn);
+}
+
+function drawFurniture() {
+  // Researcher: shelves, rug, desk
+  for (let i = 0; i < 4; i++) {
+    rect(40 + i * 70, 30, 62, 18, 'var(--desk-edge)', { rx: 2 });
+    for (let b = 0; b < 8; b++) rect(44 + i * 70 + b * 7, 33, 5, 12, ['var(--embr)', 'var(--screen)', 'var(--paper)', 'var(--graphite)'][(b + i) % 4], { rx: 1 });
+  }
+  rect(70, 190, 200, 90, 'var(--rug)', { rx: 45 });
+  chair(...ROOMS.researcher.seat); desk(170, 150, 0);
+  rect(360, 60, 60, 80, 'var(--paper)', { stroke: 'var(--desk-edge)', 'stroke-width': 2, rx: 2 });
+  for (let i = 0; i < 4; i++) rect(368, 70 + i * 16, 44 - (i % 2) * 14, 6, 'var(--desk-edge)', { rx: 2 });
+  plant(400, 300);
+
+  // Luke: approvals desk, in-tray, plant
+  rect(500, 190, 200, 110, 'var(--rug)', { rx: 8 });
+  chair(...ROOMS.luke.seat);
+  rect(510, 118, 180, 64, 'var(--desk)', { rx: 4, stroke: 'var(--embr)', 'stroke-width': 3 });
+  rect(578, 124, 44, 8, 'var(--screen)', { rx: 2 });
+  rect(520, 132, 46, 36, 'var(--paper)', { stroke: 'var(--desk-edge)', 'stroke-width': 2, rx: 3 });
+  el('text', { x: 543, y: 178, 'text-anchor': 'middle', 'font-size': 8, 'font-weight': 700, fill: 'var(--graphite)' }, gFurn).textContent = 'IN TRAY';
+  el('circle', { cx: 668, cy: 150, r: 9, fill: 'var(--embr)' }, gFurn);
+  el('circle', { cx: 668, cy: 150, r: 4, fill: 'var(--paper)' }, gFurn);
+  plant(486, 50); plant(714, 50);
+
+  // Developer: two monitors, server rack
+  rect(870, 190, 240, 90, 'var(--rug)', { rx: 45 });
+  chair(...ROOMS.developer.seat); desk(1030, 150, 0, 2);
+  rect(790, 40, 44, 110, 'var(--screen)', { rx: 3 });
+  window.LEDS = [];
+  for (let i = 0; i < 6; i++) { rect(798, 50 + i * 16, 28, 10, 'var(--wall)', { rx: 2 }); LEDS.push(el('circle', { cx: 820, cy: 55 + i * 16, r: 2.5, fill: '#3ad07a' }, gFurn)); }
+  plant(1150, 200); plant(1150, 50);
+
+  // Marketer: mood board, camera, desk
+  rect(40, 456, 180, 14, 'var(--desk-edge)', { rx: 2 });
+  ['var(--embr)', 'var(--screen)', 'var(--paper)', 'var(--embr)', 'var(--graphite)', 'var(--paper)'].forEach((c, i) => rect(46 + i * 29, 474, 24, 32, c, { rx: 2, stroke: 'var(--desk-edge)', 'stroke-width': 1 }));
+  rect(70, 580, 200, 90, 'var(--rug)', { rx: 45 });
+  chair(...ROOMS.marketer.seat); desk(170, 690, 180);
+  el('circle', { cx: 380, cy: 520, r: 22, fill: 'none', stroke: 'var(--desk-edge)', 'stroke-width': 2, 'stroke-dasharray': '2 5' }, gFurn);
+  rect(368, 510, 24, 18, 'var(--screen)', { rx: 3 }); el('circle', { cx: 380, cy: 519, r: 5, fill: 'var(--graphite)' }, gFurn);
+  plant(400, 470);
+
+  // Meeting room: oval table, chairs, whiteboard
+  rect(476, 460, 8, 120, 'var(--paper)', { stroke: 'var(--desk-edge)', 'stroke-width': 2 });
+  for (const [x, y] of [[560, 600], [640, 600], [530, 660], [670, 660], [560, 720], [640, 720]]) chair(x, y);
+  el('ellipse', { cx: 600, cy: 660, rx: 82, ry: 50, fill: 'var(--desk)', stroke: 'var(--desk-edge)', 'stroke-width': 2 }, gFurn);
+  el('text', { x: 600, y: 664, 'text-anchor': 'middle', 'font-size': 10, 'font-weight': 800, fill: 'var(--graphite)', style: 'letter-spacing:1px' }, gFurn).textContent = 'MANCHESTER PILOT';
+  plant(716, 620); plant(716, 760);
+
+  // App builder: device test rack, build lamp, boxes
+  rect(1100, 456, 64, 150, 'var(--desk-edge)', { rx: 3 });
+  for (let r = 0; r < 5; r++) for (let c = 0; c < 2; c++) rect(1108 + c * 28, 464 + r * 28, 20, 24, 'var(--screen)', { rx: 4 });
+  rect(870, 580, 240, 90, 'var(--rug)', { rx: 45 });
+  chair(...ROOMS['app-builder'].seat); desk(1030, 690, 180, 2);
+  window.LAMP = el('circle', { cx: 790, cy: 470, r: 9, fill: 'var(--embr)', opacity: .3 }, gFurn);
+  rect(1120, 740, 40, 40, 'var(--desk-edge)', { rx: 2 }); rect(1130, 730, 30, 26, 'var(--desk)', { rx: 2, stroke: 'var(--desk-edge)' });
+
+  // Corridor: water cooler and plants
+  plant(40, 390, .8); plant(1160, 390, .8);
+  el('circle', { cx: 1110, cy: 362, r: 9, fill: 'var(--paper)', stroke: 'var(--desk-edge)', 'stroke-width': 2 }, gFurn);
+}
+
+// ---------- Paper stacks on desks ----------
+const DESK_SPOT = { researcher: [100, 150], developer: [960, 150], marketer: [100, 690], 'app-builder': [960, 690], orchestrator: [600, 650], luke: [543, 150] };
+const stacks = Object.fromEntries(Object.keys(ROOMS).map((k) => [k, []]));
+function drawStack(room) {
+  const g = document.getElementById('stack-' + room) || el('g', { id: 'stack-' + room }, gPapers);
+  g.innerHTML = '';
+  const items = stacks[room];
+  const [x, y] = DESK_SPOT[room];
+  items.slice(-5).forEach((id, i) => {
+    el('rect', { x: x - 11 + i * 1.5, y: y - 8 - i * 2.5, width: 22, height: 16, fill: 'var(--paper)', stroke: 'var(--desk-edge)', 'stroke-width': 1, rx: 1.5 }, g);
+    el('rect', { x: x - 8 + i * 1.5, y: y - 5 - i * 2.5, width: 12, height: 2.5, fill: 'var(--embr)' }, g);
+  });
+  if (items.length) {
+    const top = y - 14 - Math.min(items.length, 5) * 2.5;
+    el('circle', { cx: x + 14, cy: top, r: 9, fill: room === 'luke' ? 'var(--warn)' : 'var(--embr)' }, g);
+    el('text', { x: x + 14, y: top + 3.5, 'text-anchor': 'middle', 'font-size': 10, 'font-weight': 800, fill: '#000' }, g).textContent = items.length;
+  }
+}
+function deliver(room, id) {
+  if (!id || stacks[room].includes(id)) return;
+  stacks[room].push(id);
+  drawStack(room);
+  if (room === current) renderDetail();
+}
+
+// ---------- People ----------
+const LOOK = {
+  researcher:    { shirt: '#2f5d8a', arm: '#244a6f', hair: '#3b2a20', skin: '#c99677' },
+  developer:     { shirt: '#26272b', arm: '#18191c', hair: '#141414', skin: '#8d5a3b' },
+  'app-builder': { shirt: '#5b6b3a', arm: '#48552d', hair: '#a8652f', skin: '#e3b591' },
+  marketer:      { shirt: '#ff3b00', arm: '#d93200', hair: '#1d1d1d', skin: '#b7835f' },
+  orchestrator:  { shirt: '#8a8d93', arm: '#6e7178', hair: '#d9d2c3', skin: '#d8a887' },
+  luke:          { shirt: '#f4f4f5', arm: '#c4c6ca', hair: '#5a3e2b', skin: '#e0b08f' },
+};
+const NAME = { researcher: 'Researcher', developer: 'Developer', 'app-builder': 'App builder', marketer: 'Marketer', orchestrator: 'Orchestrator', luke: 'Luke' };
+const people = {};
+
+function makePerson(key) {
+  const r = ROOMS[key], L = LOOK[key];
+  const root = el('g', {}, gPeople);
+  const body = el('g', {}, root);
+  el('ellipse', { cx: 0, cy: 3, rx: 18, ry: 13, fill: 'var(--shadow)' }, body);
+  const armL = el('circle', { cx: -16, cy: 0, r: 5.5, fill: L.arm }, body);
+  const armR = el('circle', { cx: 16, cy: 0, r: 5.5, fill: L.arm }, body);
+  el('ellipse', { cx: 0, cy: 0, rx: 17, ry: 10, fill: L.shirt, stroke: 'rgba(0,0,0,.25)', 'stroke-width': 1 }, body);
+  el('circle', { cx: 0, cy: 0, r: 10.5, fill: L.hair }, body);
+  el('ellipse', { cx: 0, cy: 5.5, rx: 7, ry: 4, fill: L.skin }, body);
+  const paper = el('g', { opacity: 0 }, body);
+  el('rect', { x: -9, y: 9, width: 18, height: 13, fill: '#fff', stroke: '#b9bbbf', 'stroke-width': 1, rx: 1.5 }, paper);
+  const paperStripe = el('rect', { x: -6, y: 12, width: 10, height: 2.5, fill: 'var(--embr)' }, paper);
+  const tag = el('g', {}, root);
+  const tw = NAME[key].length * 6.2 + 14;
+  el('rect', { x: -tw / 2, y: -38, width: tw, height: 16, rx: 8, fill: 'var(--paper)', stroke: 'var(--line)' }, tag);
+  el('text', { x: 0, y: -26.5, 'text-anchor': 'middle', 'font-size': 10, 'font-weight': 700, fill: 'var(--ink)' }, tag).textContent = NAME[key];
+  const badge = el('g', { opacity: 0 }, root);
+  el('circle', { cx: 19, cy: -10, r: 7, fill: 'var(--bad)' }, badge);
+  el('text', { x: 19, y: -6.5, 'text-anchor': 'middle', 'font-size': 11, 'font-weight': 900, fill: '#fff' }, badge).textContent = '!';
+  root.addEventListener('click', () => select(key));
+  root.style.cursor = 'pointer';
+  const p = { key, root, body, armL, armR, paper, paperStripe, badge, x: r.seat[0], y: r.seat[1], angle: r.face, path: [], phase: 'sit', t: 0, wait: 1.5 + Math.random() * 3 + (key === 'orchestrator' ? 0 : 2), trips: [], next: 0, walkT: 0, bubble: null, slot: null };
+  people[key] = p;
+  return p;
+}
+
+// ---------- Bubbles ----------
+function bubble(person, text, colour, secs = 2.6) {
+  if (person.bubble) person.bubble.g.remove();
+  const g = el('g', {}, gBubbles);
+  const w = Math.min(text.length * 6.4 + 26, 240);
+  el('rect', { x: -w / 2, y: -86, width: w, height: 24, rx: 12, fill: 'var(--bubble)', stroke: 'var(--ink)', 'stroke-width': 1.5 }, g);
+  el('path', { d: 'M-5 -62.8 L0 -54 L5 -62.8', fill: 'var(--bubble)', stroke: 'var(--ink)', 'stroke-width': 1.5, 'stroke-linejoin': 'round' }, g);
+  el('rect', { x: -5.2, y: -64.5, width: 10.4, height: 3, fill: 'var(--bubble)' }, g);
+  el('circle', { cx: -w / 2 + 12, cy: -74, r: 4, fill: colour }, g);
+  const t = el('text', { x: -w / 2 + 22, y: -70, 'font-size': 11, 'font-weight': 650, fill: 'var(--ink)' }, g);
+  t.textContent = text.length > 34 ? text.slice(0, 33) + '…' : text;
+  person.bubble = { g, until: clock + secs };
+}
+
+// ---------- Paths ----------
+function homeToDoor(r) { return [...r.out, doorIn(r), hall(r)]; }
+function doorToVisit(r, slot) { return [hall(r), doorIn(r), ...r.via, r.visit[slot]]; }
+const busy = {}; // room -> Set of used visit slots
+function takeSlot(room) {
+  busy[room] ??= new Set();
+  const n = ROOMS[room].visit.length;
+  for (let i = 0; i < n; i++) if (!busy[room].has(i)) { busy[room].add(i); return i; }
+  return -1;
+}
+function routeTo(p, trip) {
+  const from = ROOMS[p.key], to = ROOMS[trip.to];
+  const slot = takeSlot(trip.to);
+  if (slot < 0) return null;
+  p.slot = slot;
+  const pts = [...homeToDoor(from), ...doorToVisit(to, slot)];
+  return { slot, pts };
+}
+
+// ---------- Simulation ----------
+let clock = 0, speed = 1, paused = false;
+const SPEED = 130; // px per second at 1x
+
+function startTrip(p) {
+  if (!p.trips.length) { p.wait = 9999; return; }
+  const trip = p.trips[p.next % p.trips.length];
+  const route = routeTo(p, trip);
+  if (!route) { p.wait = 1.2; return; }
+  p.next++;
+  p.trip = trip;
+  p.path = route.pts.slice();
+  p.back = [...route.pts].reverse().slice(1).concat([ROOMS[p.key].seat]);
+  p.phase = 'go';
+  p.paper.setAttribute('opacity', trip.kind === 'pickup' ? 0 : 1);
+  p.paperStripe.setAttribute('fill', KIND_COLOUR[trip.kind]);
+  const intro = { handoff: `Taking ${trip.item} to ${NAME[trip.to]}`, approval: `${trip.item} for Luke`, pickup: `Checking on ${trip.item}`, assign: `${trip.item} for ${NAME[trip.to]}` }[trip.kind];
+  bubble(p, intro, KIND_COLOUR[trip.kind], 120); // stays up until they arrive
+}
+
+function arrive(p) {
+  const trip = p.trip;
+  p.phase = 'hand'; p.wait = 3.2;
+  const target = people[trip.to];
+  // face the person you're visiting
+  if (target) p.angle = Math.atan2(target.y - p.y, target.x - p.x) * 180 / Math.PI - 90;
+  bubble(p, trip.says, KIND_COLOUR[trip.kind], 3);
+  if (trip.kind !== 'pickup') { deliver(trip.to, trip.item); p.paper.setAttribute('opacity', 0); }
+  const reply = { handoff: 'Thanks, got it', assign: 'On it', approval: null, pickup: null }[trip.kind];
+  if (target && reply) setTimeout(() => bubble(target, reply, 'var(--ok)', 2), 700 / speed);
+  logEvent(trip);
+}
+
+function step(p, dt) {
+  if (p.key === 'luke') return;
+  if (p.phase === 'sit') {
+    p.wait -= dt;
+    if (p.wait <= 0) startTrip(p);
+    return;
+  }
+  if (p.phase === 'hand') {
+    p.wait -= dt;
+    if (p.wait <= 0) { busy[p.trip.to]?.delete(p.slot); p.phase = 'back'; p.path = p.back; }
+    return;
+  }
+  // walking along p.path
+  let move = SPEED * dt * (reduced ? 20 : 1);
+  while (move > 0 && p.path.length) {
+    const [tx, ty] = p.path[0];
+    const dx = tx - p.x, dy = ty - p.y, d = Math.hypot(dx, dy);
+    if (d < 0.5) { p.path.shift(); continue; }
+    p.angle = Math.atan2(dy, dx) * 180 / Math.PI - 90;
+    const s = Math.min(move, d);
+    p.x += dx / d * s; p.y += dy / d * s; move -= s;
+  }
+  p.walkT += dt;
+  if (!p.path.length) {
+    if (p.phase === 'go') arrive(p);
+    else { p.phase = 'sit'; p.angle = ROOMS[p.key].face; p.wait = 3 + Math.random() * 4; }
+  }
+}
+
+function paint(p) {
+  const walking = p.phase === 'go' || p.phase === 'back';
+  const swing = walking ? Math.sin(p.walkT * 11) * 5 : 0;
+  const status = DATA.desks[p.key]?.current?.status;
+  const typing = !walking && p.phase === 'sit' && status === 'doing' ? Math.sin(clock * 22) * 1.2 : 0;
+  p.armL.setAttribute('cy', swing + typing + (walking ? 0 : 6));
+  p.armR.setAttribute('cy', -swing - typing + (walking ? 0 : 6));
+  const bob = walking ? Math.abs(Math.sin(p.walkT * 11)) * 1.2 : 0;
+  p.root.setAttribute('transform', `translate(${p.x.toFixed(1)} ${(p.y - bob).toFixed(1)})`);
+  p.body.setAttribute('transform', `rotate(${p.angle.toFixed(1)})`);
+  p.badge.setAttribute('opacity', p.phase === 'sit' && (status === 'blocked' || status === 'needs-approval') ? 1 : 0);
+  if (p.bubble) {
+    p.bubble.g.setAttribute('transform', `translate(${p.x.toFixed(1)} ${(p.y - bob).toFixed(1)})`);
+    if (clock > p.bubble.until) { p.bubble.g.remove(); p.bubble = null; }
+  }
+}
+
+// ---------- Log and panels ----------
+const log = [];
+function logEvent(trip) {
+  log.unshift(trip);
+  log.length = Math.min(log.length, 7);
+  $('log').innerHTML = log.map((t) => `<li><span class="chip k-${t.kind}">${KIND[t.kind]}</span><span>${inline(t.note)}</span></li>`).join('');
+}
+
+let current = 'luke';
+function renderButtons() {
+  $('roombtns').innerHTML = Object.keys(ROOMS).map((k) => `<button class="room-btn" data-k="${k}" aria-pressed="${k === current}">${esc(ROOMS[k].name)}</button>`).join('');
+  $('roombtns').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => select(b.dataset.k)));
+}
+function renderDetail() {
+  const d = DATA.desks[current] || { tasks: [], counts: {} };
+  const name = current === 'orchestrator' ? 'Orchestrator · Meeting room' : ROOMS[current].name;
+  const arrived = stacks[current];
+  const outgoing = DATA.trips.filter((t) => t.from === current).length;
+  $('detail').innerHTML = `<h3>${esc(name)}</h3>
+    ${d.current ? `<div class="now"><b>Working on:</b> ${inline(d.current.task)} <span class="pill ${esc(d.current.status)}">${esc(LABEL[d.current.status] || d.current.status)}</span></div>` : ''}
+    <div class="counts">${Object.entries(d.counts || {}).filter(([, n]) => n).map(([s, n]) => `<span class="pill ${s}">${n} ${esc(LABEL[s])}</span>`).join('')}</div>
+    <p class="muted">${outgoing} walk${outgoing === 1 ? '' : 's'} out of this room in the loop. On the desk now: ${arrived.length ? arrived.map(esc).join(', ') : 'nothing yet'}.</p>
+    ${d.tasks.length ? `<ul class="tasks">${d.tasks.map((t) => `<li><div><b>${esc(t.id)}</b>${inline(t.title)}<small>Next: ${inline(t.next)}</small></div><span class="pill ${esc(t.status)}">${esc(LABEL[t.status] || t.status)}</span></li>`).join('')}</ul>` : ''}`;
+}
+function select(k) { current = k; renderButtons(); renderDetail(); }
+
+// ---------- Boot ----------
+drawFloor(); drawFurniture();
+for (const k of Object.keys(ROOMS)) { makePerson(k); drawStack(k); }
+for (const t of DATA.trips) people[t.from]?.trips.push(t);
+// Waiting-on-Luke items start on his desk.
+for (const w of DATA.waiting) deliver('luke', w.id);
+$('sub').innerHTML = `Built from <code>docs/workflow-state.md</code>, last updated ${esc(DATA.updated)}. ${DATA.trips.length} links between rooms.`;
+$('wait').innerHTML = DATA.waiting.length ? DATA.waiting.map((w) => `<li><b>${esc(w.id)}</b> ${inline(w.what)}</li>`).join('') : '<li>Nothing right now.</li>';
+renderButtons(); renderDetail();
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.05) * speed;
+  last = now;
+  if (!paused) {
+    clock += dt;
+    for (const p of Object.values(people)) step(p, dt);
+    LEDS.forEach((l, i) => l.setAttribute('opacity', (Math.sin(clock * 3 + i * 1.7) > 0) ? 1 : .35));
+    const builder = people['app-builder'];
+    LAMP.setAttribute('opacity', builder.phase === 'sit' ? .3 : .55 + Math.sin(clock * 8) * .4);
+  }
+  for (const p of Object.values(people)) paint(p);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+$('pause').addEventListener('click', (e) => { paused = !paused; e.currentTarget.textContent = paused ? 'Play' : 'Pause'; e.currentTarget.setAttribute('aria-pressed', paused); });
+$('speed').addEventListener('click', (e) => { speed = speed === 1 ? 2 : speed === 2 ? 4 : 1; e.currentTarget.textContent = `Speed ${speed}×`; e.currentTarget.setAttribute('aria-pressed', speed !== 1); });
+</script>
+
+</body></html>
