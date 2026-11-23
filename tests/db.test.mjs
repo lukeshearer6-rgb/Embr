@@ -87,8 +87,17 @@ async function main() {
   await fails(call(amara, 'add_photo', amara.id + '/x.jpg', 'Actor'), /things you do/); ok('photos only go in sections for roles they picked');
   for (const n of [1, 2, 3]) me = await call(amara, 'add_photo', amara.id + `/${n}.jpg`, 'Model');
   assert.equal(me.talent.published, false);
-  assert.ok(me.talent.gaps.find((g) => g.role === 'Model').missing.some((m) => /height/i.test(m))); ok('modelling needs height as well as photos');
-  me = await call(amara, 'save_talent', { height: '5\'10"' });
+  assert.ok(me.talent.gaps.find((g) => g.role === 'Model').missing.some((m) => /which sizes you model/.test(m))); ok('modelling needs full model details as well as photos');
+  me = await call(amara, 'save_model_stats', { sizing: 'womenswear', height_cm: '178' });
+  let mgap = me.talent.gaps.find((g) => g.role === 'Model').missing.join();
+  assert.match(mgap, /bust, waist, hips, dress size, shoe size, hair colour, eye colour/); ok('height alone is not enough: every core measurement is listed as missing');
+  await fails(call(amara, 'save_model_stats', { sizing: 'womenswear', height_cm: '5.10' }), /numbers|centimetres/);
+  await fails(call(amara, 'save_model_stats', { sizing: 'womenswear', height_cm: '178', dress_uk: '9' }), /UK size/);
+  await fails(call(amara, 'save_model_stats', { sizing: 'womenswear', height_cm: '178', hair: 'Purple' }), /hair colour/);
+  ok('model details are checked: cm heights, UK sizes, colours from the list');
+  const amaraStats = { sizing: 'womenswear', height_cm: '178', bust_in: '32', waist_in: '24', hips_in: '35', dress_uk: '8', shoe_uk: '6.5', hair: 'Black', eyes: 'Brown', bra: '32b' };
+  me = await call(amara, 'save_model_stats', amaraStats);
+  assert.equal(me.talent.height, '5\'10"'); assert.equal(me.talent.stats.bra, '32B'); assert.equal(me.talent.stats.height_ft, '5\'10"');
   assert.deepEqual(me.talent.gaps.map((g) => g.role), ['UGC creator']);
   await fails(call(amara, 'add_link', 'UGC creator', 'my tiktok', 'x'), /https/); ok('video links must be full web addresses');
   await fails(call(amara, 'add_link', 'Actor', 'https://example.com/v', 'x'), /things you do/);
@@ -102,7 +111,11 @@ async function main() {
   assert.equal(me.talent.published, true);
   await fails(call(jay, 'save_talent', { handle: 'Amara' }), /taken/); ok('Book-me names are unique, ignoring case');
   await fails(call(jay, 'save_talent', { roles: [] }), /at least one/); ok('talent must keep at least one role');
-  await call(jay, 'save_talent', { handle: 'jay', height: '6\'0"', day_rate: '200', travels: true });
+  await call(jay, 'save_talent', { handle: 'jay', day_rate: '200', travels: true });
+  me = await call(jay, 'save_model_stats', { sizing: 'menswear', height_cm: '185', chest_in: '40', waist_in: '32', shoe_uk: '10', hair: 'Brown', eyes: 'Blue' });
+  assert.match(me.talent.gaps[0].missing.join(), /inside leg, suit size/); ok('menswear needs chest, waist, inside leg and suit size');
+  await fails(call(jay, 'save_model_stats', { sizing: 'menswear', height_cm: '185', suit: '40' }), /40R/);
+  await call(jay, 'save_model_stats', { sizing: 'menswear', height_cm: '185', chest_in: '40', waist_in: '32', inside_leg_in: '33', suit: '40r', shoe_uk: '10', hair: 'Brown', eyes: 'Blue' });
   for (const n of [1, 2, 3]) await call(jay, 'add_photo', jay.id + `/${n}.jpg`, 'Model');
 
   // --- brand search and agency rules
@@ -112,11 +125,26 @@ async function main() {
   res = await call(rivet, 'search_talent', { category: 'UGC creator' });
   assert.deepEqual(res.map((t) => t.name), ['Amara Okafor']); assert.deepEqual(res[0].roles, ['Model', 'UGC creator']);
   ok('searching one role finds everyone who does it, alongside their other roles');
+  res = await call(rivet, 'search_talent', { category: 'Model', specs: { sizing: 'womenswear', height_min: 175, dress: [6, 8, 10] } });
+  assert.deepEqual(res.map((t) => t.name), ['Amara Okafor']); assert.equal(res[0].stats.dress_uk, 8);
+  res = await call(rivet, 'search_talent', { category: 'Model', specs: { height_min: 180 } });
+  assert.deepEqual(res.map((t) => t.name), ['Jay Patel']);
+  res = await call(rivet, 'search_talent', { category: 'Model', specs: { sizing: 'menswear', suit: ['38R'] } });
+  assert.equal(res.length, 0); ok('brands filter models by sizing, height range and sizes');
   await fails(call(amara, 'search_talent', {}), /not allowed/i); ok('talent can\'t search other talent');
 
   const briefId = await call(rivet, 'create_brief', { title: 'Drop 4 lookbook', category: 'Model', city: 'Manchester', shoot_date: today(10), days: 1, day_rate: 240, travel: 'local', description: 'Studio, streetwear' });
   let brief = await call(rivet, 'brief_detail', briefId);
   assert.deepEqual(brief.ranked.map((t) => t.name), ['Amara Okafor']); ok('ranking respects "local talent only"');
+  await fails(call(rivet, 'create_brief', { title: 'x', category: 'Model', city: 'Manchester', shoot_date: today(10), day_rate: 200, specs: { height_min: 190, height_max: 170 } }), /lowest height/);
+  const specBrief = await call(rivet, 'create_brief', { title: 'Denim campaign', category: 'Model', city: 'Manchester', shoot_date: today(12), day_rate: 300, travel: 'covered',
+    specs: { sizing: 'womenswear', height_min: 172, height_max: 183, dress: [8, 10], shoe_min: 5, shoe_max: 7, hair: [], eyes: '' } });
+  brief = await call(rivet, 'brief_detail', specBrief);
+  assert.deepEqual(brief.specs, { sizing: 'womenswear', height_min: 172, height_max: 183, dress: [8, 10], shoe_min: 5, shoe_max: 7 });
+  assert.deepEqual(brief.ranked.map((t) => t.name), ['Amara Okafor']);
+  const specBrief2 = await call(rivet, 'create_brief', { title: 'Tall', category: 'Model', city: 'Manchester', shoot_date: today(12), day_rate: 300, travel: 'covered', specs: { height_min: 180, hair: ['Blonde'] } });
+  assert.equal((await call(rivet, 'brief_detail', specBrief2)).ranked.length, 0);
+  ok('briefs store the model details a brand needs, and ranking only shows people who fit');
   const ugcBrief = await call(rivet, 'create_brief', { title: 'Skincare UGC', category: 'UGC creator', city: 'Manchester', shoot_date: today(11), days: 1, day_rate: 200, travel: 'covered', description: '3 videos' });
   assert.deepEqual((await call(rivet, 'brief_detail', ugcBrief)).ranked.map((t) => t.name), ['Amara Okafor']);
   ok('a brief for one role ranks only people who do that role');
@@ -239,7 +267,7 @@ async function main() {
   // --- ops
   const people = await call(ops, 'ops_people');
   assert.equal(people.talent.length, 2); assert.equal(people.brands.length, 2);
-  const ob = await call(ops, 'ops_briefs'); assert.equal(ob.length, 2);
+  const ob = await call(ops, 'ops_briefs'); assert.equal(ob.length, 4);
   await fails(call(rivet, 'ops_people'), /not allowed/i); ok('admin view is for Embr staff only');
 
   console.log(`\n${passed} checks passed`);

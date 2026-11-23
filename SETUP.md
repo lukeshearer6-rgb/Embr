@@ -99,9 +99,9 @@ Check Cloudflare's current terms allow a commercial app on the free plan before 
 
 ## 7. First sign-in and a test booking
 
-1. Open the app, go to `/join?invite=<your staff code>` and sign in with your email. You land on the Embr admin **Overview**.
+1. Open the **admin website** on a computer at `https://embr-pilot.pages.dev/admin/join?invite=<your staff code>` and sign in with your email. You land on the Embr admin **Overview**. The app itself (`/`) is only for talent and brands; staff always use `/admin`.
 2. **Invites**: create a talent invite and a brand invite. Use a second email address for each (Gmail's `you+talent@gmail.com` trick works).
-3. As talent: fill in the profile, add photos, do the ID check (Stripe's test mode lets you pick a test result), and set up payouts (test mode: use Stripe's test bank details, sort code `108800`, account `00012345`).
+3. As talent: pick what you do, fill in the profile and every role section (for Model: photos plus the full model details), add photos, do the ID check (Stripe's test mode lets you pick a test result), and set up payouts (test mode: use Stripe's test bank details, sort code `108800`, account `00012345`).
 4. As the brand: find the talent, send an offer. As talent: accept. As the brand: pay the deposit with card `4242 4242 4242 4242`, any future date, any CVC.
 5. Change the booking's date to today in Supabase's **Table Editor** (bookings → shoot_date), mark it wrapped as talent, sign off as the brand. Check the transfer appears in Stripe under **Connect → the talent's account**.
 

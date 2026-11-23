@@ -3,7 +3,7 @@ import './style.css';
 import { sb, rpc } from './api.js';
 import { $, esc, toast, closeLayer, closeAll, layerCount, loading, openLayer } from './ui.js';
 import { ICON, NICON, LOGO } from './icons.js';
-import { S, A, F, C, VIEWS, NAV, go, onRoute, refreshMe, renderBell } from './state.js';
+import { S, A, F, C, VIEWS, NAV, go, onRoute, refreshMe, renderBell, SITE, BASE } from './state.js';
 // role chips anywhere in a form toggle on and off
 A['pick-role'] = (el) => {
   const form = el.closest('form');
@@ -12,12 +12,13 @@ A['pick-role'] = (el) => {
   el.setAttribute('aria-pressed', !on);
   form?.dispatchEvent(new Event('roles-changed', { bubbles: true }));
 };
+A['spec-chip'] = (el) => el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') !== 'true');
 import './views/auth.js';
 import './views/brand.js';
-import './views/talent.js';
 import './views/booking.js';
-import './views/ops.js';
-import './views/public.js';
+// the app never loads the staff screens; the admin site never loads the talent or public ones
+if (SITE === 'admin') await import('./views/ops.js');
+else await Promise.all([import('./views/talent.js'), import('./views/public.js')]);
 
 const app = $('#app');
 
@@ -28,12 +29,12 @@ function shell(role, tab) {
   return `<header class="top"><div class="shell topbar">
       <button class="brandmark" data-go="/" aria-label="Embr home"><img src="${LOGO}" alt="Embr"></button>
       <nav class="main" aria-label="Main">${nav.map(([k, l]) => `<button data-tab="${k}" ${tab === k ? 'aria-current="page"' : ''}>${l}${flags[k] ? '<span class="flag" aria-label="needs attention"></span>' : ''}</button>`).join('')}</nav>
-      <div class="who"><span class="s g whoami">${esc(S.me.brand?.name || S.me.talent?.name || S.me.email)}${role === 'ops' ? ' · Embr' : ''}</span>
+      <div class="who"><span class="s g whoami">${esc(S.me.brand?.name || S.me.talent?.name || S.me.email)}${role === 'ops' ? ' · Embr admin' : ''}</span>
         <span id="bell"></span>
         <button class="link s" data-a="signout">Sign out</button></div>
     </div></header>
     <main class="shell" id="main">${loading()}</main>
-    <nav class="botnav" aria-label="Main">${mob.map(([k, l]) => `<button data-tab="${k}" ${tab === k ? 'aria-current="page"' : ''}>${NICON[k] || NICON.today}<span>${l}</span>${flags[k] ? '<span class="flag"></span>' : ''}</button>`).join('')}${nav.length > 5 ? `<button data-a="more" ${nav.slice(4).some(([k]) => k === tab) ? 'aria-current="page"' : ''}>${NICON.more}<span>More</span></button>` : ''}</nav>`;
+    ${SITE === 'admin' ? '' : `<nav class="botnav" aria-label="Main">${mob.map(([k, l]) => `<button data-tab="${k}" ${tab === k ? 'aria-current="page"' : ''}>${NICON[k] || NICON.today}<span>${l}</span>${flags[k] ? '<span class="flag"></span>' : ''}</button>`).join('')}${nav.length > 5 ? `<button data-a="more" ${nav.slice(4).some(([k]) => k === tab) ? 'aria-current="page"' : ''}>${NICON.more}<span>More</span></button>` : ''}</nav>`}`;
 }
 
 export const bare = (inner) => `<header class="top"><div class="shell topbar"><a class="brandmark" href="/" data-go="/"><img src="${LOGO}" alt="Embr"></a>
@@ -42,18 +43,23 @@ export const bare = (inner) => `<header class="top"><div class="shell topbar"><a
 let renderSeq = 0;
 async function render() {
   const seq = ++renderSeq;
-  const path = location.pathname.replace(/\/+$/, '') || '/';
+  const path = location.pathname.slice(BASE.length).replace(/\/+$/, '') || '/';
   const parts = path.split('/').filter(Boolean);
   S.route = { path, parts, query: new URLSearchParams(location.search) };
 
-  // public pages work signed in or out
-  if (parts[0]?.startsWith('@')) return VIEWS.public.bookme(app, parts[0].slice(1));
-  if (parts[0] === 'l' && parts[1]) return VIEWS.public.link(app, parts[1]);
+  if (SITE === 'app') {
+    // public pages work signed in or out
+    if (parts[0]?.startsWith('@')) return VIEWS.public.bookme(app, parts[0].slice(1));
+    if (parts[0] === 'l' && parts[1]) return VIEWS.public.link(app, parts[1]);
+  }
   if (parts[0] === 'signin' || parts[0] === 'join') return VIEWS.auth.signin(app);
-  if (!S.session) return VIEWS.auth.welcome(app);
+  if (!S.session) return SITE === 'admin' ? VIEWS.auth.signin(app) : VIEWS.auth.welcome(app);
   if (!S.me) await refreshMe();
   if (seq !== renderSeq) return;
-  if (!S.me?.role) return VIEWS.auth.onboarding(app);
+  if (!S.me?.role) return SITE === 'admin' ? VIEWS.auth.staffJoin(app) : VIEWS.auth.onboarding(app);
+  // each site is for its own people only
+  if (SITE === 'app' && S.me.role === 'ops') return VIEWS.auth.wrongSite(app, 'admin');
+  if (SITE === 'admin' && S.me.role !== 'ops') return VIEWS.auth.wrongSite(app, 'app');
 
   const role = S.me.role;
   let tab = parts[0];
@@ -140,7 +146,7 @@ sb.auth.onAuthStateChange((event, session) => {
   setInterval(() => { if (S.session && S.me?.role && document.visibilityState === 'visible') refreshMe().then(renderBell).catch(() => {}); }, 60000);
 })();
 
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+if (SITE === 'app' && 'serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 }
 export { render };

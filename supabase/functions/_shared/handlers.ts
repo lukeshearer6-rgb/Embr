@@ -95,7 +95,7 @@ export async function sendEmail(req: Request, d: Deps, send = resendSend): Promi
   const n = await d.rpc('svc_email_for', { p_notification: notification_id });
   if (!n || n.emailed || !n.email) return new Response(JSON.stringify({ skipped: true }));
   if (!d.env.RESEND_API_KEY) { console.log('[email not sent: no RESEND_API_KEY]', n.email, n.text); return new Response(JSON.stringify({ skipped: 'no key' })); }
-  const link = (d.env.APP_URL || '').replace(/\/$/, '') + (n.url || '/');
+  const link = (d.env.APP_URL || '').replace(/\/$/, '') + (n.staff ? '/admin' : '') + (n.url || '/');
   await send(d.env, { to: n.email, subject: subjectFor(n.text), html: emailHtml(n.name, n.text, link), text: `${n.text}\n\nOpen Embr: ${link}` });
   await d.rpc('svc_emailed', { p_notification: notification_id });
   return new Response(JSON.stringify({ sent: true }));

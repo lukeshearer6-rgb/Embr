@@ -237,7 +237,7 @@ async function route(req, res) {
   // ---- the app (built files, single-page fallback)
   let f = path.join(DIST, decodeURIComponent(p));
   if (!f.startsWith(DIST)) return send(res, 403, 'no');
-  if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) f = path.join(DIST, 'index.html');
+  if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) f = path.join(DIST, /^\/admin(\/|$)/.test(url.pathname) ? 'admin.html' : 'index.html');
   return send(res, 200, fs.readFileSync(f), { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
 }
 

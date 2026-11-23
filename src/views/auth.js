@@ -1,5 +1,5 @@
 // Welcome, sign-in by emailed code, and first-time account setup.
-import { VIEWS, F, A, S, go, refreshMe } from '../state.js';
+import { SITE, VIEWS, F, A, S, go, refreshMe } from '../state.js';
 import { sendCode, verifyCode, rpc, sb } from '../api.js';
 import { $, esc, toast, opts, CITIES, formData, roleChips, pickedRoles } from '../ui.js';
 import { LOGO } from '../icons.js';
@@ -26,11 +26,13 @@ VIEWS.auth.welcome = (app) => {
 
 VIEWS.auth.signin = (app) => {
   app.dataset.role = '';
+  const q0 = new URLSearchParams(location.search);
+  if (SITE === 'admin' && q0.get('invite')) setVia({ invite: q0.get('invite').toUpperCase(), as: 'ops' });
   if (S.session) return go('/', { replace: true });
   const q = new URLSearchParams(location.search);
   if (q.get('invite')) setVia({ ...via(), invite: q.get('invite').toUpperCase(), as: q.get('as') || undefined });
   if (q.get('as')) setVia({ ...via(), as: q.get('as') });
-  app.innerHTML = frame(`<h1 class="display t-48">Sign in</h1>
+  app.innerHTML = frame(`<h1 class="display t-48">${SITE === 'admin' ? 'Embr admin' : 'Sign in'}</h1>${SITE === 'admin' ? '<p class="s g mt8">For Embr staff. Talent and brands use the app.</p>' : ''}
     <p class="g mt16 measure">Enter your email and we'll send you a 6-digit code. No password needed.</p>
     <form id="f-email" class="mt24" style="max-width:420px">
       <label class="field">Email<input class="in" type="email" name="email" required autocomplete="email" inputmode="email" placeholder="you@example.com"></label>
@@ -83,9 +85,11 @@ VIEWS.auth.onboarding2 = (app) => {
   const v = via();
   const as = v.as || (v.link || v.handle ? 'brand' : 'talent');
   if (as === 'ops') {
-    app.innerHTML = frame(`<h1 class="display t-48">Embr staff account</h1><p class="g mt16">Signed in as ${esc(S.me?.email)}.</p>
-      <form id="f-onboard" data-role="ops" class="mt24" style="max-width:420px"><label class="field">Invite code<input class="in" name="invite" required value="${esc(v.invite || '')}"></label>
-      <button class="btn primary full mt24" type="submit">Create staff account</button></form>`);
+    // a staff invite opened in the app: send it to the admin website instead
+    app.innerHTML = frame(`<h1 class="display t-48">This is a staff invite</h1>
+      <p class="g mt16 measure">Embr staff use the admin website on a computer, not the app.</p>
+      <a class="btn primary mt24" href="/admin/join?invite=${encodeURIComponent(v.invite || '')}">Open the admin website</a>`);
+    setVia({});
     return;
   }
   app.innerHTML = frame(`<h1 class="display t-48">Set up your account</h1>
@@ -123,13 +127,13 @@ F['f-onboard'] = async (form) => {
   const d = formData(form);
   const v = via();
   let role = form.dataset.role;
+  if (d.invite && role !== 'ops') {
+    const inv = await rpc('check_invite', { p_code: d.invite });
+    if (inv.ok && inv.role === 'ops') { setVia({ invite: d.invite, as: 'ops' }); return VIEWS.auth.onboarding2($('#app')); }
+  }
   if (role === 'talent') {
     d.roles = pickedRoles(form);
     if (!d.roles.length) throw new Error('Pick at least one thing you do');
-  }
-  if (d.invite) {
-    const inv = await rpc('check_invite', { p_code: d.invite });
-    if (inv.ok && inv.role === 'ops') role = 'ops';
   }
   S.me = await rpc('create_profile', {
     p_role: role, p_invite: d.invite || null,
@@ -139,9 +143,34 @@ F['f-onboard'] = async (form) => {
   const back = v.back;
   setVia({});
   toast(role === 'talent' ? 'Welcome to Embr. Next: your profile.' : 'Welcome to Embr.');
-  if (role === 'ops') return go('/', { replace: true });
+  if (role === 'ops') return go('/overview', { replace: true });
   go(back || (role === 'talent' ? '/profile' : '/'), { replace: true });
 };
 
 // keep the session in step with sign-in changes made in other tabs
 sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_IN' && !S.me) refreshMe().catch(() => {}); });
+
+// ---------------------------------------------------------------- admin website only
+// First sign-in on the admin site: an Embr staff invite code makes a staff account.
+VIEWS.auth.staffJoin = (app) => {
+  app.dataset.role = '';
+  const v = via();
+  app.innerHTML = frame(`<h1 class="display t-48">Embr admin</h1><p class="g mt16">Signed in as ${esc(S.me?.email)}. <button class="link" data-a="signout">Not you?</button></p>
+    <form id="f-staff" class="mt24" style="max-width:420px"><label class="field">Staff invite code<input class="in" name="invite" required autocapitalize="characters" value="${esc(v.invite || '')}"></label>
+    <button class="btn primary full mt24" type="submit">Create staff account</button></form>`);
+};
+F['f-staff'] = async (form) => {
+  const d = formData(form);
+  S.me = await rpc('create_profile', { p_role: 'ops', p_invite: d.invite, p_link: null, p_handle: null, p_data: {} });
+  setVia({});
+  go('/overview', { replace: true });
+};
+// Signed in on the wrong site (staff in the app, or talent/brand on the admin site)
+VIEWS.auth.wrongSite = (app, to) => {
+  app.dataset.role = '';
+  app.innerHTML = frame(to === 'admin'
+    ? `<h1 class="display t-48">You're signed in as Embr staff</h1><p class="g mt16 measure">The app is for talent and brands. Staff use the admin website on a computer.</p>
+       <div class="row mt24"><a class="btn primary" href="/admin">Open the admin website</a><button class="btn" data-a="signout">Sign out</button></div>`
+    : `<h1 class="display t-48">This is the Embr admin website</h1><p class="g mt16 measure">It's for Embr staff. Your account is in the app.</p>
+       <div class="row mt24"><a class="btn primary" href="/">Open Embr</a><button class="btn" data-a="signout">Sign out</button></div>`);
+};

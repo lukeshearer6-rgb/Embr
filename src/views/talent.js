@@ -2,7 +2,8 @@
 // and booking links. Talent never see briefs and can't apply for work:
 // brands find them and send offers. "Let work find you".
 import { VIEWS, A, F, C, S, go, refreshMe, rerender } from '../state.js';
-import { rpc, action, uploadPhoto, deletePhoto, photoUrl, roleRules } from '../api.js';
+import { rpc, action, uploadPhoto, deletePhoto, photoUrl, roleRules, modelOptions } from '../api.js';
+import { statsForm } from './model.js';
 import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CITIES, rolesOf, rolesTxt, roleChips, pickedRoles, USAGE, TERMS, toast, openLayer, closeLayer, formData, plural, first, busy, confirmDialog } from '../ui.js';
 import { ICON } from '../icons.js';
 import { thumb, calendar, groupBookings, bookingItem, linkCards } from './common.js';
@@ -105,7 +106,7 @@ A.verify = async (el) => {
 V.profile = async () => {
   const q = new URLSearchParams(location.search);
   if (q.get('id')) { await action('identity_refresh').catch(() => null); history.replaceState({}, '', '/profile'); }
-  const [, rules] = await Promise.all([refreshMe(), roleRules()]);
+  const [, rules, mo] = await Promise.all([refreshMe(), roleRules(), modelOptions()]);
   const t = T();
   const idStatus = t.verified ? '<span class="st ok">Verified 18+</span>'
     : t.identity_status === 'processing' ? '<span class="st wait">Checking your ID…</span>'
@@ -117,7 +118,6 @@ V.profile = async () => {
     <label class="field span">Name<input class="in" name="name" required value="${esc(t.name)}"></label>
     ${roleChips(rolesOf(t), 'What you do')}
     <label class="field">Based in<select class="in" name="city">${opts(CITIES, t.city)}</select></label>
-    <label class="field">Height <span class="hint">${rolesOf(t).includes('Model') ? 'Needed for modelling' : 'Optional'}</span><input class="in" name="height" value="${esc(t.height)}" placeholder="5'9&quot;"></label>
     <label class="field">Day rate, £<input class="in" type="number" name="day_rate" min="5" step="5" required value="${t.day_rate ?? ''}"></label>
     <label class="field">Half-day rate, £<input class="in" type="number" name="half_rate" min="5" step="5" value="${t.half_rate ?? ''}"></label>
     <label class="field span">Travel<select class="in" name="travels"><option value="true" ${t.travels ? 'selected' : ''}>I'll travel anywhere in the UK, with travel paid</option><option value="false" ${!t.travels ? 'selected' : ''}>Local work only</option></select><span class="hint">Talent who travel also appear when brands search other cities.</span></label>
@@ -127,7 +127,7 @@ V.profile = async () => {
     <label class="field span">Tags <span class="hint">Comma separated, for example: streetwear, beauty, tattoos</span><input class="in" name="tags" value="${esc((t.tags || []).join(', '))}"></label>
     <label class="field span">Content you're comfortable with <span class="hint">Brands see this before they book. For example: no lingerie or swimwear</span><textarea class="in" name="comfort" rows="2" maxlength="600">${esc(t.comfort)}</textarea></label>
   </div><button class="btn ink mt24" type="submit">Save profile</button></form>
-  <section id="work" class="mt48" aria-label="Your work">${workHTML(t, rules)}</section></div>
+  <section id="work" class="mt48" aria-label="Your work">${workHTML(t, rules, mo)}</section></div>
   <aside class="stack">
     <div class="panel"><div class="row between"><h3>ID check</h3>${idStatus}</div><p class="s g mt8">Embr is for talent aged 18 and over. Stripe checks your passport, driving licence or ID card and a selfie. Embr only receives the result and your date of birth.</p>${t.verified ? '' : `<button class="btn ${t.identity_status === 'processing' ? '' : 'primary'} sm mt12" data-a="verify">${t.identity_status ? 'Try again' : 'Verify ID'}</button>`}</div>
     <div><h3 class="mb8">When you're free</h3><p class="s g mb12">Tap a day to mark it unavailable. Brands only see you for dates you're free.</p><div id="cal">${calendar(t, true)}</div></div>
@@ -135,7 +135,7 @@ V.profile = async () => {
 };
 
 const MAXP = 24;
-function workHTML(t, rules) {
+function workHTML(t, rules, mo) {
   const roles = rolesOf(t);
   const photos = t.photos || [];
   const links = t.links || [];
@@ -149,6 +149,7 @@ function workHTML(t, rules) {
     const ln = links.filter((l) => l.role === r);
     return `<section class="role-sec" data-role-sec="${esc(r)}"><h3>${esc(r)} ${gap ? `<span class="need">Needs ${esc(gap.missing.join(', '))}</span>` : '<span class="done">Complete</span>'}</h3>
       <p class="s g mt8">${esc(rule.hint || '')}</p>
+      ${rule.stats ? statsForm(t.stats || {}, mo) : ''}
       <h4 class="s mt16 mb8">${esc(rule.photo_label || 'Photos')}${rule.photos ? ` <span class="g">(at least ${rule.photos})</span>` : ''}</h4>
       <div class="phs">${ph.map((p) => `<div class="p" style="background-image:url('${photoUrl(p.path)}')">${p.id === cover ? '<span class="xs" style="position:absolute;left:6px;bottom:6px;background:#fff;padding:1px 6px;border-radius:2px;font-weight:600">Cover</span>' : `<button type="button" data-a="cover" data-id="${p.id}" aria-label="Make cover photo" style="left:6px;right:auto;font-size:11px;width:auto;padding:0 6px;border-radius:2px">Cover</button>`}<button type="button" data-a="rmphoto" data-id="${p.id}" data-path="${esc(p.path)}" aria-label="Remove photo">×</button></div>`).join('')}
         ${photos.length < MAXP ? `<label class="p" tabindex="0">+ Add<input type="file" accept="image/*" multiple hidden data-change="photos" data-role="${esc(r)}" aria-label="Add ${esc(rule.photo_label || 'photos')}"></label>` : ''}</div>
@@ -159,8 +160,8 @@ function workHTML(t, rules) {
   }).join('')}`;
 }
 async function refreshWork() {
-  const rules = await roleRules();
-  $('#work').innerHTML = workHTML(T(), rules);
+  const [rules, mo] = await Promise.all([roleRules(), modelOptions()]);
+  $('#work').innerHTML = workHTML(T(), rules, mo);
   $('#ready').innerHTML = readyPanel(T());
 }
 A.towork = () => {
@@ -185,6 +186,18 @@ document.addEventListener('submit', async (e) => {
   try { S.me = await rpc('add_link', { p_role: form.dataset.addlink, p_url: d.url, p_title: d.title || null }); await refreshWork(); toast(S.me.talent.published ? 'Added. Your profile is live.' : 'Link added'); }
   catch (err) { toast(err.message, 5000); }
 }, true);
+// switching womenswear/menswear swaps the measurement fields, keeping what's typed
+C.sizing = async (sel) => {
+  const form = sel.closest('form');
+  const typed = Object.fromEntries(Object.entries(formData(form)).filter(([, v]) => v !== ''));
+  form.outerHTML = statsForm({ ...(T().stats || {}), ...typed, sizing: sel.value }, await modelOptions());
+};
+F['f-stats'] = async (form) => {
+  S.me = await rpc('save_model_stats', { p: formData(form) });
+  await refreshWork();
+  const gap = (S.me.talent.gaps || []).find((g) => g.role === 'Model');
+  toast(S.me.talent.published ? 'Model details saved. Your profile is live.' : gap ? 'Saved. Still needed for modelling: ' + gap.missing.join(', ') : 'Model details saved');
+};
 A.rmlink = async (el) => { S.me = await rpc('remove_link', { p_id: el.dataset.id }); await refreshWork(); };
 F['f-profile'] = async (form) => {
   const d = formData(form);

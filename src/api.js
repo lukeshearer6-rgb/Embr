@@ -73,3 +73,5 @@ export async function deletePhoto(id, path) {
 // what each role needs before a profile goes live (cached: it never changes mid-session)
 let rulesP;
 export const roleRules = () => (rulesP ||= rpc('role_rules').catch((e) => { rulesP = null; throw e; }));
+let optsP;
+export const modelOptions = () => (optsP ||= rpc('model_options').catch((e) => { optsP = null; throw e; }));

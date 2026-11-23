@@ -3,6 +3,7 @@ import { S } from '../state.js';
 import { photoUrl } from '../api.js';
 import { esc, gbp, pounds, pct, dMed, dLong, addDays, iso, initials, plural, whenTxt, rolesOf, rolesTxt } from '../ui.js';
 import { ICON } from '../icons.js';
+import { statsHTML } from './model.js';
 
 export const role = () => S.me?.role;
 
@@ -31,8 +32,9 @@ export function workByRole(t, rules = {}) {
   return rolesOf(t).map((r) => {
     const ph = photos.filter((p) => (p.role || rolesOf(t)[0]) === r);
     const ln = links.filter((l) => l.role === r);
-    if (!ph.length && !ln.length) return '';
-    return `<section class="role-sec"><h3>${esc(r)}</h3>
+    const st = r === 'Model' ? statsHTML(t.stats) : '';
+    if (!ph.length && !ln.length && !st) return '';
+    return `<section class="role-sec"><h3>${esc(r)}</h3>${st ? `<div class="mt12">${st}</div>` : ''}
       ${ph.length ? `<div class="gal mt12">${ph.map((p) => `<div class="gi" style="background-image:url('${photoUrl(p.path)}')" role="img" aria-label="${esc(t.name)}, ${esc(r)}"></div>`).join('')}</div>` : ''}
       ${ln.length ? `<h4 class="s mt16 mb8">${esc(rules[r]?.link_label || 'Videos')}</h4>${linkCards(ln)}` : ''}</section>`;
   }).join('');

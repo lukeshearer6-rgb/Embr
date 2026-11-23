@@ -3,6 +3,10 @@ import { rpc } from './api.js';
 import { $, esc, ago, openLayer, closeAll } from './ui.js';
 import { ICON } from './icons.js';
 
+// Two sites from one codebase: the app (talent and brands, at /) and the Embr
+// admin website (staff only, at /admin, desktop). <html data-site="admin"> picks it.
+export const SITE = document.documentElement.dataset.site === 'admin' ? 'admin' : 'app';
+export const BASE = SITE === 'admin' ? '/admin' : '';
 export const S = { me: null, session: null, tab: null, route: null, flags: {} };
 export const A = {};       // click actions:  data-a="name"
 export const F = {};       // form submits:   <form id="name">
@@ -17,6 +21,7 @@ export const NAV = {
 let routeFn = () => {};
 export const onRoute = (fn) => { routeFn = fn; };
 export function go(path, { replace = false } = {}) {
+  if (BASE && path.startsWith('/') && !path.startsWith(BASE)) path = path === '/' ? BASE : BASE + path;
   if (path !== location.pathname + location.search) history[replace ? 'replaceState' : 'pushState']({}, '', path);
   routeFn();
 }

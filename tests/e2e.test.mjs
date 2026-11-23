@@ -47,12 +47,24 @@ try {
 
   // ---------------------------------------------------------------- Embr staff + invites
   const luke = await person('luke');
-  await luke.goto(`${BASE}/join?invite=${opsCode}`);
+  await luke.goto(`${BASE}/`);
+  await luke.waitForSelector('text=Unsigned, not unseen.');
+  assert.equal(await luke.locator('text=/staff|work at Embr/i').count(), 0);
+  ok('the app\'s welcome screen offers brand and talent only, no staff option');
+  await luke.goto(`${BASE}/admin/join?invite=${opsCode}`);
+  await luke.waitForSelector('h1:has-text("Embr admin")');
   await signIn(luke, 'luke@embr.test');
-  await luke.waitForSelector('#f-onboard');
-  await luke.click('#f-onboard button[type=submit]');
+  await luke.waitForSelector('#f-staff');
+  assert.equal(await luke.inputValue('#f-staff [name=invite]'), opsCode);
+  await luke.click('#f-staff button[type=submit]');
   await luke.waitForSelector('h1:has-text("Overview")');
-  ok('Embr staff account from the first invite, lands on the admin overview');
+  assert.match(luke.url(), /\/admin\/overview$/);
+  assert.equal(await luke.locator('.botnav').count(), 0);
+  await luke.goto(`${BASE}/`);
+  await luke.waitForSelector('text=You\'re signed in as Embr staff');
+  await luke.goto(`${BASE}/admin`);
+  await luke.waitForSelector('h1:has-text("Overview")');
+  ok('Embr staff join on the separate admin website, not the app');
   await luke.click('nav.main >> text=Invites');
   await luke.selectOption('#f-invite [name=role]', 'talent');
   await luke.fill('#f-invite [name=note]', 'Amara');
@@ -98,14 +110,29 @@ try {
   await amara.fill('#f-profile [name=tags]', 'streetwear, beauty');
   await amara.click('#f-profile button[type=submit]');
   await toastHas(amara, /Fill in your work sections/);
-  await amara.waitForSelector('[data-role-sec="Model"] .need >> text=/height/');
+  await amara.waitForSelector('[data-role-sec="Model"] .need >> text=/which sizes you model/');
   ok('a section per role, and the profile stays hidden until each is filled');
   await amara.setInputFiles('[data-role-sec="Model"] input[type=file]', ['/tmp/claude-0/test-photo-0.jpg', '/tmp/claude-0/test-photo-1.jpg', '/tmp/claude-0/test-photo-2.jpg']);
   await toastHas(amara, /Photos added/);
   await amara.waitForSelector('[data-role-sec="Model"] .phs .p >> nth=2');
-  await amara.fill('#f-profile [name=height]', '5\'10"');
-  await amara.click('#f-profile button[type=submit]');
+  await amara.selectOption('#f-stats [name=sizing]', 'womenswear');
+  await amara.waitForSelector('#f-stats [name=bust_in]');
+  await amara.fill('#f-stats [name=height_cm]', '178');
+  await amara.fill('#f-stats [name=bust_in]', '32');
+  await amara.fill('#f-stats [name=waist_in]', '24');
+  await amara.click('#f-stats button[type=submit]');
+  await toastHas(amara, /Still needed for modelling: your hips, dress size, shoe size, hair colour, eye colour/);
+  ok('height alone isn\'t enough: every core model measurement is required');
+  await amara.fill('#f-stats [name=hips_in]', '35');
+  await amara.selectOption('#f-stats [name=dress_uk]', '8');
+  await amara.selectOption('#f-stats [name=shoe_uk]', '6.5');
+  await amara.selectOption('#f-stats [name=hair]', 'Black');
+  await amara.selectOption('#f-stats [name=eyes]', 'Brown');
+  await amara.fill('#f-stats [name=bra]', '32B');
+  await amara.click('#f-stats button[type=submit]');
   await amara.waitForSelector('[data-role-sec="Model"] .done');
+  await amara.locator('#f-stats').scrollIntoViewIfNeeded();
+  await shot(amara, '02d-model-details-phone');
   await amara.fill('[data-addlink="UGC creator"] [name=url]', 'https://www.tiktok.com/@amara/video/1');
   await amara.fill('[data-addlink="UGC creator"] [name=title]', 'Skincare ad');
   await amara.click('[data-addlink="UGC creator"] button');
@@ -159,6 +186,8 @@ try {
   await rivet.waitForSelector('.sheet .role-sec h3:has-text("UGC creator")');
   await rivet.waitForSelector('.sheet .linkcard >> text=Skincare ad');
   await rivet.waitForSelector('.sheet .rolebadges >> text=Model');
+  await rivet.waitForSelector('.sheet .stats-grid >> text=5\'10" (178cm)');
+  await rivet.waitForSelector('.sheet .stats-grid >> text=UK 8');
   await rivet.locator('.sheet .role-sec >> nth=0').scrollIntoViewIfNeeded();
   await shot(rivet, '04b-brand-profile-roles');
   await rivet.keyboard.press('Escape');
@@ -169,7 +198,15 @@ try {
   await rivet.fill('#f-job [name=title]', 'Drop 4 lookbook');
   await rivet.fill('#f-job [name=shoot_date]', iso(10));
   await rivet.fill('#f-job [name=day_rate]', '240');
+  await rivet.selectOption('#f-job [name=sizing]', 'womenswear');
+  await rivet.fill('#f-job [name=height_min]', '172');
+  await rivet.fill('#f-job [name=height_max]', '183');
+  await rivet.click('#f-job [data-name=dress][data-v="8"]');
+  await rivet.click('#f-job [data-name=dress][data-v="10"]');
+  await rivet.locator('#f-job [data-specs]').scrollIntoViewIfNeeded();
+  await shot(rivet, '05a-brief-model-details');
   await rivet.click('button[form=f-job]');
+  await rivet.waitForSelector('.sheet >> text=Womenswear · 172–183cm · dress UK 8, 10');
   await rivet.waitForSelector('h3:has-text("Best fit for this brief")');
   await rivet.waitForSelector('.sheet .comp >> text=Amara Okafor');
   await shot(rivet, '05-brief-best-fit');
@@ -301,7 +338,7 @@ try {
   await rivet.fill('#cd-field', 'Talent arrived two hours late');
   await rivet.click('[data-a=cd-yes]');
   await rivet.waitForSelector('.sheet .st:has-text("Problem reported")');
-  await luke.goto(`${BASE}/overview`);
+  await luke.goto(`${BASE}/admin/overview`);
   await luke.waitForSelector('text=Problem shoot');
   await luke.click('.item >> text=Problem shoot');
   await luke.click('.sheet button[data-a=resolve]');
@@ -344,7 +381,7 @@ try {
   await bm.waitForSelector('.linkcard >> text=Trainers unboxing');
   await shot(bm, '12-bookme-phone');
   ok('public Book-me page at /@amara shows every role');
-  await luke.goto(`${BASE}/people`);
+  await luke.goto(`${BASE}/admin/people`);
   await luke.waitForSelector('text=18+ verified');
   await shot(luke, '13-ops-people');
   await rivet.goto(`${BASE}/bookings`);
@@ -357,6 +394,10 @@ try {
   assert.ok(!(await amara.textContent('main')).includes('Drop 4 lookbook brief'));
   assert.equal(await amara.locator('nav >> text=Jobs').count(), 0);
   ok('talent have no Jobs tab and nothing to apply for');
+  await amara.goto(`${BASE}/admin/people`);
+  await amara.waitForSelector('text=This is the Embr admin website');
+  assert.equal(await amara.locator('text=18+ verified').count(), 0);
+  ok('talent and brands can\'t use the admin website');
 
   if (errors.length) { console.log('\nBrowser errors:\n' + errors.join('\n')); throw new Error(errors.length + ' browser errors'); }
   console.log(`\n${passed} checks passed. Screenshots in ${SHOTS}`);

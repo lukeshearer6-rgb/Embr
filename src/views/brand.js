@@ -1,13 +1,14 @@
 // Brand screens: board (to-dos and talent search), jobs/briefs with Embr's
 // best-fit ranking, the offer form, shortlist and account.
 import { VIEWS, A, F, C, S, go, refreshMe, rerender } from '../state.js';
-import { rpc, photoUrl, roleRules } from '../api.js';
+import { rpc, photoUrl, roleRules, modelOptions } from '../api.js';
+import { specsFields, readSpecs, specsTxt, DRESS, SUITS } from './model.js';
 import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CATS, CITIES, USAGE, TERMS, toast, openLayer, closeLayer, replaceLayer, formData, loading, plural, first, whenTxt, rolesOf, rolesTxt, rolePlural } from '../ui.js';
 import { ICON } from '../icons.js';
 import { comp, thumb, bookingItem, groupBookings, calendar, gallery, stHTML, workByRole } from './common.js';
 
 const V = VIEWS.brand;
-const f = { category: '', city: '', date: '', max_rate: '', q: '' };
+const f = { category: '', city: '', date: '', max_rate: '', q: '', specs: {} };
 
 // ---------------------------------------------------------------- board
 V.board = async () => {
@@ -26,10 +27,21 @@ V.board = async () => {
     in <select name="city" data-change="search" aria-label="City"><option value="">anywhere</option>${CITIES.map((c) => `<option ${f.city === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
     free on <input type="date" name="date" value="${f.date}" min="${today()}" data-change="search" aria-label="Date">
     up to £<input type="number" name="max_rate" value="${f.max_rate}" placeholder="any" min="0" step="10" data-change="search" aria-label="Maximum day rate" style="width:4em"> a day.
+    <span id="mfilter">${modelFilter()}</span>
   </form>
   <div class="toolbar"><label class="search">${ICON.search}<input type="search" name="q" form="f-search" value="${esc(f.q)}" placeholder="Search names, looks, skills" data-input="searchq" aria-label="Search"></label><span class="s g" id="count">${plural(talent.length, 'person')}</span></div>
   <div id="results">${results(talent)}</div>`;
 };
+// extra sentence for models: sizes, height range and dress/suit size
+function modelFilter() {
+  if (f.category !== 'Model') return '';
+  const sp = f.specs || {};
+  const size = sp.sizing === 'womenswear' ? ` in dress size <select name="m_size" data-change="search" aria-label="Dress size"><option value="">any</option>${DRESS.map((d) => `<option ${String(sp.dress?.[0]) === String(d) ? 'selected' : ''}>${d}</option>`).join('')}</select>`
+    : sp.sizing === 'menswear' ? ` in suit size <select name="m_size" data-change="search" aria-label="Suit size"><option value="">any</option>${SUITS.map((d) => `<option ${sp.suit?.[0] === d ? 'selected' : ''}>${d}</option>`).join('')}</select>` : '';
+  return `<br>Wearing <select name="m_sizing" data-change="search" aria-label="Sizes"><option value="">any sizes</option><option value="womenswear" ${sp.sizing === 'womenswear' ? 'selected' : ''}>womenswear</option><option value="menswear" ${sp.sizing === 'menswear' ? 'selected' : ''}>menswear</option></select>${size},
+    <input type="number" name="m_hmin" value="${sp.height_min ?? ''}" placeholder="any" min="120" max="220" data-change="search" aria-label="Height from, cm" style="width:3.6em"> to
+    <input type="number" name="m_hmax" value="${sp.height_max ?? ''}" placeholder="any" min="120" max="220" data-change="search" aria-label="Height to, cm" style="width:3.6em"> cm tall.`;
+}
 function results(list) {
   if (!list.length) return '<div class="empty">No one matches yet. Try another date, city or rate. Embr is invite-only during the pilot, so the board is still filling up.</div>';
   const here = list.filter((t) => !t.away), away = list.filter((t) => t.away);
@@ -39,7 +51,15 @@ function results(list) {
 async function runSearch() {
   const form = $('#f-search');
   if (!form) return;
-  Object.assign(f, formData(form));
+  const d = formData(form);
+  const catChanged = d.category !== f.category;
+  Object.assign(f, { category: d.category, city: d.city, date: d.date, max_rate: d.max_rate });
+  const sizing = catChanged ? '' : d.m_sizing || '';
+  const sizeV = !catChanged && sizing === (f.specs?.sizing || '') ? d.m_size || '' : '';
+  f.specs = f.category === 'Model' && !catChanged ? { sizing, height_min: d.m_hmin ? +d.m_hmin : '', height_max: d.m_hmax ? +d.m_hmax : '',
+    dress: sizing === 'womenswear' && sizeV ? [+sizeV] : [], suit: sizing === 'menswear' && sizeV ? [sizeV] : [] } : {};
+  const mf = $('#mfilter');
+  if (mf) mf.innerHTML = modelFilter();
   f.q = $('[name=q]')?.value || '';
   const list = await rpc('search_talent', { f });
   $('#results').innerHTML = results(list);
@@ -163,11 +183,11 @@ V.jobs = async () => {
     <div class="facts"><span><b>${esc(j.category)}</b>${j.spots > 1 ? ' × ' + j.spots : ''}</span><span>${dMed(j.shoot_date)}${j.days > 1 ? ', ' + j.days + ' days' : ''}</span><span>${esc(j.city)}</span><span>${plural(j.offers, 'offer')} sent${j.booked ? ', ' + j.booked + ' booked' : ''}</span></div></button>`).join('')}</div>`
     : '<div class="empty">No briefs yet. Posting one takes about two minutes.</div>'}`;
 };
-A.postjob = () => openLayer({
+A.postjob = async () => { const mo = await modelOptions(); openLayer({
   kind: 'sheet', label: 'Post a brief', head: '<div class="grow s g">Only you and Embr see your brief. Talent never see it.</div>',
   body: `<h2 class="display t-48">Post a brief</h2><form id="f-job" class="mt24" style="max-width:720px"><div class="fgrid">
     <label class="field span">Title<input class="in" name="title" required placeholder="Summer drop lookbook, one model"></label>
-    <label class="field">Looking for<select class="in" name="category">${opts(CATS)}</select></label>
+    <label class="field">Looking for<select class="in" name="category" data-change="job-cat">${opts(CATS)}</select></label>
     <label class="field">City<select class="in" name="city">${opts(CITIES, S.me.brand?.city)}</select></label>
     <label class="field">Shoot date<input class="in" type="date" name="shoot_date" required min="${today()}" value="${addDays(14)}"></label>
     <label class="field">Days<input class="in" type="number" name="days" min="1" max="14" value="1"></label>
@@ -175,11 +195,20 @@ A.postjob = () => openLayer({
     <label class="field">How many people<input class="in" type="number" name="spots" min="1" max="20" value="1"></label>
     <label class="field span">Travel<select class="in" name="travel"><option value="local">Local talent only</option><option value="covered">I'll pay travel for the right person</option></select></label>
     <label class="field span">Usage<select class="in" name="usage">${USAGE.map((u) => `<option>${u}, 12 months</option>`).join('')}</select></label>
-    <label class="field span">Brief<textarea class="in" name="description" placeholder="What you're shooting, the look, what's provided"></textarea></label></div></form>`,
+    <label class="field span">Brief<textarea class="in" name="description" placeholder="What you're shooting, the look, what's provided"></textarea></label>
+    <div class="span" id="job-specs">${CATS[0] === 'Model' ? specsFields(mo) : ''}</div></div></form>`,
   foot: '<span class="grow"></span><button class="btn primary" type="submit" form="f-job">Post and see who fits</button>',
-});
+}); };
+C['job-cat'] = async (sel) => { $('#job-specs').innerHTML = sel.value === 'Model' ? specsFields(await modelOptions()) : ''; };
+C['spec-sizing'] = async (sel) => {
+  const form = sel.closest('form');
+  const sp = { ...readSpecs(form), sizing: sel.value };
+  sel.closest('[data-specs]').outerHTML = specsFields(await modelOptions(), sp);
+};
 F['f-job'] = async (form) => {
-  const id = await rpc('create_brief', { p: formData(form) });
+  const d = formData(form);
+  const id = await rpc('create_brief', { p: { title: d.title, category: d.category, city: d.city, shoot_date: d.shoot_date, days: d.days, day_rate: d.day_rate,
+    spots: d.spots, travel: d.travel, usage: d.usage, description: d.description, specs: d.category === 'Model' ? readSpecs(form) : {} } });
   closeLayer();
   rerender();
   A.job({ dataset: { id } });
@@ -190,8 +219,9 @@ A.job = async (el) => {
     kind: 'sheet', label: j.title, head: `<div class="grow s g">Posted ${dMed(j.created_at)}</div>`,
     body: `<h2 class="display t-48">${esc(j.title)}</h2>
     <dl class="statline"><div><dt>Rate</dt><dd>${pounds(j.day_rate)} a day</dd></div><div><dt>Date</dt><dd>${dMed(j.shoot_date)}${j.days > 1 ? ', ' + j.days + ' days' : ''}</dd></div><div><dt>Where</dt><dd>${esc(j.city)}</dd></div><div><dt>Looking for</dt><dd>${esc(j.category)}${j.spots > 1 ? ', ' + j.spots : ''}</dd></div><div><dt>Travel</dt><dd>${j.travel === 'local' ? 'Local talent only' : 'Paid for the right person'}</dd></div></dl>
+    ${specsTxt(j.specs) ? `<p class="mt16"><b>Model details:</b> ${esc(specsTxt(j.specs))}</p>` : ''}
     ${j.description ? `<p class="measure mt24">${esc(j.description)}</p>` : ''}${j.usage ? `<p class="s g mt8">Usage: ${esc(j.usage)}</p>` : ''}
-    <h3 class="mt32 mb8">Best fit for this brief</h3><p class="s g mb16">Ranked by who's free on ${dMed(j.shoot_date)}, where they're based and how close their day rate is to yours. You choose who gets an offer.</p>
+    <h3 class="mt32 mb8">Best fit for this brief</h3><p class="s g mb16">${specsTxt(j.specs) ? 'Only models who match your details. ' : ''}Ranked by who's free on ${dMed(j.shoot_date)}, where they're based and how close their day rate is to yours. You choose who gets an offer.</p>
     ${j.ranked.length ? `<div class="comps" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:24px 16px">${j.ranked.map((t) => `<div>${comp(t, { save: false }).replace('data-a="talent"', `data-a="talent" data-brief="${j.id}"`)}${t.offered ? '<p class="xs g mt4">Offer sent</p>' : `<button class="btn sm full mt8" data-a="offer" data-id="${t.id}" data-brief="${j.id}">Send offer</button>`}</div>`).join('')}</div>`
       : '<div class="empty">No one free fits this brief yet. Try another date, or search the board.</div>'}
     ${j.bookings.length ? `<h3 class="mt32 mb8">Offers</h3><div class="list">${j.bookings.map(bookingItem).join('')}</div>` : ''}`,
