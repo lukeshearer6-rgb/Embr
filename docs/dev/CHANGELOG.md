@@ -2,6 +2,11 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-24: Admin website loads on Cloudflare Pages
+- Fixes an endless redirect on /admin. Cloudflare Pages already serves admin.html at /admin and redirects /admin.html back to /admin, so the old `/admin -> /admin.html` rewrite looped. `/admin/*` now rewrites to `/admin`.
+- Files: `public/_redirects`.
+- Tests: checked on the live test site (embr-pilot.pages.dev/admin and /admin/people load); the local test server has its own routing, so e2e is unchanged (33 checks).
+
 ## 2026-11-24: Security review and hardening before the test deploy
 - No visible change for users. Pages now tell browsers to run scripts only from Embr itself (Content-Security-Policy) and to always use HTTPS, as a second line of defence against unsafe text. Review findings are in `docs/dev/security-review-2026-11-24.md`.
 - Files: `public/_headers`, `scripts/dev-server.mjs` (sends the same headers locally), `tests/e2e.test.mjs`, `docs/dev/security-review-2026-11-24.md`.
