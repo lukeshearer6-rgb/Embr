@@ -4,7 +4,7 @@
 //
 //   node --import tsx scripts/dev-server.mjs      (serves dist/ on :8787)
 //
-// Implements: email-code sign-in (code is always 123456), database calls
+// Implements: email-code sign-in (code is always 123456, or 12345678 like newer Supabase projects), database calls
 // (/rest/v1/rpc/*) against local Postgres with the caller's identity set the
 // way Supabase sets it, photo storage on disk, the Embr server functions, and
 // fake Stripe hosted pages.
@@ -131,7 +131,7 @@ async function route(req, res) {
   if (p === '/auth/v1/otp') { const b = JSON.parse(await readBody(req)); console.log(`[auth] code for ${b.email}: 123456`); return send(res, 200, {}); }
   if (p === '/auth/v1/verify') {
     const b = JSON.parse(await readBody(req));
-    if (b.token !== '123456') return send(res, 403, { code: 403, error_code: 'otp_expired', msg: 'Token has expired or is invalid' });
+    if (b.token !== '123456' && b.token !== '12345678') return send(res, 403, { code: 403, error_code: 'otp_expired', msg: 'Token has expired or is invalid' });
     return send(res, 200, await session(b.email));
   }
   if (p === '/auth/v1/token') {

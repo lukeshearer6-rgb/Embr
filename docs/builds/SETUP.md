@@ -28,7 +28,7 @@ Keep a note open as you go. You'll collect these values:
    <p>Enter this code in Embr: <b style="font-size:22px;letter-spacing:4px">{{ .Token }}</b></p>
    <p>It works for one hour. If you didn't ask for it, ignore this email.</p>
    ```
-   Do the same for **Confirm signup**. (Embr signs people in with a 6-digit code, which works better than links on a home-screen app.)
+   Do the same for **Confirm signup**. (Embr signs people in with a 6-digit code, which works better than links on a home-screen app. New projects send 8 digits: under **Sign In / Providers → Email**, set **Email OTP Length** to 6. The app accepts either.)
 5. **Authentication → URL Configuration**: set Site URL to your app address once you have it (step 6), for example `https://embr-pilot.pages.dev`.
 
 Note: free Supabase projects pause after a week with no activity. During the pilot, any sign-in keeps it awake.
