@@ -2,6 +2,11 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-24: Booking agreement exported for solicitor review
+- No change for users. New `docs/dev/booking-agreement.md` holds the booking agreement text exactly as the `_agreement` function writes it (migration `20261123000001_embr_pilot.sql`, line 373), with `{placeholders}` for the parts filled in per booking, a table of where each comes from, and questions for the solicitor limited to points in the text.
+- Files: `docs/dev/booking-agreement.md`, `tests/agreement-export.test.mjs`, `package.json` (new `test:agreement` script), `.github/workflows/ci.yml`.
+- Tests: new `npm run test:agreement` (9 checks, no database needed, also in CI) fails if the doc and the function's text drift apart.
+
 ## 2026-11-24: Payment safety fixes
 - From a review of the Stripe integration. Brands can no longer be charged twice and talent can't be paid twice when a step fails halfway: the balance charge and each transfer are saved the moment they happen, and retries reuse them (even after Stripe's 24-hour idempotency window).
 - A webhook that fails is forgotten, so Stripe's retry is processed instead of skipped as a duplicate.

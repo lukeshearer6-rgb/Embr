@@ -12,7 +12,8 @@
     "db:reset": "sh scripts/db-reset.sh",
     "office": "node scripts/office.mjs",
     "test:office": "node tests/office.test.mjs",
-    "test:payments": "node --import tsx tests/payments.test.mjs"
+    "test:payments": "node --import tsx tests/payments.test.mjs",
+    "test:agreement": "node tests/agreement-export.test.mjs"
   },
   "keywords": [],
   "author": "",
