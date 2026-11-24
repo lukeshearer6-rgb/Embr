@@ -21,6 +21,16 @@ const PORT = +(process.env.PORT || 8787);
 const BASE = `http://localhost:${PORT}`;
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const DIST = path.join(ROOT, 'dist');
+// the same security headers Cloudflare Pages adds (public/_headers, "/*" block), so tests run under them
+const SITE_HEADERS = (() => {
+  const out = {}; let on = false;
+  for (const line of fs.readFileSync(path.join(ROOT, 'public', '_headers'), 'utf8').split('\n')) {
+    if (!/^\s/.test(line)) { on = line.trim() === '/*'; continue; }
+    const m = on && line.match(/^\s+([\w-]+):\s*(.+)$/);
+    if (m && m[1] !== 'Strict-Transport-Security') out[m[1]] = m[2].trim();
+  }
+  return out;
+})();
 const STORE = process.env.STORE || '/tmp/embr-storage';
 const SECRET = 'local-test-secret';
 fs.mkdirSync(STORE, { recursive: true });
@@ -238,7 +248,7 @@ async function route(req, res) {
   let f = path.join(DIST, decodeURIComponent(p));
   if (!f.startsWith(DIST)) return send(res, 403, 'no');
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) f = path.join(DIST, /^\/admin(\/|$)/.test(url.pathname) ? 'admin.html' : 'index.html');
-  return send(res, 200, fs.readFileSync(f), { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+  return send(res, 200, fs.readFileSync(f), { ...SITE_HEADERS, 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
 }
 
 http.createServer((req, res) => route(req, res).catch((e) => { console.error(e); send(res, 500, { error: e.message }); }))
