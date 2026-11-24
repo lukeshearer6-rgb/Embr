@@ -1,7 +1,7 @@
 // Pieces used on several screens: talent cards, booking rows, status labels, calendar.
-import { S } from '../state.js';
+import { S, A } from '../state.js';
 import { photoUrl } from '../api.js';
-import { esc, gbp, pounds, pct, dMed, dLong, addDays, iso, initials, plural, whenTxt, rolesOf, rolesTxt } from '../ui.js';
+import { toast, esc, gbp, pounds, pct, dMed, dLong, addDays, iso, initials, plural, whenTxt, rolesOf, rolesTxt } from '../ui.js';
 import { ICON } from '../icons.js';
 import { statsHTML } from './model.js';
 
@@ -113,3 +113,8 @@ export function feeLine(rate) {
 export function signoffNote(b) {
   return b.auto_signoff_at ? `Signs off automatically ${whenTxt(b.auto_signoff_at)} unless a problem is reported.` : '';
 }
+
+// copy buttons, used by the app and the admin site
+A.copy = async (el) => {
+  try { await navigator.clipboard.writeText(el.dataset.text); toast('Copied'); } catch { toast(el.dataset.text, 6000); }
+};

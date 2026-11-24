@@ -2,6 +2,10 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-24: "Copy invite link" works on the admin site
+- The copy button's code only loaded in the app, so on the admin site "Copy invite link" did nothing. It now lives in shared code used by both.
+- Files: `src/views/common.js`, `src/views/talent.js`, `tests/e2e.test.mjs` (clicks Copy invite link on the admin site and checks it copied).
+
 ## 2026-11-24: Admin menu shows on narrow windows
 - On a browser window narrower than 820px, the admin website hid its top menu and had nothing in its place, so Invites couldn't be reached. The menu now stays visible and scrolls sideways if needed.
 - Files: `src/style.css`, `tests/e2e.test.mjs` (checks Invites is visible at 760px wide).

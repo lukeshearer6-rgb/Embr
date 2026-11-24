@@ -230,9 +230,6 @@ A.day = async (el) => {
   S.me = await rpc('toggle_off_day', { p_day: el.dataset.d });
   $('#cal').innerHTML = calendar(S.me.talent, true);
 };
-A.copy = async (el) => {
-  try { await navigator.clipboard.writeText(el.dataset.text); toast('Copied'); } catch { toast(el.dataset.text, 6000); }
-};
 
 V.bookings = bookingsView;
 V.inbox = inboxView;
