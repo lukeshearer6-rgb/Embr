@@ -66,7 +66,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 | ID | Task | Agent | Status | Verify by | Next action |
 |---|---|---|---|---|---|
-| M1 | Positioning pack: "Unsigned, not unseen" messaging for brands and talent | marketer | needs-approval | Drafted in marketing/positioning/positioning-pack.md; every claim traced to decisions.md, CHANGELOG or app code; banned phrases checked 2026-11-23 | Luke to review and approve the 7 remaining flagged claims and the Crew note; pay-later added as lead brand pillar |
+| M1 | Positioning pack: "Unsigned, not unseen" messaging for brands and talent | marketer | needs-approval | Revised 2026-11-24 in marketing/positioning/positioning-pack.md: Crew removed, talent/creatives decision (section 9), recommended picks per line (section 4), final wording for the 7 flagged claims (section 7); every claim sourced; banned-phrase grep run | Luke to review: the talent/creatives split, recommended lines, and the 7 gated claims |
 | M2 | Founding talent invite DMs and brand invite emails | marketer | todo | Copy rules checked | Drafts only; Luke sends |
 | M3 | Landing and waitlist copy (not public until B5) | marketer | todo | Claims checked against R6 | Draft in marketing/landing/ |
 | M4 | Instagram launch posts for Luke's account | marketer | todo | Canva drafts, claims checked | Drafts only; Luke posts |
@@ -76,6 +76,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 Newest first. One line per session: date, agent, what happened.
 
+- 2026-11-24 marketer: revised M1 positioning pack at Luke's request: removed "Crew", decided talent (system word) plus creatives (public warm word), added recommended picks for each headline line and final wording for the 7 flagged claims; waiting on Luke's review.
 - 2026-11-23 marketer: made "book now, pay later" the lead brand pillar at Luke's request; logged it in decisions.md and added R7 and D5.
 - 2026-11-23 marketer: drafted M1 positioning pack (marketing/positioning/positioning-pack.md) with messaging house, gated proof points and a "Crew" comparison; waiting on Luke's review.
 - 2026-11-23 orchestrator: created the workspace (CLAUDE.md, four agents, decisions, backlog, CI, dashboard); pilot app moved to the repo root; local tests passed.
