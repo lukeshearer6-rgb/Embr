@@ -24,7 +24,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | ID | What Luke needs to do | Why |
 |---|---|---|
 | B2 | Create Supabase, Stripe (test mode), Resend and Cloudflare accounts (docs/builds/SETUP.md). Supabase signed up 2026-11-24; Stripe CLI installed on Luke's Mac (~/Documents/EMBR/tools/stripe-cli), login pending | Only Luke can sign up and hold the passwords |
-| B3 | Approve pushing branch `claude/payment-safety` and opening a pull request | Repo rule: ask before pushing |
+| B3 | Review and merge the payment-safety pull request (push approved by Luke 2026-11-24) | Merging is Luke's call |
 
 ## Backlog
 
