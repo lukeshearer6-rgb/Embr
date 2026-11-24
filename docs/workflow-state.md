@@ -24,7 +24,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | ID | What Luke needs to do | Why |
 |---|---|---|
 | B2 | Create Supabase, Stripe (test mode), Resend and Cloudflare accounts (docs/builds/SETUP.md). Supabase signed up 2026-11-24; Stripe CLI installed on Luke's Mac (~/Documents/EMBR/tools/stripe-cli), login pending | Only Luke can sign up and hold the passwords |
-| DR1 | Approve pushing the 24 Nov daily run (R1 brief, D4 agreement export) to branch claude/project-thread-0e0u37 and opening a pull request | Pushing is an external action |
+| DR1 | Review and merge the 24 Nov daily run pull request (R1 brief, D4 agreement export); push approved by Luke 2026-11-24 | Merging is Luke's call |
 | D4 | Choose a solicitor to review docs/dev/booking-agreement.md (see R3 for low-cost routes) | Contacting a real person needs Luke |
 
 ## Backlog
