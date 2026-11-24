@@ -42,3 +42,5 @@ jobs:
           npm run test:e2e
       - name: Dashboard and office build
         run: npm run dashboard && npm run test:office
+      - name: Booking agreement export matches the database
+        run: npm run test:agreement

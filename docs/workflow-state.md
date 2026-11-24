@@ -4,7 +4,7 @@ This file is the single source of truth for what's happening. Every session read
 
 Statuses: `todo`, `doing`, `blocked`, `needs-approval`, `done`. Agents: `researcher`, `developer`, `app-builder`, `marketer`, `luke`, `orchestrator`.
 
-Last updated: 2026-11-23
+Last updated: 2026-11-24
 
 ## Current focus
 
@@ -14,8 +14,8 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 | Agent | Working on | Status |
 |---|---|---|
-| researcher | R1 Cloudflare Pages free-plan terms | todo |
-| developer | D4 Export the booking agreement for solicitor review | todo |
+| researcher | R2 Incorporation and domain brief | todo |
+| developer | No unblocked task (D2, D3, D5 waiting) | blocked |
 | app-builder | B5 Release checklist for the invite-only pilot | todo |
 | marketer | M1 Positioning pack | todo |
 
@@ -24,7 +24,8 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | ID | What Luke needs to do | Why |
 |---|---|---|
 | B2 | Create Supabase, Stripe (test mode), Resend and Cloudflare accounts (docs/builds/SETUP.md). Supabase signed up 2026-11-24; Stripe CLI installed on Luke's Mac (~/Documents/EMBR/tools/stripe-cli), login pending | Only Luke can sign up and hold the passwords |
-| B3 | Review and merge the payment-safety pull request (push approved by Luke 2026-11-24) | Merging is Luke's call |
+| DR1 | Review and merge the 24 Nov daily run pull request (R1 brief, D4 agreement export); push approved by Luke 2026-11-24 | Merging is Luke's call |
+| D4 | Choose a solicitor to review docs/dev/booking-agreement.md (see R3 for low-cost routes) | Contacting a real person needs Luke |
 
 ## Backlog
 
@@ -32,7 +33,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 | ID | Task | Agent | Status | Verify by | Next action |
 |---|---|---|---|---|---|
-| R1 | Check Cloudflare Pages free-plan terms allow a commercial app | researcher | todo | Quote and link the current terms | Write docs/research brief |
+| R1 | Check Cloudflare Pages free-plan terms allow a commercial app | researcher | done | Every quote re-read on the live pages 2026-11-24; brief docs/research/r1-cloudflare-pages-free-plan.md | Unclear, leaning allowed; keep talent photos in Supabase Storage |
 | R2 | Incorporation and domain: steps, official fees, cheapest compliant option | researcher | todo | Companies House and registrar pages cited | Write brief for Luke to approve spend |
 | R3 | Routes to a specialist agency-law opinion at zero or low cost (law clinics, pro bono, founder schemes) | researcher | todo | Each route linked with eligibility | Write brief; Luke chooses who to contact |
 | R4 | Competitor brief: UK platforms where brands book unsigned models and creatives | researcher | todo | Every claim linked to the platform's own pages | Write brief; hand to marketer |
@@ -49,7 +50,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | D2 | Test server functions against real Supabase and Stripe test mode | developer | blocked | Test-mode payments, payouts and ID check work | Waits on B3 |
 | D3 | Fix anything found in the five test bookings | developer | blocked | Tests added for each fix | Waits on B4 |
 | D5 | Build book now, pay later at the balance step with the chosen partner | developer | blocked | Tests cover on-terms balance and instant talent payout | Waits on R7 and Luke's partner choice |
-| D4 | Export the booking agreement text for solicitor review | developer | todo | Text matches the `_agreement` function | Write docs/dev/booking-agreement.md |
+| D4 | Export the booking agreement text for solicitor review | developer | done | npm run test:agreement 9/9 passed 2026-11-24 (exact match to `_agreement`); docs/dev/booking-agreement.md | Luke picks a solicitor (Waiting on Luke) |
 
 ### App build
 
@@ -76,6 +77,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 Newest first. One line per session: date, agent, what happened.
 
+- 2026-11-24 daily run: R1 Cloudflare terms brief (quotes verified) and D4 agreement export (test 9/9, added to CI) done; payment-safety PR #2 merged; push waiting on Luke (DR1).
 - 2026-11-24 orchestrator: reviewed the Stripe integration; fixed lost webhooks, double balance charge/transfer after partial failure, staff sign-off double payment, over-broad Checkout fallback; added dispute/payout/deauthorized webhooks; tests/payments.test.mjs 6 checks pass, db 64 and e2e 32 pass. Branch claude/payment-safety committed locally, push waiting on Luke (B3).
 
 - 2026-11-23 orchestrator: added the animated office view (docs/office.html, npm run office) driven by this file; 13 office checks pass; Luke approved push and pull request (2026-11-23).
