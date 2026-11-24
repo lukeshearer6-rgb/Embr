@@ -20,7 +20,7 @@ This pack is the reference every other draft (M2 invites, M3 landing, M4 posts) 
 
 ### Positioning statement (internal, not copy)
 
-For independent UK brands who want faces and creatives that look like their own customers, Embr is a booking board of unsigned models and creative talent. The brand searches, Embr ranks talent against the brief, and the brand makes the offer. Embr lets a brand book now and pay on its usual invoice terms, while the people booked are paid on completion, and every booking has a written agreement and agreed usage. *(Sources: decisions.md, Product and money, Agency position, Campaign; Decision (Luke, 2026-11-20 and 2026-11-23). Pilot app features: CHANGELOG 2026-11-23. The app is tested locally and is not live. Pay-later is not built: see B1.)*
+For independent UK brands who want distinctive faces and creative talent for their own campaigns, Embr is a booking board of professional models and creatives who are unsigned. The brand searches, Embr ranks talent against the brief, and the brand makes the offer. Embr lets a brand book now and pay on its usual invoice terms, while the people booked are paid on completion, and every booking has a written agreement and agreed usage. *(Sources: decisions.md, Product and money, Agency position, Campaign; Decision (Luke, 2026-11-20 and 2026-11-23). Pilot app features: CHANGELOG 2026-11-23. The app is tested locally and is not live. Pay-later is not built: see B1.)*
 
 The statement does not compare Embr with agencies, and it does not say talent find or get work.
 
@@ -46,7 +46,7 @@ Segments come from the campaign plan (section 3). Why they would switch is a **h
 |---|---|
 | Working unsigned models who already take bookings from Instagram enquiries | Moving DM enquiries onto a proper booking with the booking link |
 | Models who have left representation | A clear, written booking and on-time pay |
-| New faces with a usable portfolio | A professional profile and safety tools |
+| New faces with a professional portfolio | A professional profile and safety tools |
 | Creatives: UGC creators, actors, content creators, photographers, videographers, make-up artists, stylists | One profile for every role they do |
 
 Roles are the eight in the app: Model, UGC creator, Actor, Content creator, Photographer, Videographer, Make-up artist, Stylist *(src/ui.js `CATS`; supabase/migrations/20261123000002_multi_role.sql)*. Talent must be 18+ *(decisions.md, Agency position)*.
@@ -60,8 +60,8 @@ Roles are the eight in the app: Model, UGC creator, Actor, Content creator, Phot
         Independent on both sides of the shoot. Booked properly.
 
   BRANDS                                   TALENT
-  "Faces that look like your               "Let work find you."
-   customers."
+  "Distinctive faces. Independent        "Let work find you."
+   talent. Booked directly."
 
   B1  Book today, pay your way             T1  Your bookings, in one place
   B2  Independent faces                    T2  0% of your earnings
@@ -146,13 +146,20 @@ Craft rules used: short sentences, concrete nouns, independence as a source of p
 
 ### Brand hook
 
+Luke rejected "Faces that look like your customers" on 2026-11-24: it made unsigned talent sound common. Unsigned is a status, not a level. These are professional models and creatives who happen to be independent. Every option below presents them as professional, distinctive and bookable, with no comparison and no number.
+
 | Option | Reason |
 |---|---|
-| **Faces that look like your customers.** (Recommended) | Shorter and warmer than the campaign-plan draft, and it contains no "actually", which can read as a dig at others. |
-| The faces your customers actually look like. | Campaign plan, Territory A. Keep as the A/B variant in E2. |
-| Real people. Booked directly. | Honest and plain. Use as support copy, not the hook. |
+| **Distinctive faces. Independent talent. Booked directly.** (Recommended) | Leads with what a brand wants (a distinctive face), makes independence the proud word, and ends on a plain fact. No comparison with anyone. |
+| Models with a point of view. Booked directly. | Gives the talent character and authorship. Best for fashion and beauty. |
+| Independent talent, ready to book. | Calm and professional. Good for a button or a bio. |
+| Unsigned models and creatives. Booked by you. | Says the status and the brand's control in one line. Plain, less poetic. |
+| Faces with their own point of view. | Short and warm. Less clear that they are bookable. |
+| The distinctive faces your brand has been looking for. | Brand-centred and aspirational. Longer, and a little generic. |
+| Professional talent. Independent by choice. | Pride in independence. "By choice" is true for some, not all, so use with care. |
+| Independent talent. Your brief. | Tight and confident. Needs the line above it for context. |
 
-Rejected on purpose: "Book the face, not the middleman" (disparages agencies, CAP 3.41).
+"Distinctive" is a description of talent, not a claim about numbers or quality against others. Keep it as a style word, not a promise. The hook is a hypothesis to test in E2 and the brand interviews (R5).
 
 ### Brand benefit: book now, pay later (all gated: not built, no funding provider)
 
@@ -186,8 +193,8 @@ Support line with it: **"The people you book are paid on completion."** Never "i
 
 ### Brand copy (short and long)
 
-- **Short (recommended):** Unsigned, not unseen. Faces that look like your customers. Post a brief, see who fits, make the offer. Book today and pay the way your business already does. *(Pay-later sentence gated.)*
-- **Short, safe version (no pay-later):** Unsigned, not unseen. Faces that look like your customers. Post a brief, see who fits, make the offer. One fee, shown before you book.
+- **Short (recommended):** Unsigned, not unseen. Distinctive faces. Independent talent. Booked directly. Post a brief, see who fits, make the offer. Book today and pay the way your business already does. *(Pay-later sentence gated.)*
+- **Short, safe version (no pay-later):** Unsigned, not unseen. Distinctive faces. Independent talent. Booked directly. Post a brief, see who fits, make the offer. One fee, shown before you book.
 - **Long:** Embr is a board of unsigned models and creatives in the UK, starting in Manchester. Post a brief with your date, place, budget and usage. Embr ranks the talent who fit, and you choose who gets an offer. The agreement, the deposit and the usage terms sit in one place, and you see the fee before you book. Book today and pay the way your business already does, while the people you book are paid on completion. *(Fee and deposit wording gated on B4. Pay-later gated on D5 and R7.)*
 
 ### Talent copy (short and long)
@@ -213,8 +220,9 @@ Gated: Embr must be incorporated before public use (trading details), the pilot 
 | brands make offers | talent pitch, talent message brands (talent can't, decisions.md) |
 | Embr ranks talent against the brief | we match you, we put you forward, we represent (agency reading) |
 | board, profile, Book-me page | roster, "our models", "our talent" (sounds like representation) |
-| independent, unsigned, new faces | "better than an agency", "cheaper", "Burn Agency Fees" (CAP 3.41 denigration; no like-for-like evidence; decisions.md) |
+| independent, unsigned, new faces, professional, distinctive | "better than an agency", "cheaper", "Burn Agency Fees" (CAP 3.41 denigration; no like-for-like evidence; decisions.md) |
 | deposit held through Stripe | escrow, guaranteed pay, paid in X days, paid instantly (until live and confirmed) |
+| unsigned as a status ("professional models who are unsigned") | "faces that look like your customers", "the faces your customers actually look like" (rejected by Luke, 2026-11-24: it belittles unsigned talent and makes them sound common); "real people", "everyday", "ordinary", "relatable", "amateur", "emerging" or any wording that makes unsigned a lower level |
 | paid on completion, paid on sign-off | instantly (payout timing unconfirmed) |
 | safety tools, 18+ | protected, vetted, safe guaranteed |
 | fee shown before you book | no fees (brands do pay a fee) |
@@ -250,7 +258,7 @@ For 1:1 conversations and the FAQ draft (M3). Each answer uses only decided or b
 | Deposit, balance, sign-off | "A 50% deposit by card, held through Stripe. The balance on completion. Signed off automatically 72 hours after wrap, unless a problem is reported." The "unless" is in the app (`src/views/brand.js`) so we say it. | decisions.md, Product and money | Yes, as "how it will work" | B4 test bookings pass + live payments |
 | 18+ and ID check | Public: "Embr is for people aged 18 and over." Add "with an ID check through Stripe Identity" only when D2 passes. Never "vetted" or "verified safe". | decisions.md; CLAUDE.md, Tech stack | Yes, as "how it will work" | 18+ line at pilot open; ID check after D2 |
 | Brand fee tiers | Public copy never quotes percentages. Say "One fee, shown before you book." Numbers live in the app, where the brand sees its own fee. My call: no tier numbers in marketing even after Luke confirms, so a change doesn't date the copy. | decisions.md (tiers need confirmation) | Only as "draft" | Luke confirms tiers (app only); marketing line is free to use at pilot open |
-| Brand hook | "Faces that look like your customers." Aspirational, not a statistical claim. A/B against the campaign-plan line in E2. | Campaign plan, Territory A | Yes | Pilot open |
+| Brand hook | "Distinctive faces. Independent talent. Booked directly." Describes the talent, makes no comparison or number. Test in E2. | Marketer wording, Luke to approve | Yes | Pilot open |
 | "Is Embr an agency?" | "No. Embr is a booking app. Brands choose who to book, and Embr doesn't represent anyone." | decisions.md, Agency position; `src/views/brand.js` already says "Embr is not an agency." | Yes, short | After specialist opinion (R3) |
 | Book now, pay later; talent paid on completion | "Book today. Pay the way your business already does. The people you book are paid on completion." Never "instantly", never "escrow". | Decision (Luke, 2026-11-23); **not in the app** | No, only as "we're building it" | D5 built and tested **and** R7 funding provider in place |
 
@@ -271,7 +279,7 @@ Already clear:
 
 1. **Agency test:** could a reader think Embr gets talent work, puts them forward, or that talent can apply? If yes, rewrite.
 2. **Source test:** is every fact in decisions.md, the CHANGELOG, the code or a dated research brief? If no, cut it or mark "unverified: needs measuring".
-3. **Respect test (new):** does the line only get its energy by making someone else look worse? If yes, rewrite it so the energy comes from independence itself.
+3. **Respect test:** (a) does the line get its energy by making someone else look worse? If yes, rewrite. (b) Would an unsigned model feel proud reading it? Does it treat unsigned as a status, not a level, and avoid "common", "everyday", "real people" or "relatable"? If not, rewrite.
 
 ---
 
@@ -312,7 +320,7 @@ Already clear:
 - `docs/dev/CHANGELOG.md` (read 2026-11-23): multi-role profiles, model measurements, admin site; shipped in the pilot app, tested locally, not deployed.
 - Pilot app code (read 2026-11-24): role list `src/ui.js` `CATS`; migration `supabase/migrations/20261123000002_multi_role.sql`; ranking, quote and usage `src/views/brand.js` (including "unless a problem is reported" and "Embr is not an agency"); booking detail `src/views/booking.js`; sign-up and "0% of your fee" `src/views/auth.js`; `index.html` meta description.
 - Word counts for "talent" and "creative" came from grep over `supabase/migrations/` and `src/` on 2026-11-24.
-- Campaign plan (provisional), https://claude.ai/artifact/CzJgtfXvCefoRdZ3AnNKHC (read 2026-11-23): segments, Territory A lines, message hierarchy, Burn Agency Fees assessment, CAP 3.41 and 3.32 to 3.34, "never call it escrow".
+- Campaign plan (provisional), https://claude.ai/artifact/CzJgtfXvCefoRdZ3AnNKHC (read 2026-11-23): segments, Territory A (its hook line is rejected, see section 5), message hierarchy, Burn Agency Fees assessment, CAP 3.41 and 3.32 to 3.34, "never call it escrow".
 - Spotlight, https://www.spotlight.com (checked 2026-11-24). Backstage, https://www.backstage.com/discover/on-brand-talent-all-in-one-place-75446/ (checked 2026-11-24). Twine, https://www.twine.net/blog/best-platforms-for-hiring-freelance-creatives (checked 2026-11-24). Used only for how they word their audiences.
 - `docs/research/`: empty as of 2026-11-24, so no market figures appear in this pack. R4 and R6 feed the next revision.
 - `README.md` and app code (checked 2026-11-23): no pay-later or invoice-terms payment in the pilot app.
@@ -323,7 +331,7 @@ Claims for Luke to approve before any public use (final wording in section 7):
 2. Deposit, balance and sign-off wording (gated on B4 and live payments).
 3. "ID check" wording (gated on D2; 18+ line can go earlier).
 4. Brand fee tiers (Luke to confirm; no percentages in marketing copy).
-5. Brand hook "Faces that look like your customers." (subjective, aspirational; A/B in E2).
+5. Brand hook "Distinctive faces. Independent talent. Booked directly." ("distinctive" is a style word, not a comparison; test in E2). The earlier hook was rejected by Luke, 2026-11-24.
 6. "Is Embr an agency? No." (legal-adjacent; R3 pending).
 7. "Book today. Pay the way your business already does. The people you book are paid on completion." (gated on D5 and R7; never "instantly" or "escrow").
 - Approved: "Founded by a model" (Decision (Luke, 2026-11-23)).
