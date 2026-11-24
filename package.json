@@ -11,7 +11,8 @@
     "dashboard": "node scripts/dashboard.mjs && node scripts/office.mjs",
     "db:reset": "sh scripts/db-reset.sh",
     "office": "node scripts/office.mjs",
-    "test:office": "node tests/office.test.mjs"
+    "test:office": "node tests/office.test.mjs",
+    "test:payments": "node --import tsx tests/payments.test.mjs"
   },
   "keywords": [],
   "author": "",

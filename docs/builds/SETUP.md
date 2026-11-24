@@ -79,8 +79,8 @@ Then open **SQL Editor** in Supabase, paste `supabase/setup/after-deploy.sql`, r
 
 In Stripe, **Developers → Webhooks → Add endpoint**, twice:
 
-1. **Your account** events. URL: `https://<PROJECT-REF>.supabase.co/functions/v1/stripe-webhook`. Events: `checkout.session.completed`, `identity.verification_session.verified`, `identity.verification_session.requires_input`, `identity.verification_session.canceled`.
-2. **Connected accounts** events. Same URL. Event: `account.updated`.
+1. **Your account** events. URL: `https://<PROJECT-REF>.supabase.co/functions/v1/stripe-webhook`. Events: `checkout.session.completed`, `checkout.session.expired`, `charge.dispute.created`, `charge.dispute.closed`, `identity.verification_session.verified`, `identity.verification_session.requires_input`, `identity.verification_session.canceled`.
+2. **Connected accounts** events. Same URL. Events: `account.updated`, `account.application.deauthorized`, `payout.failed`.
 
 Copy each endpoint's **Signing secret**, then:
 

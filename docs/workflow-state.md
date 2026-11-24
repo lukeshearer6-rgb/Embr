@@ -23,7 +23,8 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 | ID | What Luke needs to do | Why |
 |---|---|---|
-| B2 | Create Supabase, Stripe (test mode), Resend and Cloudflare accounts (docs/builds/SETUP.md) | Only Luke can sign up and hold the passwords |
+| B2 | Create Supabase, Stripe (test mode), Resend and Cloudflare accounts (docs/builds/SETUP.md). Supabase signed up 2026-11-24; Stripe CLI installed on Luke's Mac (~/Documents/EMBR/tools/stripe-cli), login pending | Only Luke can sign up and hold the passwords |
+| B3 | Approve pushing branch `claude/payment-safety` and opening a pull request | Repo rule: ask before pushing |
 
 ## Backlog
 
@@ -74,6 +75,8 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 ## Session log
 
 Newest first. One line per session: date, agent, what happened.
+
+- 2026-11-24 orchestrator: reviewed the Stripe integration; fixed lost webhooks, double balance charge/transfer after partial failure, staff sign-off double payment, over-broad Checkout fallback; added dispute/payout/deauthorized webhooks; tests/payments.test.mjs 6 checks pass, db 64 and e2e 32 pass. Branch claude/payment-safety committed locally, push waiting on Luke (B3).
 
 - 2026-11-23 orchestrator: added the animated office view (docs/office.html, npm run office) driven by this file; 13 office checks pass; Luke approved push and pull request (2026-11-23).
 - 2026-11-23 orchestrator: added book now, pay later to README and decisions (planned, not built); new tasks R7 and D5.
