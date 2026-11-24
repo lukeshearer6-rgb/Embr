@@ -315,6 +315,8 @@ details.more summary b::after{content:' +';font-weight:400}details.more[open] su
 @media (max-width:820px){
   .shell{padding:0 18px}
   nav.main{display:none}
+  [data-site=admin] nav.main{display:flex;gap:18px;overflow-x:auto;scrollbar-width:none}
+  [data-site=admin] .whoami{display:none}
   .topbar{gap:12px}
   .viewas .lbl{display:none}
   .botnav{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1px solid var(--line);z-index:20;padding:0 4px env(safe-area-inset-bottom)}

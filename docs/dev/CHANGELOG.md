@@ -2,6 +2,10 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-24: Admin menu shows on narrow windows
+- On a browser window narrower than 820px, the admin website hid its top menu and had nothing in its place, so Invites couldn't be reached. The menu now stays visible and scrolls sideways if needed.
+- Files: `src/style.css`, `tests/e2e.test.mjs` (checks Invites is visible at 760px wide).
+
 ## 2026-11-24: Sign-in accepts 8-digit codes
 - New Supabase projects email 8-digit sign-in codes, and the sign-in box only took 6, so every code looked wrong. The box now takes 6 to 8 digits and ignores spaces, and its label no longer says "6-digit".
 - Files: `src/views/auth.js`, `scripts/dev-server.mjs` (test stand-in also accepts an 8-digit code), `tests/e2e.test.mjs`.

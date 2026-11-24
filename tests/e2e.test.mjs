@@ -78,6 +78,9 @@ try {
   await luke.goto(`${BASE}/admin`);
   await luke.waitForSelector('h1:has-text("Overview")');
   ok('Embr staff join on the separate admin website, not the app');
+  await luke.setViewportSize({ width: 760, height: 860 });
+  assert.ok(await luke.isVisible('nav.main >> text=Invites'), 'admin menu shows on a narrow window');
+  await luke.setViewportSize({ width: 1280, height: 860 });
   await luke.click('nav.main >> text=Invites');
   await luke.selectOption('#f-invite [name=role]', 'talent');
   await luke.fill('#f-invite [name=note]', 'Amara');
