@@ -2,6 +2,11 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-24: Security review and hardening before the test deploy
+- No visible change for users. Pages now tell browsers to run scripts only from Embr itself (Content-Security-Policy) and to always use HTTPS, as a second line of defence against unsafe text. Review findings are in `docs/dev/security-review-2026-11-24.md`.
+- Files: `public/_headers`, `scripts/dev-server.mjs` (sends the same headers locally), `tests/e2e.test.mjs`, `docs/dev/security-review-2026-11-24.md`.
+- Tests: e2e 33 checks (new: HTML typed into a bio shows as text and never runs; pages send the CSP and no-framing headers), db 64 checks.
+
 ## 2026-11-24: Booking agreement exported for solicitor review
 - No change for users. New `docs/dev/booking-agreement.md` holds the booking agreement text exactly as the `_agreement` function writes it (migration `20261123000001_embr_pilot.sql`, line 373), with `{placeholders}` for the parts filled in per booking, a table of where each comes from, and questions for the solicitor limited to points in the text.
 - Files: `docs/dev/booking-agreement.md`, `tests/agreement-export.test.mjs`, `package.json` (new `test:agreement` script), `.github/workflows/ci.yml`.

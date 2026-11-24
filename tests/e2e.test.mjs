@@ -119,7 +119,7 @@ try {
   await amara.waitForSelector('[data-role-sec="UGC creator"]');
   await amara.fill('#f-profile [name=handle]', 'amara');
   await amara.fill('#f-profile [name=day_rate]', '250');
-  await amara.fill('#f-profile [name=bio]', 'Manchester model and UGC creator. Streetwear, beauty and editorial.');
+  await amara.fill('#f-profile [name=bio]', 'Manchester model and UGC creator. Streetwear, beauty and editorial. <img src=x onerror="window.__xss=1">');
   await amara.fill('#f-profile [name=tags]', 'streetwear, beauty');
   await amara.click('#f-profile button[type=submit]');
   await toastHas(amara, /Fill in your work sections/);
@@ -201,6 +201,9 @@ try {
   await rivet.waitForSelector('.sheet .rolebadges >> text=Model');
   await rivet.waitForSelector('.sheet .stats-grid >> text=5\'10" (178cm)');
   await rivet.waitForSelector('.sheet .stats-grid >> text=UK 8');
+  // text people type is shown as text, never run as code
+  assert.match(await rivet.textContent('.sheet .measure'), /<img src=x onerror=/);
+  assert.equal(await rivet.evaluate(() => window.__xss), undefined);
   await rivet.locator('.sheet .role-sec >> nth=0').scrollIntoViewIfNeeded();
   await shot(rivet, '04b-brand-profile-roles');
   await rivet.keyboard.press('Escape');
@@ -392,8 +395,14 @@ try {
   await bm.waitForSelector('h1:has-text("Amara Okafor")');
   await bm.waitForSelector('.role-sec h3:has-text("UGC creator")');
   await bm.waitForSelector('.linkcard >> text=Trainers unboxing');
+  assert.equal(await bm.evaluate(() => window.__xss), undefined);
+  assert.match(await bm.textContent('main'), /<img src=x onerror=/);
+  const hdr = (await bm.request.get(`${BASE}/@amara`)).headers();
+  assert.match(hdr['content-security-policy'] || '', /script-src 'self'/);
+  assert.equal(hdr['x-frame-options'], 'DENY');
   await shot(bm, '12-bookme-phone');
   ok('public Book-me page at /@amara shows every role');
+  ok('typed-in text shows as text, never runs as code, and pages send the security headers (CSP, no framing)');
   await luke.goto(`${BASE}/admin/people`);
   await luke.waitForSelector('text=18+ verified');
   await shot(luke, '13-ops-people');
