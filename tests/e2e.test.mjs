@@ -93,6 +93,8 @@ try {
   const tCode = await luke.textContent('.item .ttl:text-matches("^T-")');
   const bCode = await luke.textContent('.item .ttl:text-matches("^B-")');
   await shot(luke, '01-ops-invites');
+  await luke.click('button[data-a=copy] >> nth=0');
+  await luke.waitForFunction(() => /Copied|join\?invite=/.test(document.getElementById('toast')?.textContent || ''));
   ok('staff create talent and brand invites');
 
   // ---------------------------------------------------------------- talent onboarding (phone)
