@@ -63,3 +63,23 @@ Luke makes all contact (CLAUDE.md approval gates). Nothing has been sent. Flag: 
 ## Verification
 
 Second pass on 2026-11-24 (orchestrator): the quotes above were re-read on the live pages. MMU is confirmed by the page's address block (Manchester Law School, M15 6BH); its service list includes "Written Advice", but the page does not say it reviews documents. The BPP wording is corrected to the source's "reviewing standard terms and conditions"; LawWorks gives no location, application route or eligibility for it. Find a Solicitor filters by area of practice in its advanced search. None of the pages state a rule excluding unincorporated founders, and none mention the Conduct of Employment Agencies Regulations 2003.
+
+## BPP Enterprise Clinic: how to apply (Luke's choice, 2026-11-24)
+
+The clinic now runs as **BPP Legal Advice Clinic for Enterprise (BLAC Enterprise) – Online**. All facts below are quoted from BPP's Pro Bono Centre pages, checked 2026-11-24:
+[business page](https://probono.bppuniversity.ac.uk/blog/projects/business-legal-advice/), [free legal advice page](https://probono.bppuniversity.ac.uk/individuals/).
+
+- **What it does:** "BLAC Enterprise provides free legal advice to the public on business law matters, such as setting up a business, ... contract clauses, company procedures and disputes with consumers or supplier or business partners."
+- **How to apply:** online enquiry form, linked from the business page ("Please click here to submit your enquiry"). It is hosted on a third-party intake site: https://bpplegaladviceclinic.eu.cliogrow.com/intake/2f52df5861913b067d3ba02b227abbde. If the form can't be completed, the page gives 0330 060 3444 to leave a name and number for a call back.
+- **Where:** "All appointments are currently being provided online." Manchester is not mentioned; online means it doesn't matter.
+- **Eligibility:** "Individual cases must be suitable for the clinic and this is assessed on a case-by-case basis after submitting an enquiry form online." "You must not be receiving legal advice or assistance from any other provider." "Priority is given to those who would not otherwise be able to access legal services (for example, due to income or location)." Nothing found on unincorporated founders or sole traders: unverified, needs measuring.
+- **What to send:** "Please provide as many details as you can. Please do not send any documents. If we are able to offer you an appointment, we will ask for your documents."
+- **Cost:** "There is no charge for our legal services."
+- **How it works:** an online interview, "followed up each interview with a detailed letter of advice supervised by a qualified lawyer". "No advice is provided during the appointment".
+- **Limits:** "Appointments are available during term time and are subject to student and supervisor availability." "In August and September we have a reduced service." "Our projects are unable to provide legal services at short notice." "Generally, our projects are limited to provision of advice only."
+- **Turnaround and number of appointments:** not stated: unverified, needs measuring.
+
+Points for Luke:
+- Applying to BPP means not using another adviser for the same matter at the same time (the "must not be receiving legal advice" rule), so hold the MMU route until BPP answers.
+- BPP's stated scope is business law and contract clauses. The employment-agency question (Conduct of Employment Agencies Regulations 2003) may be outside it; ask in the enquiry.
+- Draft enquiry text for Luke to paste: marketing-free, no documents attached: `docs/dev/bpp-enquiry-draft.md`.
