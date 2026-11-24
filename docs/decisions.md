@@ -42,3 +42,9 @@ Locked decisions from Luke. Change one only when Luke says so, and record the da
 - The code lives in a private GitHub repo, with Luke's Mac folder `Documents/EMBR` as the local copy.
 - The pilot app is the repo root. The prototypes are archived.
 - Use whichever tools are most token-, time- and cost-efficient, and use all connected plugins (Mobbin, Canva and others) to make the best app and company.
+
+## Legal review (2026-11-24)
+- Booking agreement review: Luke chose the BPP Legal Advice Clinic for Enterprise (free, online). Decision (Luke, 2026-11-24). Luke submits the enquiry himself; route and draft in docs/research/r3-agreement-review-shortlist.md and docs/dev/bpp-enquiry-draft.md. Don't approach other advisers on the same matter while BPP is considering it.
+
+## Autonomy (2026-11-24)
+- Agents may push branches, open and merge their own PRs once CI is green, and change the pilot's test setup (Supabase test project, Stripe sandbox) without asking. Public deploys, publishing, contacting people, spending, credentials and live money still need Luke. Decision (Luke, 2026-11-24).

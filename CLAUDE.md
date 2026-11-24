@@ -18,26 +18,32 @@ The locked business rules are in `docs/decisions.md`. Read it before any product
 
 1. **No estimated figures.** Every number (market size, price, fee, statistic, date) carries a source link and the date it was checked. If no source exists, write "unverified: needs measuring" instead of a guess. Luke's own decisions count as a source: cite them as "Decision (Luke, date)".
 2. **Embr must not look like an employment agency.** Talent cannot apply for jobs, browse jobs or message brands to get work. Brands search the board, Embr ranks talent against a brief, and brands make offers. Never write "find work", "apply", "jobs for you" or "join to get work" for talent. Keep "Let work find you" away from membership pricing.
-3. **Ask Luke before any external or irreversible action.** Right now, that means everything below. See "Approval gates".
+3. **Ask Luke before any public, paid, live-money or outward action.** See "Approval gates" for what agents may now do alone.
 4. **Verify before marking done.** Code: the tests pass. Build: the build runs and the log is saved. Research and marketing: every claim is checked against its source.
 5. **Never commit secrets.** `.env*` files (except `.env.example`), API keys, webhook secrets and passwords stay out of git and out of docs.
 
 ## Approval gates
 
-Luke's standing rule (2026-11-23): **ask before everything external for now.** Autonomy grows as trust is built, and Luke will loosen this list himself. Stop, write the request in `docs/workflow-state.md` under "Waiting on Luke", and ask him before you:
+Luke's standing rule, loosened 2026-11-24 ("GitHub plus routine setup"; Luke: "I allow this to be autonomous"). Autonomy grows as trust is built, and Luke loosens this list himself.
 
-- push to GitHub, open or merge pull requests, or deploy (Supabase, Cloudflare, anything live)
-- run database changes or migrations on any hosted Supabase project
+Agents may do these without asking:
+
+- push branches, and open and merge their own pull requests once CI is green (never force-push, never push straight to `main`)
+- change the pilot's **test** setup: Supabase test project schema and migrations, Edge Functions, and Stripe sandbox (test mode) settings
+
+Stop, write the request in `docs/workflow-state.md` under "Waiting on Luke", and ask him before you:
+
+- deploy anything public or live (Cloudflare Pages, a live domain, anything real users can reach)
 - publish, post or send anything (social posts, emails, DMs, landing pages, Canva exports for use)
 - contact any real person or company
 - spend money or start a paid plan or trial
-- create, change or rotate credentials, secrets or account settings
-- switch Stripe from test mode to live mode
+- create or rotate credentials or secrets, or change account settings beyond the test setup above
+- switch Stripe from test mode to live mode, or move any real money
 - put any legal, pricing, earnings or comparative claim into public copy
 
 Local work needs no approval: editing files, running tests and builds, local commits, research and drafts.
 
-`.claude/settings.json` enforces the main gates by making these commands ask first.
+`.claude/settings.json` makes the gated commands ask first. It still lists `git push`, GitHub and Supabase/Stripe CLI commands as ask-first until Luke updates that file himself.
 
 ## Orchestrator pattern
 

@@ -24,8 +24,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | ID | What Luke needs to do | Why |
 |---|---|---|
 | B2 | Create Supabase, Stripe (test mode), Resend and Cloudflare accounts (docs/builds/SETUP.md). Supabase signed up 2026-11-24; Stripe CLI installed on Luke's Mac (~/Documents/EMBR/tools/stripe-cli), login pending | Only Luke can sign up and hold the passwords |
-| DR1 | Review and merge the 24 Nov daily run pull request (R1 brief, D4 agreement export); push approved by Luke 2026-11-24 | Merging is Luke's call |
-| D4 | Choose a solicitor to review docs/dev/booking-agreement.md (see R3 for low-cost routes) | Contacting a real person needs Luke |
+| D4 | Send the enquiry to BPP's free online business clinic (draft: docs/dev/bpp-enquiry-draft.md; form linked in docs/research/r3-agreement-review-shortlist.md) | Contacting BPP is Luke's to do |
 
 ## Backlog
 
@@ -35,7 +34,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 |---|---|---|---|---|---|
 | R1 | Check Cloudflare Pages free-plan terms allow a commercial app | researcher | done | Every quote re-read on the live pages 2026-11-24; brief docs/research/r1-cloudflare-pages-free-plan.md | Unclear, leaning allowed; keep talent photos in Supabase Storage |
 | R2 | Incorporation and domain: steps, official fees, cheapest compliant option | researcher | todo | Companies House and registrar pages cited | Write brief for Luke to approve spend |
-| R3 | Routes to a specialist agency-law opinion at zero or low cost (law clinics, pro bono, founder schemes) | researcher | todo | Each route linked with eligibility | Write brief; Luke chooses who to contact |
+| R3 | Routes to a specialist agency-law opinion at zero or low cost (law clinics, pro bono, founder schemes) | researcher | done | Quotes re-read on live pages 2026-11-24; docs/research/r3-agreement-review-shortlist.md | Luke chooses who to contact |
 | R4 | Competitor brief: UK platforms where brands book unsigned models and creatives | researcher | todo | Every claim linked to the platform's own pages | Write brief; hand to marketer |
 | R5 | Brand interview kit: Manchester independent brand target list and interview script | researcher | todo | Public sources for each brand | Draft only; Luke makes contact |
 | R7 | Book now, pay later: how talent get paid at sign-off before the brand pays. Cover credit risk and who carries it, Embr's cash position (zero), UK B2B pay-later and invoice-finance partners (e.g. Kriya, Two) and their terms, fit with Stripe Connect, whether it's FCA-regulated, and partner fees and who absorbs them | researcher | todo | Every figure and rule cited to the provider's pages, FCA or legislation.gov.uk | Write brief; Luke picks a partner to approach |
@@ -77,6 +76,9 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 Newest first. One line per session: date, agent, what happened.
 
+- 2026-11-24 orchestrator: pushed the daily run (PR #3, Luke approved); R3 shortlist done (MMU Business Law Cafe, BPP Enterprise Clinic, Law Society Find a Solicitor), quotes verified; PR #3 merged by Luke; R3 pushed.
+- 2026-11-24 orchestrator: Luke loosened the approval gates (agents push and merge their own PRs, change test setup); CLAUDE.md and decisions updated; .claude/settings.json left for Luke.
+- 2026-11-24 orchestrator: Luke chose BPP's free online business clinic for the agreement review; application route verified on BPP's pages, enquiry drafted; recorded in decisions.
 - 2026-11-24 daily run: R1 Cloudflare terms brief (quotes verified) and D4 agreement export (test 9/9, added to CI) done; payment-safety PR #2 merged; push waiting on Luke (DR1).
 - 2026-11-24 orchestrator: reviewed the Stripe integration; fixed lost webhooks, double balance charge/transfer after partial failure, staff sign-off double payment, over-broad Checkout fallback; added dispute/payout/deauthorized webhooks; tests/payments.test.mjs 6 checks pass, db 64 and e2e 32 pass. Branch claude/payment-safety committed locally, push waiting on Luke (B3).
 
