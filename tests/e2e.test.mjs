@@ -43,10 +43,10 @@ async function person(name, mobile = false) {
   page.setDefaultTimeout(8000);
   return page;
 }
-async function signIn(page, email) {
+async function signIn(page, email, code = '123456') {
   await page.fill('input[name=email]', email);
   await page.click('#f-email button[type=submit]');
-  await page.fill('input[name=token]', '123456');
+  await page.fill('input[name=token]', code);
   await page.click('#f-code button[type=submit]');
 }
 const shot = async (page, n) => { await page.waitForTimeout(400); await page.evaluate(() => document.getElementById('toast')?.setAttribute('hidden', '')); await page.screenshot({ path: `${SHOTS}/${n}.png`, fullPage: false }); };
@@ -183,7 +183,7 @@ try {
   // ---------------------------------------------------------------- brand: search, brief, offer
   const rivet = await person('rivet');
   await rivet.goto(`${BASE}/join?invite=${bCode}&as=brand`);
-  await signIn(rivet, 'sam@rivet.test');
+  await signIn(rivet, 'sam@rivet.test', '12345678'); // newer Supabase projects send 8-digit codes
   await rivet.waitForSelector('#f-onboard[data-role=brand]');
   await rivet.fill('#f-onboard [name=name]', 'Rivet Studio');
   await rivet.fill('#f-onboard [name=contact_name]', 'Sam');

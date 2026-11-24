@@ -33,14 +33,14 @@ VIEWS.auth.signin = (app) => {
   if (q.get('invite')) setVia({ ...via(), invite: q.get('invite').toUpperCase(), as: q.get('as') || undefined });
   if (q.get('as')) setVia({ ...via(), as: q.get('as') });
   app.innerHTML = frame(`<h1 class="display t-48">${SITE === 'admin' ? 'Embr admin' : 'Sign in'}</h1>${SITE === 'admin' ? '<p class="s g mt8">For Embr staff. Talent and brands use the app.</p>' : ''}
-    <p class="g mt16 measure">Enter your email and we'll send you a 6-digit code. No password needed.</p>
+    <p class="g mt16 measure">Enter your email and we'll send you a sign-in code. No password needed.</p>
     <form id="f-email" class="mt24" style="max-width:420px">
       <label class="field">Email<input class="in" type="email" name="email" required autocomplete="email" inputmode="email" placeholder="you@example.com"></label>
       <button class="btn primary full mt16" type="submit">Email me a code</button>
     </form>
     <form id="f-code" class="mt24" style="max-width:420px" hidden>
       <p class="s">We sent a code to <b id="code-to"></b>. It can take a minute to arrive.</p>
-      <label class="field mt16">6-digit code<input class="in" name="token" required inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" style="letter-spacing:.3em;font-size:22px"></label>
+      <label class="field mt16">Code from the email<input class="in" name="token" required inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" maxlength="8" style="letter-spacing:.3em;font-size:22px"></label>
       <button class="btn primary full mt16" type="submit">Sign in</button>
       <p class="s g mt16"><button class="link s" type="button" data-a="code-back">Use a different email</button> · <button class="link s" type="button" data-a="code-resend">Send a new code</button></p>
     </form>
@@ -61,7 +61,7 @@ F['f-email'] = async (form, btn) => {
 };
 F['f-code'] = async (form, btn) => {
   btn.textContent = 'Checking…';
-  const session = await verifyCode(pendingEmail, formData(form).token.trim());
+  const session = await verifyCode(pendingEmail, formData(form).token.replace(/\s/g, ''));
   S.session = session;
   const me = await refreshMe();
   const v = via();

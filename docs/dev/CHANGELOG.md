@@ -2,6 +2,11 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-24: Sign-in accepts 8-digit codes
+- New Supabase projects email 8-digit sign-in codes, and the sign-in box only took 6, so every code looked wrong. The box now takes 6 to 8 digits and ignores spaces, and its label no longer says "6-digit".
+- Files: `src/views/auth.js`, `scripts/dev-server.mjs` (test stand-in also accepts an 8-digit code), `tests/e2e.test.mjs`.
+- Tests: e2e signs the brand in with an 8-digit code (33 checks).
+
 ## 2026-11-24: Admin website loads on Cloudflare Pages
 - Fixes an endless redirect on /admin. Cloudflare Pages already serves admin.html at /admin and redirects /admin.html back to /admin, so the old `/admin -> /admin.html` rewrite looped. `/admin/*` now rewrites to `/admin`.
 - Files: `public/_redirects`.
