@@ -45,6 +45,8 @@ export function createFakeStripe(baseUrl) {
           st.sessions[s.id] = s;
           return s;
         },
+        retrieve: async (sid) => st.sessions[sid],
+        expire: async (sid) => { const s = st.sessions[sid]; if (s.status !== 'open') throw new Error('Session is not open'); s.status = 'expired'; return s; },
       },
     },
     paymentIntents: {
@@ -55,6 +57,7 @@ export function createFakeStripe(baseUrl) {
         if (p.confirm) chargeFor(pi);
         return pi;
       }),
+      cancel: async (pid) => { const pi = st.intents[pid]; if (pi) pi.status = 'canceled'; return pi; },
       retrieve: async (pid, o) => { const pi = st.intents[pid]; return o?.expand?.includes('latest_charge') ? { ...pi, latest_charge: st.charges[pi.latest_charge] } : pi; },
     },
     transfers: {

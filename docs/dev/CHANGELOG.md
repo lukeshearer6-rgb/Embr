@@ -2,6 +2,16 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-24: Payment safety fixes
+- From a review of the Stripe integration. Brands can no longer be charged twice and talent can't be paid twice when a step fails halfway: the balance charge and each transfer are saved the moment they happen, and retries reuse them (even after Stripe's 24-hour idempotency window).
+- A webhook that fails is forgotten, so Stripe's retry is processed instead of skipped as a duplicate.
+- Staff sign-off closes the brand's open balance payment page first; a second balance payment that still arrives is refunded automatically and staff are told.
+- Only card problems (authentication, declines) send the brand to the Checkout fallback; other errors are errors, and the failed payment is cancelled.
+- New webhook events: chargebacks (staff alerted; transfer reversal stays a staff decision), expired balance pages, failed payouts, disconnected talent Stripe accounts. SETUP.md lists them.
+- The deposit Checkout says when the saved card will be charged for the balance.
+- Files: `supabase/functions/_shared/payments.ts`, migration `20261124000001_payment_safety.sql`, `scripts/fake-stripe.mjs`, `docs/builds/SETUP.md`.
+- Tests: new `tests/payments.test.mjs` (6 checks, also in CI); db 64 and e2e 32 checks still pass.
+
 ## 2026-11-23: Animated office view
 - New `docs/office.html`: a top-down office where the researcher, developer, app builder, marketer and orchestrator walk between rooms carrying their work, and take things to Luke's desk when they need his OK. Every walk comes from `docs/workflow-state.md` (waits-on links, "hand to" next actions, approval needs, "Agents now").
 - Built by `npm run office`, and also by `npm run dashboard` and the edit hook. The dashboard links to it. Parsing moved to `scripts/workflow-state.mjs`, shared by both pages (dashboard output unchanged).

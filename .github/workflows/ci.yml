@@ -27,6 +27,8 @@ jobs:
       - run: npm ci
       - name: Database tests
         run: sh scripts/db-reset.sh && npm run test:db
+      - name: Payment failure tests
+        run: sh scripts/db-reset.sh && npm run test:payments
       - name: Build
         run: npm run build
       - name: Browser test

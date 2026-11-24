@@ -141,6 +141,8 @@ export async function payDeposit(stripe: any, rpc: Rpc, env: Env, userId: string
       metadata: { booking_id: b.id, kind: 'deposit' },
     },
     metadata: { booking_id: b.id, kind: 'deposit' },
+    // consent for the later off-session charge: amount and when, next to the pay button
+    custom_text: { submit: { message: `By paying, you agree Embr may charge the ${gbp(b.balance_p)} balance to this card when you sign off after the shoot, or automatically if no problem is reported after it. Free cancellation until ${b.free_cancel_days} days before the shoot.` } },
     success_url: appUrl(env) + '/booking/' + b.id + '?paid=deposit',
     cancel_url: appUrl(env) + '/booking/' + b.id,
   });
@@ -165,8 +167,15 @@ export async function checkoutCompleted(stripe: any, rpc: Rpc, session: any) {
   }
   if (kind === 'balance') {
     const b = await booking(rpc, id);
-    if (b.status === 'completed') return 'already';
-    const t = await payTalent(stripe, b, chargeId(pi.latest_charge));
+    if (b.status === 'completed' || (b.balance_intent && b.balance_intent !== pi.id)) {
+      // The balance was already paid another way (for example Embr signed off with the saved card): give this one back.
+      if (b.balance_intent === pi.id) return 'already';
+      await stripe.refunds.create({ payment_intent: pi.id }, { idempotencyKey: 'dup-' + pi.id });
+      await rpc('svc_ops_alert', { p_booking: id, p_text: `A second balance payment of ${gbp(pi.amount)} arrived for ${b.ref} and was refunded automatically.` });
+      return 'refunded';
+    }
+    await rpc('svc_balance_charged', { p_id: id, p_intent: pi.id, p_charge: chargeId(pi.latest_charge) });
+    const t = await payTalent(stripe, rpc, b, chargeId(pi.latest_charge));
     await rpc('svc_completed', { p_id: id, p_intent: pi.id, p_charge: chargeId(pi.latest_charge), p_transfers: t.ids, p_paid_p: t.paid, p_kind: session.metadata?.signoff || 'brand' });
     return 'balance';
   }
@@ -174,24 +183,39 @@ export async function checkoutCompleted(stripe: any, rpc: Rpc, session: any) {
 }
 
 // ---------------------------------------------------------------- sign-off: charge the balance, pay talent
-async function payTalent(stripe: any, b: any, balanceCharge: string | null) {
+// Each transfer is saved as soon as it's made, so a retry (even days later,
+// after Stripe's 24-hour idempotency window) skips the ones already sent.
+async function payTalent(stripe: any, rpc: Rpc, b: any, balanceCharge: string | null) {
   if (!b.talent_stripe_account) throw new HttpError(409, 'The talent has no payout account');
   const ids: string[] = [];
   const fromDeposit = Math.min(b.talent_fee_p, b.deposit_p);
   const fromBalance = b.talent_fee_p - fromDeposit;
   const meta = { booking_id: b.id, ref: b.ref };
   if (fromDeposit > 0) {
-    const t = await stripe.transfers.create({ amount: fromDeposit, currency: 'gbp', destination: b.talent_stripe_account, transfer_group: b.id,
-      source_transaction: b.deposit_charge, description: `${b.ref} ${b.title}`, metadata: meta }, { idempotencyKey: 'tr-dep-' + b.id });
-    ids.push(t.id);
+    if (b.transfer_dep) ids.push(b.transfer_dep);
+    else {
+      const t = await stripe.transfers.create({ amount: fromDeposit, currency: 'gbp', destination: b.talent_stripe_account, transfer_group: b.id,
+        source_transaction: b.deposit_charge, description: `${b.ref} ${b.title}`, metadata: meta }, { idempotencyKey: 'tr-dep-' + b.id });
+      await rpc('svc_transfer_made', { p_id: b.id, p_kind: 'dep', p_transfer: t.id });
+      ids.push(t.id);
+    }
   }
   if (fromBalance > 0) {
-    const t = await stripe.transfers.create({ amount: fromBalance, currency: 'gbp', destination: b.talent_stripe_account, transfer_group: b.id,
-      ...(balanceCharge ? { source_transaction: balanceCharge } : {}), description: `${b.ref} ${b.title}`, metadata: meta }, { idempotencyKey: 'tr-bal-' + b.id });
-    ids.push(t.id);
+    if (b.transfer_bal) ids.push(b.transfer_bal);
+    else {
+      const t = await stripe.transfers.create({ amount: fromBalance, currency: 'gbp', destination: b.talent_stripe_account, transfer_group: b.id,
+        ...(balanceCharge ? { source_transaction: balanceCharge } : {}), description: `${b.ref} ${b.title}`, metadata: meta }, { idempotencyKey: 'tr-bal-' + b.id });
+      await rpc('svc_transfer_made', { p_id: b.id, p_kind: 'bal', p_transfer: t.id });
+      ids.push(t.id);
+    }
   }
   return { ids, paid: fromDeposit + fromBalance };
 }
+
+// Only problems with the brand's card send them to Checkout; anything else
+// (network, a bug, Stripe being down) is an error to retry, not a payment page.
+const CARD_CODES = new Set(['authentication_required', 'card_declined', 'expired_card', 'insufficient_funds', 'incorrect_cvc', 'processing_error', 'payment_intent_authentication_failure']);
+const isCardProblem = (e: any) => e?.type === 'StripeCardError' || e?.raw?.type === 'card_error' || CARD_CODES.has(e?.code);
 
 export async function signoff(stripe: any, rpc: Rpc, env: Env, bookingId: string, kind: 'brand' | 'auto' | 'ops', userId?: string) {
   const b = await booking(rpc, bookingId);
@@ -200,17 +224,33 @@ export async function signoff(stripe: any, rpc: Rpc, env: Env, bookingId: string
   if (!states.includes(b.status)) throw new HttpError(409, b.status === 'completed' ? 'Already signed off' : 'This booking can\'t be signed off yet');
   if (b.balance_checkout_url && kind !== 'ops') return { needs_action: true, url: b.balance_checkout_url };
   return withLock(rpc, b.id, states, async () => {
-    let pi: any = null;
-    if (b.balance_p > 0) {
+    // Embr signing off while the brand still has a balance payment page open:
+    // close that page first so the brand can't pay twice.
+    if (b.balance_checkout && !b.balance_intent) {
+      const open = await stripe.checkout.sessions.retrieve(b.balance_checkout);
+      if (open.status === 'complete') {
+        await rpc('svc_unlock', { p_id: b.id });
+        return { ok: false, message: 'The brand has just paid the balance. It will finish in a moment.' };
+      }
+      if (open.status === 'open') await stripe.checkout.sessions.expire(b.balance_checkout);
+      await rpc('svc_balance_checkout_cleared', { p_session: b.balance_checkout });
+    }
+    let intentId: string | null = b.balance_intent || null;
+    let charge: string | null = b.balance_charge || null;
+    if (b.balance_p > 0 && !intentId) {
+      let pi: any;
       try {
         pi = await stripe.paymentIntents.create({
           amount: b.balance_p, currency: 'gbp', customer: b.brand_customer, payment_method: b.payment_method,
           off_session: true, confirm: true, transfer_group: b.id,
           description: `Balance: ${b.title} with ${b.talent_name} (${b.ref})`,
           metadata: { booking_id: b.id, kind: 'balance' },
-        }, { idempotencyKey: 'bal-' + b.id });
+        }, { idempotencyKey: 'bal-' + b.id + '-' + (b.balance_checkout || 'first') });
       } catch (e: any) {
-        // The bank wants the brand to confirm (or the card failed): send them to Checkout.
+        if (!isCardProblem(e)) throw e;
+        // Leave nothing half-open at Stripe, then send the brand to Checkout to confirm.
+        const failed = e?.raw?.payment_intent?.id || e?.payment_intent?.id;
+        if (failed) await stripe.paymentIntents.cancel(failed).catch(() => null);
         const session = await stripe.checkout.sessions.create({
           mode: 'payment', customer: b.brand_customer, payment_method_types: ['card'],
           line_items: [{ quantity: 1, price_data: { currency: 'gbp', unit_amount: b.balance_p, product_data: { name: 'Balance: ' + b.title, description: `${b.talent_name}, ${day(b.shoot_date)} (${b.ref})` } } }],
@@ -223,9 +263,13 @@ export async function signoff(stripe: any, rpc: Rpc, env: Env, bookingId: string
         return { needs_action: true, url: session.url, reason: e?.code || e?.message };
       }
       if (pi.status !== 'succeeded') throw new HttpError(402, 'The balance payment didn\'t go through');
+      intentId = pi.id;
+      charge = chargeId(pi.latest_charge);
+      // saved before paying talent, so a failure below can never lead to a second charge
+      await rpc('svc_balance_charged', { p_id: b.id, p_intent: intentId, p_charge: charge });
     }
-    const t = await payTalent(stripe, b, pi ? chargeId(pi.latest_charge) : null);
-    await rpc('svc_completed', { p_id: b.id, p_intent: pi?.id || null, p_charge: pi ? chargeId(pi.latest_charge) : null, p_transfers: t.ids, p_paid_p: t.paid, p_kind: kind });
+    const t = await payTalent(stripe, rpc, b, charge);
+    await rpc('svc_completed', { p_id: b.id, p_intent: intentId, p_charge: charge, p_transfers: t.ids, p_paid_p: t.paid, p_kind: kind });
     return { ok: true, paid_to_talent_p: t.paid };
   });
 }
@@ -288,8 +332,37 @@ export async function resolve(stripe: any, rpc: Rpc, userId: string, bookingId: 
 // ---------------------------------------------------------------- webhook events
 export async function handleEvent(stripe: any, rpc: Rpc, event: any) {
   if (await rpc('svc_event_seen', { p_id: event.id, p_type: event.type })) return 'duplicate';
+  try { return await applyEvent(stripe, rpc, event); }
+  catch (e) {
+    // Forget it, so Stripe's retry is handled instead of skipped as a duplicate.
+    await rpc('svc_event_forget', { p_id: event.id }).catch(() => null);
+    throw e;
+  }
+}
+
+async function applyEvent(stripe: any, rpc: Rpc, event: any) {
   const o = event.data.object;
   switch (event.type) {
+    case 'checkout.session.expired':
+      if (o.metadata?.kind === 'balance') await rpc('svc_balance_checkout_cleared', { p_session: o.id });
+      return 'expired';
+    case 'charge.dispute.created':
+    case 'charge.dispute.closed': {
+      // With separate charges and transfers Embr carries a chargeback. Staff decide whether to
+      // reverse a transfer to the talent (stripe.transfers.createReversal); it isn't automatic.
+      const bid = await rpc('svc_booking_by_charge', { p_charge: chargeId(o.charge) });
+      await rpc('svc_ops_alert', { p_booking: bid, p_text: event.type === 'charge.dispute.created'
+        ? `Chargeback opened by the brand's bank: ${gbp(o.amount)} (reason: ${o.reason}). Respond in Stripe before the deadline.`
+        : `Chargeback closed: ${o.status} (${gbp(o.amount)}).` });
+      return 'dispute';
+    }
+    case 'account.application.deauthorized':
+      if (event.account) await rpc('svc_account_updated', { p_account: event.account, p_payouts: false });
+      await rpc('svc_ops_alert', { p_booking: null, p_text: 'A talent disconnected their Stripe account from Embr: ' + (event.account || 'unknown account') });
+      return 'deauthorized';
+    case 'payout.failed':
+      await rpc('svc_ops_alert', { p_booking: null, p_text: `A payout to a talent's bank failed (${event.account || 'unknown account'}, ${gbp(o.amount)}): ${o.failure_message || o.failure_code || 'no reason given'}.` });
+      return 'payout_failed';
     case 'checkout.session.completed':
       return checkoutCompleted(stripe, rpc, o);
     case 'account.updated':
