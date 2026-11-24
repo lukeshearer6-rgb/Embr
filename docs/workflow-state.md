@@ -76,7 +76,8 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 Newest first. One line per session: date, agent, what happened.
 
-- 2026-11-24 orchestrator: pushed the daily run (PR #3, Luke approved); R3 shortlist done (MMU Business Law Cafe, BPP Enterprise Clinic, Law Society Find a Solicitor), quotes verified; PR #3 merged by Luke; push of R3 waiting on Luke.
+- 2026-11-24 orchestrator: pushed the daily run (PR #3, Luke approved); R3 shortlist done (MMU Business Law Cafe, BPP Enterprise Clinic, Law Society Find a Solicitor), quotes verified; PR #3 merged by Luke; R3 pushed.
+- 2026-11-24 orchestrator: Luke loosened the approval gates (agents push and merge their own PRs, change test setup); CLAUDE.md and decisions updated; .claude/settings.json left for Luke.
 - 2026-11-24 orchestrator: Luke chose BPP's free online business clinic for the agreement review; application route verified on BPP's pages, enquiry drafted; recorded in decisions.
 - 2026-11-24 daily run: R1 Cloudflare terms brief (quotes verified) and D4 agreement export (test 9/9, added to CI) done; payment-safety PR #2 merged; push waiting on Luke (DR1).
 - 2026-11-24 orchestrator: reviewed the Stripe integration; fixed lost webhooks, double balance charge/transfer after partial failure, staff sign-off double payment, over-broad Checkout fallback; added dispute/payout/deauthorized webhooks; tests/payments.test.mjs 6 checks pass, db 64 and e2e 32 pass. Branch claude/payment-safety committed locally, push waiting on Luke (B3).
