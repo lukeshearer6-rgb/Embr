@@ -69,7 +69,7 @@ export function weekLines(e) {
   const life = [l.briefs > 0 && n(l.briefs, 'brief', 'briefs') + ' posted', l.bookings > 0 && n(l.bookings, 'booking', 'bookings') + ' confirmed', l.brands > 0 && n(l.brands, 'brand', 'brands') + ' joined'].filter(Boolean);
   return life.length ? ['Since the pilot began: ' + life.join(', ')] : [];
 }
-const tile = (label, fig, sub, live = true) => (live ? `<div class="tile">` : `<button type="button" class="tile off" data-a="towork">`) + `<span class="l">${label}</span><span class="fig">${fig}</span><span class="sub">${sub}</span>` + (live ? '</div>' : '</button>');
+const tile = (label, fig, sub, live = true) => (live ? `<div class="tile">` : `<button type="button" class="tile off" data-a="towork">`) + `<span class="l">${label}</span><span class="tv">${fig}</span><span class="sub">${sub}</span>` + (live ? '</div>' : '</button>');
 function statsRow(p, t) {
   if (!p) return '';
   const live = !!t.published;

@@ -577,8 +577,8 @@ fieldset.specs{border-top:1px solid var(--line);padding-top:18px;margin-top:8px}
 .tile{display:grid;align-content:start;gap:2px;padding:14px 12px 4px 0;text-align:left}
 .tile+.tile{border-left:1px solid var(--line);padding-left:12px}
 .tile .l{font-size:12px;font-weight:600;color:var(--graphite)}
-.tile .fig{font-variation-settings:var(--wide);font-weight:800;font-size:clamp(26px,6vw,40px);line-height:1;letter-spacing:-.03em;margin:4px 0}
-.tile.off .fig{font-size:15px;font-variation-settings:normal;letter-spacing:0;margin:8px 0 4px}
+.tile .tv{font-variation-settings:var(--wide);font-weight:800;font-size:clamp(26px,6vw,40px);line-height:1;letter-spacing:-.03em;margin:4px 0}
+.tile.off .tv{font-size:15px;font-variation-settings:normal;letter-spacing:0;margin:8px 0 4px}
 .tile .sub{font-size:12px;color:var(--mist);line-height:1.35}
 .meter{height:6px;background:var(--backdrop);border-radius:3px;overflow:hidden}
 .meter span{display:block;height:100%;background:var(--ink)}
