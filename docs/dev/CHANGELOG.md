@@ -2,6 +2,17 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-25: Talent Today screen has something to see after setup
+- **Seen and saved:** three tiles under the earnings card: how many brands opened your profile this week, how many have saved you, and offers received. Counts only, never which brand ("Brands make the first move"). Before the profile is live the tiles say "Not live yet" and lead to the profile.
+- **Profile strength:** once you're ready to be booked, the checklist becomes a strength bar with one "Next" step (more photos, bio, tags, comfort note, Instagram, half-day rate, dates confirmed). No claim that it ranks you higher.
+- **This week on Embr:** anonymised whole-pilot totals (briefs posted, bookings confirmed, brands joined, briefs for your roles when 2 or more). No titles, names, dates or rates, and nothing to tap. Lifetime totals when the week is quiet.
+- **Your dates:** one tap to confirm your free dates are up to date. No streaks.
+- **Last 6 months** earnings bars and a **Your Embr so far** milestones row.
+- A brand saving your profile sends one quiet in-app note a day (no email, no brand name).
+- Design and reasoning (Mobbin research, what was rejected and why): `docs/dev/talent-engagement.md`.
+- Files: `supabase/migrations/20261125000002_talent_engagement.sql`, `src/views/talent.js`, `src/style.css`.
+- Tests: db 75 checks (new: a brand view counts once a day, staff and self views don't, no brand ids returned, one quiet save note a day, pilot totals have no titles or names, talent still can't read briefs or view logs, one-tap dates), e2e 38 checks (new: tiles, strength, this week panel with nothing to click, dates check-in, milestones, no brand names and no jobs-board wording on Today).
+
 ## 2026-11-25: Talent demo fixes: photos keep your details, ID check, travel, new roles, agency status
 - **Photos no longer wipe the profile form.** Adding, removing or choosing a cover photo redrew the whole profile page, so anything typed but not saved was lost. Only the work sections are redrawn now, and typed model details are kept too.
 - **ID check no longer says "under 18" after a pass.** Stripe only returns the date of birth when asked for it by name; Embr wasn't asking, so a passed check had no date of birth and was treated as under 18. Embr now asks for it, and if a passed check ever arrives without one it goes to "Confirming your age" for staff to check, never "under 18". The test Stripe stand-in now behaves like real Stripe here.

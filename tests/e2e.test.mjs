@@ -195,8 +195,18 @@ try {
   await amara.click('.botnav >> text=Today');
   await amara.waitForSelector('text=Let work find you');
   assert.equal(await amara.locator('text=Get ready to be booked').count(), 0);
+  await amara.waitForSelector('.tiles .tile >> text=Seen by brands');
+  assert.equal(await amara.locator('.tiles .tile').count(), 3);
+  await amara.waitForSelector('.tile >> text=None yet this week');
+  await amara.waitForSelector('text=Profile strength');
+  await amara.waitForSelector('.panel:has-text("This week on Embr") >> text=Brands are being invited in now');
+  assert.equal(await amara.locator('.panel:has-text("This week on Embr") a, .panel:has-text("This week on Embr") button').count(), 0);
   await shot(amara, '03-talent-today-phone');
   ok('talent Today: ready to be booked, "Let work find you"');
+  await amara.click('.panel:has-text("Your dates") button[data-a=confirm-dates]');
+  await toastHas(amara, /Dates confirmed/);
+  await amara.waitForSelector('.panel:has-text("Your dates") >> text=Confirmed today.');
+  ok('talent Today: seen-and-saved counts, profile strength, this week on Embr (nothing to click), one-tap dates check');
 
   // ---------------------------------------------------------------- brand: search, brief, offer
   const rivet = await person('rivet');
@@ -434,6 +444,14 @@ try {
   assert.ok(!(await amara.textContent('main')).includes('Drop 4 lookbook brief'));
   assert.equal(await amara.locator('nav >> text=Jobs').count(), 0);
   ok('talent have no Jobs tab and nothing to apply for');
+  await amara.goto(`${BASE}/`);
+  await amara.waitForSelector('.mile.done >> text=First brand view');
+  await amara.waitForSelector('.mile.done >> text=First offer');
+  const todayText = (await amara.textContent('main')).toLowerCase();
+  assert.ok(!/find work|jobs for you|apply for (a |the )?(job|brief|work)|apply now|join to get work/.test(todayText));
+  for (const sel of ['.tiles', '.miles', '.panel:has-text("This week on Embr")']) assert.doesNotMatch(await amara.locator(sel).first().textContent(), /Rivet|Northern/);
+  await amara.screenshot({ path: `${SHOTS}/15-talent-today-full-phone.png`, fullPage: true });
+  ok('talent Today counts brand views and offers without naming brands, and never reads as a jobs board');
   await amara.goto(`${BASE}/admin/people`);
   await amara.waitForSelector('text=This is the Embr admin website');
   assert.equal(await amara.locator('text=18+ verified').count(), 0);

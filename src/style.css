@@ -571,3 +571,26 @@ fieldset.field legend{padding:0;font-size:13px;font-weight:600;margin-bottom:2px
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:14px 18px}
 .stats-form{border:1px solid var(--line);padding:16px;margin-top:14px}
 fieldset.specs{border-top:1px solid var(--line);padding-top:18px;margin-top:8px}
+
+/* talent Today: seen and saved, strength, last 6 months, milestones, this week */
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--line)}
+.tile{display:grid;align-content:start;gap:2px;padding:14px 12px 4px 0;text-align:left}
+.tile+.tile{border-left:1px solid var(--line);padding-left:12px}
+.tile .l{font-size:12px;font-weight:600;color:var(--graphite)}
+.tile .fig{font-variation-settings:var(--wide);font-weight:800;font-size:clamp(26px,6vw,40px);line-height:1;letter-spacing:-.03em;margin:4px 0}
+.tile.off .fig{font-size:15px;font-variation-settings:normal;letter-spacing:0;margin:8px 0 4px}
+.tile .sub{font-size:12px;color:var(--mist);line-height:1.35}
+.meter{height:6px;background:var(--backdrop);border-radius:3px;overflow:hidden}
+.meter span{display:block;height:100%;background:var(--ink)}
+.bar6{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;height:140px;align-items:end}
+.bar6 .b{display:grid;grid-template-rows:auto 1fr auto;height:100%;text-align:center;gap:4px}
+.bar6 .bar{align-self:end;background:var(--ink);min-height:2px;border-radius:2px 2px 0 0}
+.bar6 .v{font-size:11px;font-weight:600;align-self:end}
+.bar6 .m{font-size:12px;color:var(--mist)}
+.miles{display:flex;flex-wrap:wrap;gap:8px}
+.mile{display:inline-flex;align-items:center;height:30px;padding:0 12px;border:1px solid var(--line2);font-size:12px;font-weight:600;color:var(--mist)}
+.mile.done{background:var(--ink);border-color:var(--ink);color:#fff}
+.pulse{list-style:none;display:grid;gap:6px;font-size:14px}
+.pulse li{padding-left:14px;position:relative}
+.pulse li::before{content:"";position:absolute;left:0;top:.6em;width:6px;height:6px;border-radius:50%;background:var(--embr)}
+@media (max-width:380px){.tile .l{font-size:11px}.tile+.tile{padding-left:8px}}
