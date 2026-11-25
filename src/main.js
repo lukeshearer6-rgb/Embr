@@ -74,12 +74,17 @@ async function render() {
   }
   renderBell();
   const main = $('#main');
+  // a screen with a skeleton shows it if loading takes longer than 150ms (no grey flash on a quick load)
+  const skel = VIEWS[role][tab].skeleton;
+  const skT = skel && setTimeout(() => { if (seq === renderSeq) { main.innerHTML = skel(); main.setAttribute('aria-busy', 'true'); } }, 150);
   try {
     const html = await VIEWS[role][tab](main);
+    clearTimeout(skT); main.removeAttribute('aria-busy');
     if (seq !== renderSeq) return;
     if (typeof html === 'string') main.innerHTML = html;
     VIEWS[role][tab].after?.(main);
   } catch (e) {
+    clearTimeout(skT); main.removeAttribute("aria-busy");
     console.error(e);
     main.innerHTML = `<div class="callout bad mt24">Couldn't load this page: ${esc(e.message)}. <button class="link" data-a="reload">Try again</button></div>`;
   }

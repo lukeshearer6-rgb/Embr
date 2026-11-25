@@ -3,7 +3,7 @@
 import { VIEWS, A, F, C, S, go, refreshMe, rerender } from '../state.js';
 import { rpc, photoUrl, roleRules, modelOptions } from '../api.js';
 import { specsFields, readSpecs, specsTxt, DRESS, SUITS } from './model.js';
-import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CATS, CITIES, USAGE, TERMS, toast, openLayer, closeLayer, replaceLayer, topLayer, formData, loading, plural, first, whenTxt, rolesOf, rolesTxt, rolePlural, travelTxt } from '../ui.js';
+import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CATS, CITIES, USAGE, TERMS, toast, openLayer, closeLayer, replaceLayer, topLayer, formData, loading, skelCards, emptyState, plural, first, whenTxt, rolesOf, rolesTxt, rolePlural, travelTxt } from '../ui.js';
 import { ICON, RICON } from '../icons.js';
 import { creativeCard, videoHost } from './card.js';
 import { packagesOf, pkgOf, hoursTxt, pkgNote } from './rates.js';
@@ -38,6 +38,10 @@ V.board = async () => {
   <p class="s g fcount" id="count" aria-live="polite">${people(talent.length)}</p>
   <div id="results">${results(talent)}</div>`;
 };
+
+V.board.skeleton = () => `<section class="band"><h1 class="display t-72">Find talent</h1><div class="bsearch mt24" aria-hidden="true">${ICON.search}<i class="sk-l w50" style="margin:0;background-color:var(--backdrop)"></i></div></section>
+  <div class="cats" aria-hidden="true">${['', ...CATS].slice(0, 5).map((c) => `<span class="cat">${RICON[c] || ''}<span>${c || 'All'}</span></span>`).join('')}</div>
+  <p class="s g fcount"><i class="sk-l w30" style="margin:0"></i></p>${skelCards(4)}`;
 
 // what's applied, as pills; each opens the filter sheet at its own section
 const isToday = (d) => d === today();
@@ -138,8 +142,23 @@ A['board-cat'] = async (el) => {
 
 // talent cards for the board: the shared CreativeCard (src/views/card.js)
 const feedCard = (t) => creativeCard(t);
+// zero results: say why, then the one change most likely to bring people back (Tabby, alias, Artsy:
+// "No results" + Clear all; Thrive Market and Instacart repeat the search words)
+const PILOT = 'Embr is invite-only during the pilot, so the board is still filling up.';
+function noResults() {
+  const n = activeCount(f);
+  const q = (f.q || '').trim();
+  const clearF = { label: 'Clear filters', a: 'board-reset', primary: !q };
+  const allRoles = { label: 'Show every role', a: 'board-allroles', link: true };
+  if (q) return emptyState({ icon: RICON.nosearch, title: `No one matches “${q}”`, body: 'Check the spelling, or search a look or skill (for example “streetwear”) instead of a name.',
+    actions: [{ label: 'Clear search', a: 'board-clearq', primary: true }, ...(n ? [{ ...clearF, primary: false }] : []), ...(f.category ? [allRoles] : [])] });
+  if (n) return emptyState({ icon: RICON.filter, title: `No ${f.category ? rolePlural(f.category) : 'one'} ${f.category ? 'match' : 'matches'} these filters`,
+    body: `Try another date, a higher day rate or Anywhere. ${PILOT}`, actions: [clearF, ...(f.category ? [allRoles] : [])] });
+  if (f.category) return emptyState({ icon: RICON[f.category] || RICON.people, title: `No ${rolePlural(f.category)} on the board yet`, body: PILOT, actions: [{ ...allRoles, link: false, primary: true }] });
+  return emptyState({ icon: RICON.people, title: 'The board is still filling up', body: `${PILOT} Post a brief and Embr ranks everyone who fits it as they join.`, actions: [{ label: 'Post a brief', a: 'postjob', primary: true }] });
+}
 function results(list) {
-  if (!list.length) return `<div class="empty">No one matches yet. Try another date, city or rate. Embr is invite-only during the pilot, so the board is still filling up.${activeCount(f) ? '<div class="mt16"><button class="btn" data-a="board-reset">Clear filters</button></div>' : ''}</div>`;
+  if (!list.length) return noResults();
   const here = list.filter((t) => !t.away), away = list.filter((t) => t.away);
   return (here.length ? `<div class="feed">${here.map(feedCard).join('')}</div>` : '') +
     (away.length ? `<h2 class="sec mt48">Will travel to ${esc(f.city)}</h2><p class="s g mb24">Based elsewhere. Check each profile for how travel costs work.</p><div class="feed">${away.map(feedCard).join('')}</div>` : '');
@@ -155,10 +174,23 @@ A['board-find'] = async ({ role = '', date = '' }) => {
   renderRosterBar();
 };
 A['board-reset'] = async () => { Object.assign(f, { date: '', city: '', max_rate: '', specs: {} }); await runSearch(); };
+A['board-clearq'] = async () => { const i = $('.band [name=q]'); if (i) i.value = ''; f.q = ''; await runSearch(); };
+A['board-allroles'] = async () => {
+  f.category = ''; f.specs = {};
+  document.querySelectorAll('[data-a=board-cat]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.cat === ''));
+  await runSearch();
+};
+// while a search runs, the grid shows card-shaped skeletons; the search box and pills stay live (Faire, TikTok Shop).
+// Only after 150ms, so a quick answer never flashes grey.
+let sSeq = 0;
 async function runSearch() {
   if (!$('#results')) return;
   f.q = $('.band [name=q]')?.value || '';
-  const list = await rpc('search_talent', { f: query(f) });
+  const seq = ++sSeq;
+  const t = setTimeout(() => { if (seq === sSeq && $('#results')) { $('#results').innerHTML = skelCards(4); $('#results').setAttribute('aria-busy', 'true'); } }, 150);
+  const list = await rpc('search_talent', { f: query(f) }).finally(() => clearTimeout(t));
+  if (seq !== sSeq || !$('#results')) return;
+  $('#results').removeAttribute('aria-busy');
   $('#results').innerHTML = results(list);
   $('#count').textContent = people(list.length);
   $('#frow').innerHTML = filterRow();
@@ -247,7 +279,16 @@ A['pick-pkg'] = (el) => {
   sheet.querySelector('#cd-pkg').textContent = el.dataset.label.toLowerCase();
   sheet.querySelectorAll('[data-pkg]').forEach((b) => { b.dataset.pkg = el.dataset.k; });
 };
-A.talent = async (el) => openLayer(await talentSheet(el.dataset.id, { brief: el.dataset.brief }));
+const detailSkeleton = () => ({ kind: 'sheet', label: 'Loading profile', skel: true, head: '<div class="grow"><i class="sk-l w50" style="margin:0"></i></div>',
+  body: `<div class="cd-hero skel sk-b" aria-hidden="true"></div><div class="skel-id" aria-busy="true" aria-label="Loading profile"><i class="sk-l big"></i><i class="sk-l w50"></i><i class="sk-l w70"></i>
+    <i class="sk-l t w30" style="margin-top:32px"></i><div class="sk-b" style="height:64px;margin-top:12px;border-radius:var(--r)"></div><div class="sk-b" style="height:64px;margin-top:8px;border-radius:var(--r)"></div></div>` });
+export async function openTalent(id, extra = {}) {
+  const t = setTimeout(() => openLayer(detailSkeleton()), 120);
+  let layer;
+  try { layer = await talentSheet(id, extra); } catch (e) { if (topLayer()?.skel) closeLayer(); throw e; } finally { clearTimeout(t); }
+  if (topLayer()?.skel) replaceLayer(layer); else openLayer(layer);
+}
+A.talent = (el) => openTalent(el.dataset.id, { brief: el.dataset.brief });
 
 // ---------------------------------------------------------------- offer form
 A.offer = async (el) => {

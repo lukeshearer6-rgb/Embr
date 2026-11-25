@@ -5,8 +5,8 @@ import { VIEWS, A, F, C, S, go, refreshMe, rerender } from '../state.js';
 import { rpc, action, uploadPhoto, deletePhoto, photoUrl, roleRules, modelOptions, agencyText } from '../api.js';
 import { agencyBox } from './auth.js';
 import { statsForm } from './model.js';
-import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CITIES, rolesOf, rolesTxt, rolePlural, roleChips, pickedRoles, USAGE, TERMS, TRAVEL_RANGE, TRAVEL_COSTS, nearby, toast, openLayer, closeLayer, formData, plural, first, busy, confirmDialog } from '../ui.js';
-import { ICON } from '../icons.js';
+import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CITIES, rolesOf, rolesTxt, rolePlural, roleChips, pickedRoles, USAGE, TERMS, TRAVEL_RANGE, TRAVEL_COSTS, nearby, toast, openLayer, closeLayer, formData, plural, first, busy, confirmDialog, emptyState } from '../ui.js';
+import { ICON, RICON } from '../icons.js';
 import { thumb, calendar, groupBookings, bookingItem, linkCards } from './common.js';
 import { rateCard, refreshDates } from './rates.js';
 import { bookingsView, inboxView } from './brand.js';
@@ -227,6 +227,7 @@ V.profile = async () => {
         : t.identity_status === 'review' ? '<span class="st wait">Confirming your age</span>'
           : t.identity_status === 'requires_input' ? '<span class="st warn">Needs another try</span>' : '<span class="st wait">Not done</span>';
   return `<div class="row between top-al wrap mb24"><h1 class="display t-48">Profile</h1>${t.handle && t.published ? `<a class="btn" href="/@${esc(t.handle)}" target="_blank" rel="noopener">See your Book-me page</a>` : ''}</div>
+  <div id="newp">${newProfile(t)}</div>
   <div id="ready">${readyPanel(t)}</div>
   ${t.agency_declared ? '' : `<form id="f-agency" class="panel mb24"><h3>Confirm your agency status</h3><p class="s g mt8">Embr is for models and creatives who are free to take bookings themselves. Brands can't see your profile until you confirm this.</p><div class="mt12">${agencyBox(agency)}</div><button class="btn primary sm mt12" type="submit">Confirm</button></form>`}
   <div class="cols" style="grid-template-columns:minmax(0,1fr) 400px"><div><form id="f-profile"><div class="fgrid">
@@ -251,6 +252,16 @@ V.profile = async () => {
 };
 
 const MAXP = 24;
+// a brand-new profile: nothing for brands to look at yet, so the first job is photos, then rates
+// (Zomato "You haven't uploaded any photos yet" + Add photo, Cosmos "Your taste, on display" + one black button,
+// Medium "Get started" card). Talent copy describes the profile and the tools, never looking for work.
+const addPhotosBtn = (t, label, cls = 'btn ink') => `<label class="${cls}" tabindex="0" role="button">${esc(label)}<input type="file" accept="image/*" multiple hidden data-change="photos" data-role="${esc(rolesOf(t)[0] || '')}" aria-label="${esc(label)}"></label>`;
+function newProfile(t) {
+  if ((t.photos || []).length) return '';
+  return emptyState({ cls: 'left newprofile mb24', icon: RICON.camera, title: 'Show brands your work',
+    body: 'Brands see your photos first. Add a few you have the rights to, then set your rates. Offers, bookings and payment all come to you here.',
+    actions: [{ html: addPhotosBtn(t, 'Add photos') }, ...(t.day_rate ? [] : [{ label: 'Set your rates', a: 'rates-edit' }])] });
+}
 function workHTML(t, rules, mo) {
   const roles = rolesOf(t);
   const photos = t.photos || [];
@@ -268,7 +279,8 @@ function workHTML(t, rules, mo) {
       ${rule.stats ? statsForm(t.stats || {}, mo) : ''}
       <h4 class="s mt16 mb8">${esc(rule.photo_label || 'Photos')}${rule.photos ? ` <span class="g">(at least ${rule.photos})</span>` : ''}</h4>
       <div class="phs">${ph.map((p) => `<div class="p" style="background-image:url('${photoUrl(p.path)}')">${p.id === cover ? '<span class="xs" style="position:absolute;left:6px;bottom:6px;background:#fff;padding:1px 6px;border-radius:2px;font-weight:600">Cover</span>' : `<button type="button" data-a="cover" data-id="${p.id}" aria-label="Make cover photo" style="left:6px;right:auto;font-size:11px;width:auto;padding:0 6px;border-radius:2px">Cover</button>`}<button type="button" data-a="rmphoto" data-id="${p.id}" data-path="${esc(p.path)}" aria-label="Remove photo">×</button></div>`).join('')}
-        ${photos.length < MAXP ? `<label class="p" tabindex="0">+ Add<input type="file" accept="image/*" multiple hidden data-change="photos" data-role="${esc(r)}" aria-label="Add ${esc(rule.photo_label || 'photos')}"></label>` : ''}</div>
+        ${!ph.length ? `<label class="p p-first" tabindex="0">${RICON.camera}<span>Add your first ${esc((rule.photo_label || 'photos').replace(/\s*\(optional\)/i, '').toLowerCase())}</span><span class="s">${rule.photos ? `At least ${rule.photos}. ` : ''}Your first photo becomes your cover, the one brands see first.</span><input type="file" accept="image/*" multiple hidden data-change="photos" data-role="${esc(r)}" aria-label="Add ${esc(rule.photo_label || 'photos')}"></label>`
+          : photos.length < MAXP ? `<label class="p" tabindex="0">+ Add<input type="file" accept="image/*" multiple hidden data-change="photos" data-role="${esc(r)}" aria-label="Add ${esc(rule.photo_label || 'photos')}"></label>` : ''}</div>
       <h4 class="s mt16 mb8">${esc(rule.link_label || 'Links')}${rule.links ? ` <span class="g">(at least ${rule.links})</span>` : ''}</h4>
       ${ln.length ? linkCards(ln, true) : ''}
       <form class="addlink" data-addlink="${esc(r)}"><input class="in" name="url" type="url" required placeholder="https://… (TikTok, Instagram, YouTube, Vimeo, Drive)" aria-label="Link for ${esc(r)}"><input class="in" name="title" maxlength="120" placeholder="What it is, e.g. Skincare ad" aria-label="Title"><button class="btn sm" type="submit">Add link</button></form>
@@ -284,6 +296,7 @@ async function refreshWork() {
   const t = T();
   $('#work').innerHTML = workHTML({ ...t, stats: { ...(t.stats || {}), ...typed } }, rules, mo);
   $('#ready').innerHTML = readyPanel(T());
+  if ($('#newp')) $('#newp').innerHTML = newProfile(T());
 }
 A.towork = () => {
   if (location.pathname !== '/profile') return go('/profile');

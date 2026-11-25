@@ -150,4 +150,23 @@ export function busy(btn, on = true, label = 'Working…') {
   else { btn.disabled = false; if (btn.dataset.label) btn.innerHTML = btn.dataset.label; }
 }
 export const loading = () => '<div class="empty">Loading…</div>';
+// ---------------------------------------------------------------- skeletons and empty states (docs/dev/mobile-polish.md)
+// grey blocks in the shape of a CreativeCard: a 4:5 photo, then name and role lines (Airbnb, Faire)
+export const skelCards = (n = 4) => `<div class="feed skel" aria-busy="true" aria-label="Loading talent">${Array.from({ length: n }, () =>
+  '<div class="cc" aria-hidden="true"><div class="cc-frame sk-b"></div><div class="cc-body"><i class="sk-l t w70"></i><i class="sk-l w90"></i><i class="sk-l w50"></i></div></div>').join('')}</div>`;
+// icon, one bold line, one line of why, then clear actions: [{ label, a, data, primary, link, tab }]
+export function emptyState({ icon = '', title, body = '', actions = [], cls = '', extra = '' }) {
+  const act = (x) => {
+    const data = Object.entries(x.data || {}).map(([k, v]) => ` data-${k}="${esc(v)}"`).join('');
+    const hook = x.tab ? ` data-tab="${esc(x.tab)}"` : ` data-a="${esc(x.a)}"`;
+    return x.html || `<button type="button" class="${x.link ? 'link s' : `btn ${x.primary ? 'ink' : ''}`}"${hook}${data}>${esc(x.label)}</button>`;
+  };
+  return `<div class="estate ${cls}" role="status">${icon ? `<span class="es-ic" aria-hidden="true">${icon}</span>` : ''}<h3>${esc(title)}</h3>${body ? `<p>${body}</p>` : ''}${extra}${actions.length ? `<div class="es-acts">${actions.map(act).join('')}</div>` : ''}</div>`;
+}
+// photos fade in over their grey tile once loaded (or failed), so tiles never flash white
+if (typeof document !== 'undefined') {
+  const done = (e) => { const t = e.target; if (t?.tagName === 'IMG') t.parentElement?.classList.add('ld'); };
+  document.addEventListener('load', done, true);
+  document.addEventListener('error', done, true);
+}
 export const initials = (n) => String(n || '?').split(' ').map((x) => x[0]).slice(0, 2).join('').toUpperCase();

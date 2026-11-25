@@ -80,7 +80,7 @@ export function ratesLayer(t) {
   const halfOn = !!t.half_rate;
   return {
     kind: 'sheet', label: 'Rates and availability', rates: true,
-    head: '<div class="grow"><b>Rates and availability</b></div>',
+    head: '<div class="grow st-hd"><b class="st-ttl">Rates and availability</b></div>',
     body: `<form id="f-rates" class="rates">
       <h2 class="t-24">Your packages</h2>
       <p class="s g mt8 measure">Brands pick a package when they add you to a shoot. They still send you an offer with the date and terms, and you accept or decline it.</p>

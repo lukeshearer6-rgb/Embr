@@ -135,6 +135,15 @@ try {
   await amara.click('#f-profile button[type=submit]');
   await toastHas(amara, /Fill in your work sections/);
   await amara.waitForSelector('[data-role-sec="Model"] .need >> text=/which sizes you model/');
+  // a brand-new profile: photos first, then rates; an empty photo section is one big add tile
+  await amara.waitForSelector('#newp .estate >> text=Show brands your work');
+  assert.doesNotMatch(await amara.textContent('#newp'), /find work|apply|jobs for you/i);
+  await amara.waitForSelector('[data-role-sec="Model"] label.p-first >> text=Add your first modelling photos');
+  await amara.waitForSelector('[data-role-sec="UGC creator"] label.p-first >> text=Add your first stills');
+  for (const sel of ['#newp .estate label.btn', '#newp .estate [data-a=rates-edit]']) assert.ok((await amara.locator(sel).boundingBox()).height >= 48, sel + ' is at least 48px tall');
+  await amara.evaluate(() => document.getElementById('newp').scrollIntoView());
+  await shot(amara, '28-new-profile-phone');
+  await amara.evaluate(() => window.scrollTo(0, 0));
   ok('a section per role, and the profile stays hidden until each is filled');
   {
     // Rates and availability: a summary card on Profile opens a full-screen editor with X and one sticky Save
@@ -218,6 +227,8 @@ try {
   assert.equal(tRow.published, true);
   await amara.locator('#work').scrollIntoViewIfNeeded();
   await shot(amara, '02c-profile-sections-phone');
+  assert.equal((await amara.textContent('#newp')).trim(), '', 'the new-profile card goes once there are photos');
+  assert.equal(await amara.locator('[data-role-sec="Model"] label.p-first').count(), 0);
   ok('modelling photos compressed and uploaded, UGC video links added, profile goes live');
   await amara.click('.panel button[data-a=verify]');
   await amara.waitForURL(/__fake_stripe\/identity/);
@@ -326,6 +337,79 @@ try {
     assert.equal(await phone.locator('#frow .fbadge').count(), 0);
     await phone.close();
     ok('on a phone, brands switch roles with pills and narrow the board in one filter sheet with a live count');
+  }
+  {
+    // Phone polish: skeletons while the board and a profile load, and empty states with a clear next step
+    const phone = await person('rivet-polish', true);
+    await phone.goto(`${BASE}/signin`);
+    await signIn(phone, 'sam@rivet.test', '12345678');
+    await phone.waitForSelector('.feed:not(.skel) .cc');
+    // a slow search shows card-shaped skeletons; the search box and pills stay usable
+    const slow = async (route) => { await new Promise((r) => setTimeout(r, 900)); await route.continue(); };
+    await phone.route('**/rest/v1/rpc/search_talent', slow);
+    await phone.click('.cats [data-cat="Model"]');
+    await phone.waitForSelector('#results[aria-busy=true] .feed.skel .cc .cc-frame.sk-b');
+    assert.equal(await phone.locator('#results .feed.skel .cc').count(), 4);
+    assert.ok(await phone.isEnabled('.band [name=q]'));
+    await shot(phone, '24-board-skeleton-phone');
+    await phone.waitForSelector('.feed:not(.skel) .cc');
+    assert.equal(await phone.getAttribute('#results', 'aria-busy'), null);
+    // a slow profile opens a skeleton sheet at once, then the real one replaces it (no sheet on a sheet)
+    await phone.route('**/rest/v1/rpc/talent_detail', slow);
+    await phone.click('.feed .cc .cc-nm');
+    await phone.waitForSelector('.sheet .cd-hero.skel');
+    await shot(phone, '25-creative-detail-skeleton-phone');
+    await phone.waitForSelector('.sheet .cd-name');
+    assert.equal(await phone.locator('.sheet').count(), 1);
+    assert.equal(await phone.locator('.sheet .skel').count(), 0);
+    // every close button is a 48px target
+    assert.ok((await phone.locator('.sheet .xbtn').boundingBox()).height >= 48, 'close button is at least 48px');
+    await phone.click('.sheet .xbtn');
+    await phone.unroute('**/rest/v1/rpc/search_talent');
+    await phone.unroute('**/rest/v1/rpc/talent_detail');
+    // zero results for a search: say so with the words searched, and offer Clear search
+    await phone.fill('.band [name=q]', 'zzqx');
+    await phone.waitForSelector('.estate >> text=No one matches “zzqx”');
+    for (const sel of ['.estate [data-a=board-clearq]', '.estate [data-a=board-allroles]']) assert.ok((await phone.locator(sel).boundingBox()).height >= 48, sel + ' is at least 48px tall');
+    await shot(phone, '26-board-no-results-phone');
+    await phone.click('.estate [data-a=board-clearq]');
+    await phone.waitForSelector('.feed .cc');
+    assert.equal(await phone.inputValue('.band [name=q]'), '');
+    // a role with nobody yet: one button back to every role
+    await phone.click('.cats [data-cat="Nail technician"]');
+    await phone.waitForSelector('.estate >> text=No nail technicians match these filters');
+    await phone.click('.estate [data-a=board-allroles]');
+    await phone.waitForSelector('.cats [data-cat=""][aria-pressed=true]');
+    await phone.waitForSelector('.feed .cc');
+    // filters that rule everyone out: Clear filters brings people back
+    await phone.click('.frow [data-sec=rate]');
+    await phone.fill('#f-filters [name=max_rate]', '10');
+    await phone.waitForSelector('[data-a=fapply]:has-text("No one matches")');
+    await phone.click('[data-a=fapply]');
+    await phone.waitForSelector('.estate >> text=No one matches these filters');
+    await phone.click('.estate [data-a=board-reset]');
+    await phone.waitForSelector('.feed .cc');
+    // an empty Shoot Roster keeps the shoot and points at the board on the shoot date
+    await phone.click('.feed .cc .cc-add');
+    await phone.click('.shootsheet .shoot-row >> text=A new shoot');
+    await phone.waitForSelector('#rosterbar .rbar');
+    await phone.waitForTimeout(300);
+    if (!(await phone.locator('.sheet #f-roster').count())) await phone.click('#rosterbar .rbar');
+    await phone.fill('#f-roster [name=title]', 'Spring shoot');
+    await phone.fill('#f-roster [name=date]', iso(20));
+    await phone.dispatchEvent('#f-roster [name=date]', 'change');
+    await phone.click('.rr-x');
+    await phone.waitForSelector('.rcrew .estate >> text=No one on this shoot yet');
+    assert.equal(await phone.locator('.rneed').count(), 0);
+    assert.equal(await phone.locator('.sheet .ft').count(), 0);
+    assert.equal(await phone.inputValue('#f-roster [name=title]'), 'Spring shoot');
+    for (const b of await phone.locator('.rcrew .estate .btn').all()) assert.ok((await b.boundingBox()).height >= 48, 'empty roster buttons are 48px');
+    await shot(phone, '27-empty-roster-phone');
+    await phone.click('.rcrew .estate [data-a=roster-find][data-role="Photographer"]');
+    await phone.waitForFunction(() => document.querySelector('.cats [data-cat="Photographer"]')?.getAttribute('aria-pressed') === 'true');
+    assert.equal(await phone.locator('.sheet #f-roster').count(), 0);
+    await phone.close();
+    ok('Phone polish: skeletons while the board and a profile load, empty states with a next step for no results, an empty role and an empty Shoot Roster, 48px close buttons');
   }
   await rivet.click('nav.main >> text=Jobs');
   await rivet.click('button[data-a=postjob]');
