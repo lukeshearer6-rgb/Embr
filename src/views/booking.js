@@ -52,7 +52,8 @@ function footFor(b, r, me) {
     return '';
   }
   if (r === 'talent') {
-    if (b.status === 'offer') return `<button class="btn danger" data-a="decline" data-id="${b.id}">Decline</button><span class="grow"></span><button class="btn primary" data-a="accept" data-id="${b.id}">Accept offer</button>`;
+    // the pay sits beside the decision (inDrive, Airtasker, Orb Social offer screens)
+    if (b.status === 'offer') return `<div class="payline"><span class="l">You get</span><b class="money">${gbp(b.talent_fee_p)}</b><span class="xs g">0% commission · paid at sign-off</span></div><button class="btn danger" data-a="decline" data-id="${b.id}">Decline</button><span class="grow"></span><button class="btn primary" data-a="accept" data-id="${b.id}">Accept offer</button>`;
     if (b.status === 'accepted') return `<button class="btn quiet" data-a="pullout" data-id="${b.id}">I can't do it</button><span class="grow"></span><span class="s g">Waiting for ${esc(br.name)} to pay the deposit. You'll be told when it's confirmed.</span>`;
     if (b.status === 'confirmed') return `<button class="btn quiet" data-a="cancel" data-id="${b.id}">Cancel booking</button><button class="btn quiet" data-a="problem" data-id="${b.id}">Report a problem</button><span class="grow"></span>${b.shoot_date <= today() ? `<button class="btn primary" data-a="wrap" data-id="${b.id}">Mark wrapped</button>` : `<span class="s g">Mark it wrapped after the shoot on ${dMed(b.shoot_date)}</span>`}`;
     if (b.status === 'wrapped') return `<span class="s g">Waiting for ${esc(br.name)} to sign off. ${b.auto_signoff_at ? 'If they don\'t, it signs off automatically ' + whenTxt(b.auto_signoff_at) + '.' : ''}</span>`;

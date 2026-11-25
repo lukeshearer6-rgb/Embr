@@ -81,6 +81,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 Newest first. One line per session: date, agent, what happened.
 
+- 2026-11-25 orchestrator: interface round 1 from Mobbin references (brief fit reasons, talent offer pay beside Accept, Today next step first); docs/dev/interface-redesign.md; e2e 38 and db 77 passed.
 - 2026-11-25 daily run: R2 incorporation and domain brief and R6 CAP Code checklist done, every figure and rule re-read on the live pages; spend approval added to Waiting on Luke.
 - 2026-11-25 marketer: talent engagement design written (docs/dev/talent-engagement.md; Mobbin studied, 6 features ranked, build spec for developer); no app code changed; Luke to review and hand to developer.
 - 2026-11-24 orchestrator: pushed the daily run (PR #3, Luke approved); R3 shortlist done (MMU Business Law Cafe, BPP Enterprise Clinic, Law Society Find a Solicitor), quotes verified; PR #3 merged by Luke; R3 pushed.
