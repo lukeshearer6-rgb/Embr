@@ -54,6 +54,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | D5 | Build book now, pay later at the balance step with the chosen partner | developer | blocked | Tests cover on-terms balance and instant talent payout | Waits on R7 and Luke's partner choice |
 | D4 | Export the booking agreement text for solicitor review | developer | done | npm run test:agreement 9/9 passed 2026-11-24 (exact match to `_agreement`); docs/dev/booking-agreement.md | Luke picks a solicitor (Waiting on Luke) |
 | D8 | Rebuild the brand board as a native phone screen (role pills, filter sheet, photo-first cards) from Mobbin research | developer | needs-approval | e2e 39 and db 77 passed 2026-11-25; docs/dev/board-mobile.md has Mobbin refs and before/after | Held for Luke's final UI round: merge the PR when he folds it in |
+| D9 | Reusable mobile CreativeCard (swipeable photos, video tile, rating when real, Add to shoot) from Mobbin research, built on D8 | developer | needs-approval | e2e 40 and db 77 passed 2026-11-25; docs/dev/creative-card.md has Mobbin refs and before/after | Held for Luke's final UI round: merge after D8; needs `supabase db push` for the card media migration |
 
 ### App build
 
@@ -82,6 +83,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 Newest first. One line per session: date, agent, what happened.
 
+- 2026-11-25 developer: D9 CreativeCard on a PR stacked on D8 (not merged); e2e 40, db 77.
 - 2026-11-25 developer: D8 brand board rebuilt as a native phone screen on a PR (not merged; Luke wants all UI fixes in one final round); e2e 39, db 77.
 - 2026-11-25 orchestrator: interface round 2 (black header and money blocks, photo-led board, orange needs-you block, motion) after Luke chose a mix of three Mobbin-backed directions; e2e 38 and db 77 passed.
 - 2026-11-25 orchestrator: interface round 1 from Mobbin references (brief fit reasons, talent offer pay beside Accept, Today next step first); docs/dev/interface-redesign.md; e2e 38 and db 77 passed.
