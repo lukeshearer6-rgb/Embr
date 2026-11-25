@@ -196,7 +196,9 @@ async function main() {
   await fails(call(amara, 'respond_offer', b1, true, true, null), /Verify your ID/); ok('unverified talent can\'t accept');
   await call('service', 'svc_identity_result', amara.id, 'vs_0', 'verified', null);
   me = await call(amara, 'me'); assert.equal(me.talent.identity_status, 'review');
-  ok('a passed ID check with no date of birth goes to Embr review, never "under 18"');
+  const alert = (await db.query("select text, url from notifications where user_id = $1 order by id desc limit 1", [ops.id])).rows[0];
+  assert.match(alert.text, /Confirm 18\+/); assert.equal(alert.url, '/people');
+  ok('a passed ID check with no date of birth goes to Embr review, never "under 18", and staff are told where to confirm');
   await fails(call(rivet, 'ops_confirm_age', amara.id), /not allowed/i);
   await call(ops, 'ops_confirm_age', amara.id);
   me = await call(amara, 'me'); assert.equal(me.talent.identity_status, 'verified'); assert.equal(me.talent.verified, true);

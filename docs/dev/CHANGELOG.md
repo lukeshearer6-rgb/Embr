@@ -2,6 +2,10 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-25: Clearer staff email when an ID check needs confirming
+- The staff alert now says what to do ("go to People, and tap Confirm 18+ under ID checks to confirm") and its button opens the admin People page.
+- Files: `supabase/migrations/20261125000005_id_alert_wording.sql`, `tests/db.test.mjs`.
+
 ## 2026-11-25: "Around my region" means nearby cities, and saving the profile keeps typed model details
 - Travel range now decides which other cities a talent appears in for brand search and brief matching. "Around my region" covers nearby cities only (North: Manchester, Liverpool, Leeds; Midlands: Birmingham; South: London, Bristol; Scotland: Glasgow); "Anywhere in the UK" and "UK and abroad" cover every city. Before, any travelling talent showed up everywhere. The profile form says which cities "around my region" covers for your city.
 - Saving the profile form no longer redraws the model details below it, so measurements typed but not saved stay put.
