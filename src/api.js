@@ -75,3 +75,6 @@ let rulesP;
 export const roleRules = () => (rulesP ||= rpc('role_rules').catch((e) => { rulesP = null; throw e; }));
 let optsP;
 export const modelOptions = () => (optsP ||= rpc('model_options').catch((e) => { optsP = null; throw e; }));
+// the talent agency declaration, as stored by the database (version prefix dropped for display)
+let agencyP;
+export const agencyText = () => (agencyP ||= rpc('agency_declaration').then((s) => String(s).replace(/^[^:]*:\s*/, '')).catch((e) => { agencyP = null; throw e; }));

@@ -3,7 +3,7 @@
 import { VIEWS, A, F, C, S, go, refreshMe, rerender } from '../state.js';
 import { rpc, photoUrl, roleRules, modelOptions } from '../api.js';
 import { specsFields, readSpecs, specsTxt, DRESS, SUITS } from './model.js';
-import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CATS, CITIES, USAGE, TERMS, toast, openLayer, closeLayer, replaceLayer, formData, loading, plural, first, whenTxt, rolesOf, rolesTxt, rolePlural } from '../ui.js';
+import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CATS, CITIES, USAGE, TERMS, toast, openLayer, closeLayer, replaceLayer, formData, loading, plural, first, whenTxt, rolesOf, rolesTxt, rolePlural, travelTxt } from '../ui.js';
 import { ICON } from '../icons.js';
 import { comp, thumb, bookingItem, groupBookings, calendar, gallery, stHTML, workByRole } from './common.js';
 
@@ -46,7 +46,7 @@ function results(list) {
   if (!list.length) return '<div class="empty">No one matches yet. Try another date, city or rate. Embr is invite-only during the pilot, so the board is still filling up.</div>';
   const here = list.filter((t) => !t.away), away = list.filter((t) => t.away);
   return (here.length ? `<div class="comps">${here.map((t) => comp(t)).join('')}</div>` : '') +
-    (away.length ? `<h2 class="sec mt48">Will travel to ${esc(f.city)}</h2><p class="s g mb24">Based elsewhere, travel paid by you.</p><div class="comps">${away.map((t) => comp(t)).join('')}</div>` : '');
+    (away.length ? `<h2 class="sec mt48">Will travel to ${esc(f.city)}</h2><p class="s g mb24">Based elsewhere. Check each profile for how travel costs work.</p><div class="comps">${away.map((t) => comp(t)).join('')}</div>` : '');
 }
 async function runSearch() {
   const form = $('#f-search');
@@ -88,7 +88,7 @@ export async function talentSheet(id, extra = {}) {
     body: `${gallery(t)}<div class="mt32"><h2 class="pname">${esc(t.name)}${t.verified ? ICON.tick : ''}</h2>
       <div class="rolebadges mt12" aria-label="What they do">${rolesOf(t).map((r) => `<span>${esc(r)}</span>`).join('')}</div>
       ${t.verified ? '<p class="s g mt8">ID checked: 18+</p>' : '<p class="s g mt8">ID check not done yet. They\'ll need to pass it before they can accept.</p>'}
-      <dl class="statline">${t.height ? `<div><dt>Height</dt><dd>${esc(t.height)}</dd></div>` : ''}<div><dt>Day rate</dt><dd>${t.day_rate ? pounds(t.day_rate) : '–'}</dd></div>${t.half_rate ? `<div><dt>Half day</dt><dd>${pounds(t.half_rate)}</dd></div>` : ''}<div><dt>Travel</dt><dd>${t.travels ? 'Anywhere in the UK' : 'Local work only'}</dd></div>${t.completed ? `<div><dt>Jobs on Embr</dt><dd>${t.completed}</dd></div>` : ''}</dl></div>
+      <dl class="statline">${t.height ? `<div><dt>Height</dt><dd>${esc(t.height)}</dd></div>` : ''}<div><dt>Day rate</dt><dd>${t.day_rate ? pounds(t.day_rate) : '–'}</dd></div>${t.half_rate ? `<div><dt>Half day</dt><dd>${pounds(t.half_rate)}</dd></div>` : ''}<div><dt>Travel</dt><dd>${esc(travelTxt(t))}</dd></div>${t.completed ? `<div><dt>Jobs on Embr</dt><dd>${t.completed}</dd></div>` : ''}</dl></div>
       <div class="cs-grid"><div><p class="measure">${esc(t.bio) || '<span class="g">No bio yet.</span>'}</p>
         ${t.tags?.length ? `<div class="chips mt16">${t.tags.map((x) => `<span class="chip" style="cursor:default">${esc(x)}</span>`).join('')}</div>` : ''}
         ${t.comfort ? `<h3 class="mt24 mb8">Comfortable with</h3><p class="s">${esc(t.comfort)}</p>` : ''}

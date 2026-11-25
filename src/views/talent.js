@@ -2,9 +2,10 @@
 // and booking links. Talent never see briefs and can't apply for work:
 // brands find them and send offers. "Let work find you".
 import { VIEWS, A, F, C, S, go, refreshMe, rerender } from '../state.js';
-import { rpc, action, uploadPhoto, deletePhoto, photoUrl, roleRules, modelOptions } from '../api.js';
+import { rpc, action, uploadPhoto, deletePhoto, photoUrl, roleRules, modelOptions, agencyText } from '../api.js';
+import { agencyBox } from './auth.js';
 import { statsForm } from './model.js';
-import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CITIES, rolesOf, rolesTxt, roleChips, pickedRoles, USAGE, TERMS, toast, openLayer, closeLayer, formData, plural, first, busy, confirmDialog } from '../ui.js';
+import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CITIES, rolesOf, rolesTxt, roleChips, pickedRoles, USAGE, TERMS, TRAVEL_RANGE, TRAVEL_COSTS, toast, openLayer, closeLayer, formData, plural, first, busy, confirmDialog } from '../ui.js';
 import { ICON } from '../icons.js';
 import { thumb, calendar, groupBookings, bookingItem, linkCards } from './common.js';
 import { bookingsView, inboxView } from './brand.js';
@@ -20,6 +21,7 @@ function readiness(t) {
       const g = t.gaps.find((x) => x.role === r);
       return [`${r} section${g ? ': add ' + g.missing.join(', ') : ''}`, !g, 'work'];
     }) : [['Add at least one photo', (t.photos || []).length > 0, 'profile']]),
+    ['Confirm your agency status', !!t.agency_declared, 'agency'],
     ['Verify your ID (18+)', !!t.verified, 'verify'],
     ['Set up payouts with Stripe', !!t.payouts_enabled, 'payouts'],
   ];
@@ -30,8 +32,8 @@ function readyPanel(t) {
   const left = s.filter((x) => !x[1]);
   if (!left.length) return '';
   return `<section class="panel mb24"><div class="row between"><h3>Get ready to be booked</h3><span class="s g">${s.length - left.length} of ${s.length}</span></div>
-    <div class="list mt12" style="border:0">${s.map(([l, ok, a]) => `<div class="item" style="padding:10px 0"><span class="st ${ok ? 'ok' : 'wait'}">${ok ? 'Done' : 'To do'}</span><span class="grow s">${l}</span>${ok ? '' : a === 'work' ? `<button class="btn sm" data-a="towork">${location.pathname === '/profile' ? 'Fill it in' : 'Open profile'}</button>` : a === 'profile' ? '<button class="btn sm" data-tab="profile">Open profile</button>' : `<button class="btn sm ${a === 'verify' ? 'primary' : ''}" data-a="${a}">${a === 'verify' ? 'Verify ID' : 'Set up payouts'}</button>`}</div>`).join('')}</div>
-    <p class="xs g mt8">${!t.published ? 'Your profile is hidden from brands until it has your name, rate, Book-me name and every section for the things you do.' : 'Brands can see your profile. You need the ID check and payouts before you can accept an offer.'}</p></section>`;
+    <div class="list mt12" style="border:0">${s.map(([l, ok, a]) => `<div class="item" style="padding:10px 0"><span class="st ${ok ? 'ok' : 'wait'}">${ok ? 'Done' : 'To do'}</span><span class="grow s">${l}</span>${ok ? '' : a === 'work' ? `<button class="btn sm" data-a="towork">${location.pathname === '/profile' ? 'Fill it in' : 'Open profile'}</button>` : a === 'profile' || (a === 'agency' && location.pathname !== '/profile') ? '<button class="btn sm" data-tab="profile">Open profile</button>' : a === 'agency' ? '<button class="btn sm primary" data-a="toagency">Confirm</button>' : `<button class="btn sm ${a === 'verify' ? 'primary' : ''}" data-a="${a}">${a === 'verify' ? 'Verify ID' : 'Set up payouts'}</button>`}</div>`).join('')}</div>
+    <p class="xs g mt8">${!t.published ? 'Your profile is hidden from brands until it has your name, rate, Book-me name, your agency status and every section for the things you do.' : 'Brands can see your profile. You need the ID check and payouts before you can accept an offer.'}</p></section>`;
 }
 
 // ---------------------------------------------------------------- Today
@@ -90,6 +92,18 @@ A.payouts = async (el) => {
 };
 A['stripe-dash'] = async () => { const r = await action('connect_dashboard'); window.open(r.url, '_blank', 'noopener'); };
 
+A.idcheck = async (el) => {
+  busy(el, true, 'Checking…');
+  try { await action('identity_refresh'); } catch { /* shown below */ }
+  await refreshMe(); rerender();
+  toast(T().verified ? 'You\'re verified 18+' : 'Still being confirmed. Embr will let you know.');
+};
+A.toagency = () => $('#f-agency')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+F['f-agency'] = async () => {
+  S.me = await rpc('declare_agency');
+  toast(S.me.talent.published ? 'Confirmed. Your profile is live.' : 'Confirmed');
+  rerender();
+};
 A.verify = async (el) => {
   busy(el, true, 'Opening ID check…');
   try {
@@ -106,21 +120,25 @@ A.verify = async (el) => {
 V.profile = async () => {
   const q = new URLSearchParams(location.search);
   if (q.get('id')) { await action('identity_refresh').catch(() => null); history.replaceState({}, '', '/profile'); }
-  const [, rules, mo] = await Promise.all([refreshMe(), roleRules(), modelOptions()]);
+  const [, rules, mo, agency] = await Promise.all([refreshMe(), roleRules(), modelOptions(), agencyText().catch(() => '')]);
   const t = T();
   const idStatus = t.verified ? '<span class="st ok">Verified 18+</span>'
     : t.identity_status === 'processing' ? '<span class="st wait">Checking your ID…</span>'
       : t.identity_status === 'under_18' ? '<span class="st bad">Under 18</span>'
-        : t.identity_status === 'requires_input' ? '<span class="st warn">Needs another try</span>' : '<span class="st wait">Not done</span>';
+        : t.identity_status === 'review' ? '<span class="st wait">Confirming your age</span>'
+          : t.identity_status === 'requires_input' ? '<span class="st warn">Needs another try</span>' : '<span class="st wait">Not done</span>';
   return `<div class="row between top-al wrap mb24"><h1 class="display t-48">Profile</h1>${t.handle && t.published ? `<a class="btn" href="/@${esc(t.handle)}" target="_blank" rel="noopener">See your Book-me page</a>` : ''}</div>
   <div id="ready">${readyPanel(t)}</div>
+  ${t.agency_declared ? '' : `<form id="f-agency" class="panel mb24"><h3>Confirm your agency status</h3><p class="s g mt8">Embr is for models and creatives who are free to take bookings themselves. Brands can't see your profile until you confirm this.</p><div class="mt12">${agencyBox(agency)}</div><button class="btn primary sm mt12" type="submit">Confirm</button></form>`}
   <div class="cols" style="grid-template-columns:minmax(0,1fr) 400px"><div><form id="f-profile"><div class="fgrid">
     <label class="field span">Name<input class="in" name="name" required value="${esc(t.name)}"></label>
     ${roleChips(rolesOf(t), 'What you do')}
     <label class="field">Based in<select class="in" name="city">${opts(CITIES, t.city)}</select></label>
     <label class="field">Day rate, £<input class="in" type="number" name="day_rate" min="5" step="5" required value="${t.day_rate ?? ''}"></label>
     <label class="field">Half-day rate, £<input class="in" type="number" name="half_rate" min="5" step="5" value="${t.half_rate ?? ''}"></label>
-    <label class="field span">Travel<select class="in" name="travels"><option value="true" ${t.travels ? 'selected' : ''}>I'll travel anywhere in the UK, with travel paid</option><option value="false" ${!t.travels ? 'selected' : ''}>Local work only</option></select><span class="hint">Talent who travel also appear when brands search other cities.</span></label>
+    <label class="field">How far you'll travel<select class="in" name="travel_range">${TRAVEL_RANGE.map(([k, l]) => `<option value="${k}" ${(t.travel_range || 'local') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+    <label class="field">Travel costs<select class="in" name="travel_costs">${TRAVEL_COSTS.map(([k, l]) => `<option value="${k}" ${(t.travel_costs || 'discuss') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+    <p class="hint span" style="margin-top:-8px">Your usual preference. You still decide on every offer, so you can say yes to a trip one week and no the next. Brands in other cities see you if you travel beyond your city.</p>
     <label class="field">Book-me name<input class="in" name="handle" required pattern="[A-Za-z0-9_.]{2,30}" value="${esc(t.handle)}" placeholder="yourname"><span class="hint">Your page: ${esc(appOrigin().replace(/^https?:\/\//, ''))}/@${esc(t.handle || 'yourname')}</span></label>
     <label class="field">Instagram or TikTok<input class="in" name="instagram" value="${esc(t.instagram)}" placeholder="@handle"></label>
     <label class="field span">Bio<textarea class="in" name="bio" maxlength="1200" placeholder="Who you are, your experience, and what you love working on">${esc(t.bio)}</textarea></label>
@@ -129,7 +147,7 @@ V.profile = async () => {
   </div><button class="btn ink mt24" type="submit">Save profile</button></form>
   <section id="work" class="mt48" aria-label="Your work">${workHTML(t, rules, mo)}</section></div>
   <aside class="stack">
-    <div class="panel"><div class="row between"><h3>ID check</h3>${idStatus}</div><p class="s g mt8">Embr is for talent aged 18 and over. Stripe checks your passport, driving licence or ID card and a selfie. Embr only receives the result and your date of birth.</p>${t.verified ? '' : `<button class="btn ${t.identity_status === 'processing' ? '' : 'primary'} sm mt12" data-a="verify">${t.identity_status ? 'Try again' : 'Verify ID'}</button>`}</div>
+    <div class="panel"><div class="row between"><h3>ID check</h3>${idStatus}</div><p class="s g mt8">Embr is for talent aged 18 and over. Stripe checks your passport, driving licence or ID card and a selfie. Embr only receives the result and your date of birth.</p>${t.verified ? '' : t.identity_status === 'review' || t.identity_status === 'processing' ? '<p class="s mt8">Your check went through. Embr will confirm your age shortly.</p><button class="btn sm mt12" data-a="idcheck">Check again</button>' : `<button class="btn primary sm mt12" data-a="verify">${t.identity_status ? 'Try again' : 'Verify ID'}</button>`}</div>
     <div><h3 class="mb8">When you're free</h3><p class="s g mb12">Tap a day to mark it unavailable. Brands only see you for dates you're free.</p><div id="cal">${calendar(t, true)}</div></div>
   </aside></div>`;
 };
@@ -159,9 +177,14 @@ function workHTML(t, rules, mo) {
     </section>`;
   }).join('')}`;
 }
+// redraws only the work sections (never the profile form above them), and keeps
+// any model details typed but not yet saved
 async function refreshWork() {
   const [rules, mo] = await Promise.all([roleRules(), modelOptions()]);
-  $('#work').innerHTML = workHTML(T(), rules, mo);
+  const sf = $('#f-stats');
+  const typed = sf ? Object.fromEntries(Object.entries(formData(sf)).filter(([, v]) => v !== '')) : {};
+  const t = T();
+  $('#work').innerHTML = workHTML({ ...t, stats: { ...(t.stats || {}), ...typed } }, rules, mo);
   $('#ready').innerHTML = readyPanel(T());
 }
 A.towork = () => {
@@ -201,10 +224,12 @@ F['f-stats'] = async (form) => {
 A.rmlink = async (el) => { S.me = await rpc('remove_link', { p_id: el.dataset.id }); await refreshWork(); };
 F['f-profile'] = async (form) => {
   const d = formData(form);
-  d.travels = d.travels === 'true';
+  const travel = { travel_range: d.travel_range, travel_costs: d.travel_costs };
+  delete d.travel_range; delete d.travel_costs;
   d.tags = (d.tags || '').split(',').map((x) => x.trim()).filter(Boolean);
   d.roles = pickedRoles(form);
   S.me = await rpc('save_talent', { p: d });
+  S.me = await rpc('save_travel', { p: travel });
   toast(S.me.talent.published ? 'Saved. Brands can see your profile.' : 'Saved. Fill in your work sections to go live.');
   rerender();
 };
@@ -217,15 +242,15 @@ C.photos = async (input) => {
     S.me = await uploadPhoto(S.me.id, f, input.dataset.role || null);
   }
   toast(S.me.talent.published ? 'Photos added. Your profile is live.' : 'Photos added');
-  rerender();
+  await refreshWork();
 };
 A.rmphoto = async (el) => {
   const ok = await confirmDialog({ title: 'Remove this photo?', body: 'It will be deleted from your profile.', yes: 'Remove', danger: true });
   if (!ok) return;
   S.me = await deletePhoto(el.dataset.id, el.dataset.path);
-  rerender();
+  await refreshWork();
 };
-A.cover = async (el) => { S.me = await rpc('cover_photo', { p_id: el.dataset.id }); rerender(); };
+A.cover = async (el) => { S.me = await rpc('cover_photo', { p_id: el.dataset.id }); await refreshWork(); };
 A.day = async (el) => {
   S.me = await rpc('toggle_off_day', { p_day: el.dataset.d });
   $('#cal').innerHTML = calendar(S.me.talent, true);
