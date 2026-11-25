@@ -33,7 +33,13 @@ export function createFakeStripe(baseUrl) {
     identity: {
       verificationSessions: {
         create: async (p) => { const s = { id: id('vs'), status: 'requires_input', metadata: p.metadata, return_url: p.return_url, verified_outputs: null }; s.url = `${baseUrl}/__fake_stripe/identity?session=${s.id}`; st.identity[s.id] = s; return s; },
-        retrieve: async (sid) => st.identity[sid],
+        // like real Stripe: the date of birth is only included when expanded by name
+        retrieve: async (sid, o = {}) => {
+          const s = st.identity[sid];
+          if (!s?.verified_outputs || (o.expand || []).includes('verified_outputs.dob')) return s;
+          const { dob, ...rest } = s.verified_outputs;
+          return { ...s, verified_outputs: rest };
+        },
       },
     },
     customers: { create: async (p, o) => once(opt(o), () => { const c = { id: id('cus'), ...p }; st.customers[c.id] = c; return c; }) },

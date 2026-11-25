@@ -3,7 +3,7 @@
 //  /l/CODE    a booking link a talent sent to a brand
 import { VIEWS, A, F, S, go, refreshMe } from '../state.js';
 import { rpc, action, photoUrl, roleRules } from '../api.js';
-import { $, esc, gbp, pounds, pct, dLong, dMed, toast, formData, first, openLayer, rolesOf, rolesTxt } from '../ui.js';
+import { $, esc, gbp, pounds, pct, dLong, dMed, toast, formData, first, openLayer, rolesOf, rolesTxt, travelTxt } from '../ui.js';
 import { ICON, LOGO } from '../icons.js';
 import { calendar, workByRole } from './common.js';
 import { setVia, via } from './auth.js';
@@ -31,7 +31,7 @@ VIEWS.public.bookme = async (app, handle) => {
     <div class="bm-work">${workByRole(t, rules)}</div>
     <aside class="bm-side"><p class="s g">Based in ${esc(t.city)}</p><h1 class="pname mt8">${esc(t.name)}${t.verified ? ICON.tick : ''}</h1>
       <div class="rolebadges mt12" aria-label="What ${esc(first(t.name))} does">${rolesOf(t).map((r) => `<span>${esc(r)}</span>`).join('')}</div>
-      <dl class="statline">${t.height ? `<div><dt>Height</dt><dd>${esc(t.height)}</dd></div>` : ''}<div><dt>Day rate</dt><dd>${t.day_rate ? pounds(t.day_rate) : '–'}</dd></div><div><dt>Travel</dt><dd>${t.travels ? 'UK-wide' : 'Local'}</dd></div></dl>
+      <dl class="statline">${t.height ? `<div><dt>Height</dt><dd>${esc(t.height)}</dd></div>` : ''}<div><dt>Day rate</dt><dd>${t.day_rate ? pounds(t.day_rate) : '–'}</dd></div><div><dt>Travel</dt><dd>${esc(travelTxt(t))}</dd></div></dl>
       ${t.bio ? `<p class="mt24">${esc(t.bio)}</p>` : ''}
       <div class="mt24">${act}</div>
       <h3 class="mt32 mb12">Free dates</h3>${calendar({ ...t, off_days: [] })}

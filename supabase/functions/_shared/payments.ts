@@ -93,7 +93,8 @@ export async function identityStart(stripe: any, rpc: Rpc, env: Env, userId: str
 }
 
 export async function identitySync(stripe: any, rpc: Rpc, sessionId: string, userId?: string) {
-  const s = await stripe.identity.verificationSessions.retrieve(sessionId, { expand: ['verified_outputs'] });
+  // Stripe only returns the date of birth when it's asked for by name
+  const s = await stripe.identity.verificationSessions.retrieve(sessionId, { expand: ['verified_outputs', 'verified_outputs.dob'] });
   const user = userId || s.metadata?.user_id;
   if (!user) return;
   const dob = s.verified_outputs?.dob;

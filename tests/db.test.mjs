@@ -69,12 +69,17 @@ async function main() {
   ok('under-18 date of birth is refused at sign-up');
   await fails(call(amara, 'create_profile', 'talent', bInv, null, null, { name: 'A', dob: '1999-04-02' }), /for a brand account/);
   ok('a brand invite can\'t make a talent account');
-  let me = await call(amara, 'create_profile', 'talent', tInv, null, null, { name: 'Amara Okafor', dob: '1999-04-02', city: 'Manchester', roles: ['Model', 'UGC creator', 'Juggler'] });
+  await fails(call(amara, 'create_profile', 'talent', tInv, null, null, { name: 'Amara Okafor', dob: '1999-04-02', roles: ['Model'] }), /agency status/);
+  ok('talent must confirm their agency status to sign up');
+  let me = await call(amara, 'create_profile', 'talent', tInv, null, null, { name: 'Amara Okafor', dob: '1999-04-02', city: 'Manchester', roles: ['Model', 'UGC creator', 'Juggler'], agency: 'yes' });
+  assert.equal(me.talent.agency_declared, true);
+  const decl = (await db.query('select agency_declared_at, agency_declaration from talents where id = $1', [amara.id])).rows[0];
+  assert.ok(decl.agency_declared_at); assert.match(decl.agency_declaration, /^agency-v1/); ok('the agency declaration is recorded with its version and time');
   assert.equal(me.role, 'talent'); assert.deepEqual(me.talent.roles, ['Model', 'UGC creator']);
   ok('sign-up keeps every role picked, ignoring unknown ones');
-  await fails(call(jay, 'create_profile', 'talent', tInv, null, null, { name: 'J', dob: '1999-01-01', roles: ['Model'] }), /used/);
+  await fails(call(jay, 'create_profile', 'talent', tInv, null, null, { name: 'J', dob: '1999-01-01', roles: ['Model'], agency: 'yes' }), /used/);
   ok('an invite code works once');
-  await call(jay, 'create_profile', 'talent', tInv2, null, null, { name: 'Jay Patel', dob: '1997-01-01', city: 'London', category: 'Model' });
+  await call(jay, 'create_profile', 'talent', tInv2, null, null, { name: 'Jay Patel', dob: '1997-01-01', city: 'London', category: 'Model', agency: 'yes' });
   ok('older single-category sign-up still works');
   await call(rivet, 'create_profile', 'brand', bInv, null, null, { name: 'Rivet Studio', contact_name: 'Sam', city: 'Manchester' });
   ok('talent and brand accounts created with invites');
@@ -111,7 +116,14 @@ async function main() {
   assert.equal(me.talent.published, true);
   await fails(call(jay, 'save_talent', { handle: 'Amara' }), /taken/); ok('Book-me names are unique, ignoring case');
   await fails(call(jay, 'save_talent', { roles: [] }), /at least one/); ok('talent must keep at least one role');
-  await call(jay, 'save_talent', { handle: 'jay', day_rate: '200', travels: true });
+  await call(jay, 'save_talent', { handle: 'jay', day_rate: '200' });
+  await fails(call(jay, 'save_travel', { travel_range: 'moon' }), /travel/i);
+  me = await call(jay, 'save_travel', { travel_range: 'region', travel_costs: 'discuss' });
+  assert.equal(me.talent.travel_range, 'region'); assert.equal(me.talent.travel_costs, 'discuss'); assert.equal(me.talent.travels, true);
+  ok('travel is a range plus how costs are handled, not just yes or no');
+  me = await call(jay, 'save_talent', { roles: ['Model', 'Hair stylist', 'Nail technician'] });
+  assert.deepEqual([...me.talent.roles].sort(), ['Hair stylist', 'Model', 'Nail technician']);
+  await call(jay, 'save_talent', { roles: ['Model'] }); ok('hair stylists and nail technicians can join');
   me = await call(jay, 'save_model_stats', { sizing: 'menswear', height_cm: '185', chest_in: '40', waist_in: '32', shoe_uk: '10', hair: 'Brown', eyes: 'Blue' });
   assert.match(me.talent.gaps[0].missing.join(), /inside leg, suit size/); ok('menswear needs chest, waist, inside leg and suit size');
   await fails(call(jay, 'save_model_stats', { sizing: 'menswear', height_cm: '185', suit: '40' }), /40R/);
@@ -177,6 +189,9 @@ async function main() {
   assert.equal(brief.ranked[0].offered, true);
 
   await fails(call(amara, 'respond_offer', b1, true, true, null), /Verify your ID/); ok('unverified talent can\'t accept');
+  await call('service', 'svc_identity_result', amara.id, 'vs_0', 'verified', null);
+  me = await call(amara, 'me'); assert.equal(me.talent.identity_status, 'review');
+  ok('a passed ID check with no date of birth goes to Embr review, never "under 18"');
   await call('service', 'svc_identity_result', amara.id, 'vs_1', 'verified', '1999-04-02');
   await fails(call(amara, 'respond_offer', b1, true, true, null), /payouts/); ok('talent without payouts can\'t accept');
   await call('service', 'svc_set_stripe_account', amara.id, 'acct_amara');

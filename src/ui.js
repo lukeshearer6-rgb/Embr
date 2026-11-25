@@ -39,7 +39,7 @@ export const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
 export const opts = (arr, v) => arr.map((x) => `<option ${x === v ? 'selected' : ''}>${esc(x)}</option>`).join('');
 
 // the roles a person can pick (the same list as role_rules() in the database)
-export const CATS = ['Model', 'UGC creator', 'Actor', 'Content creator', 'Photographer', 'Videographer', 'Make-up artist', 'Stylist'];
+export const CATS = ['Model', 'UGC creator', 'Actor', 'Content creator', 'Photographer', 'Videographer', 'Make-up artist', 'Hair stylist', 'Nail technician', 'Stylist'];
 export const rolesOf = (t) => (t?.roles?.length ? t.roles : t?.category ? [t.category] : []);
 // "Model, UGC creator and Actor"
 export const rolesTxt = (t) => { const r = rolesOf(t); return r.length < 2 ? r.join('') : r.slice(0, -1).join(', ') + ' and ' + r.at(-1); };
@@ -49,6 +49,15 @@ export const roleChips = (picked = [], label = 'What you do') => `<fieldset clas
 // "UGC creators", "models": for sentences like "Show me models in Leeds"
 export const rolePlural = (c) => (c === 'UGC creator' ? 'UGC creators' : c.toLowerCase() + 's');
 export const pickedRoles = (form) => [...form.querySelectorAll('[data-a=pick-role][aria-pressed=true]')].map((b) => b.dataset.role);
+// travel is a preference, not a promise: talent still decide offer by offer
+export const TRAVEL_RANGE = [['local', 'Local to my city'], ['region', 'Around my region'], ['uk', 'Anywhere in the UK'], ['international', 'UK and abroad']];
+export const TRAVEL_COSTS = [['paid', 'Brand covers travel'], ['nearby_included', 'Nearby travel included, further paid'], ['discuss', 'Agree it per booking']];
+export const travelTxt = (t) => {
+  const r = (TRAVEL_RANGE.find(([k]) => k === (t.travel_range || (t.travels ? 'uk' : 'local'))) || TRAVEL_RANGE[0])[1];
+  if ((t.travel_range || 'local') === 'local' && !t.travels) return r;
+  const c = { paid: 'travel paid', nearby_included: 'nearby travel included', discuss: 'costs agreed per booking' }[t.travel_costs || 'paid'];
+  return `${r}, ${c}`;
+};
 export const CITIES = ['Manchester', 'London', 'Birmingham', 'Leeds', 'Glasgow', 'Bristol', 'Liverpool'];
 export const USAGE = ['Instagram and TikTok', 'Paid social ads', 'Website and online shop', 'Email newsletters', 'Posters and print', 'All of it'];
 export const TERMS = ['3 months', '6 months', '12 months', '24 months'];

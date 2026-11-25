@@ -1,6 +1,6 @@
 // Welcome, sign-in by emailed code, and first-time account setup.
 import { SITE, VIEWS, F, A, S, go, refreshMe } from '../state.js';
-import { sendCode, verifyCode, rpc, sb } from '../api.js';
+import { sendCode, verifyCode, rpc, sb, agencyText } from '../api.js';
 import { $, esc, toast, opts, CITIES, formData, roleChips, pickedRoles } from '../ui.js';
 import { LOGO } from '../icons.js';
 
@@ -81,8 +81,10 @@ F['f-code'] = async (form, btn) => {
 A['code-back'] = () => { $('#f-code').hidden = true; $('#f-email').hidden = false; $('#f-email input').focus(); };
 A['code-resend'] = async () => { await sendCode(pendingEmail); toast('New code sent'); };
 
+let AGENCY = '';
 VIEWS.auth.onboarding = async (app) => {
   app.dataset.role = '';
+  AGENCY = await agencyText().catch(() => AGENCY);
   const v = via();
   if (v.invite && !v.as) {
     const inv = await rpc('check_invite', { p_code: v.invite }).catch(() => ({}));
@@ -125,9 +127,13 @@ function obForm(as, v) {
     ${roleChips([], 'What do you do?')}
     <label class="field span">Based in<select class="in" name="city">${opts(CITIES, 'Manchester')}</select></label>
     <label class="field span">Date of birth<input class="in" type="date" name="dob" required max="${new Date(Date.now() - 18 * 365.25 * 864e5).toISOString().slice(0, 10)}">
-      <span class="hint">Embr is for talent aged 18 and over. You'll confirm it with a quick ID check before your first booking.</span></label></div>
+      <span class="hint">Embr is for talent aged 18 and over. You'll confirm it with a quick ID check before your first booking.</span></label>
+    ${agencyBox()}</div>
     <button class="btn primary full mt24" type="submit">Create talent account</button></form>`;
 }
+// agency status: Embr is for people free to take bookings themselves
+export const agencyBox = (text = AGENCY) => `<div class="field span"><span>Agency status</span>
+  <label class="check mt8"><input type="checkbox" name="agency" value="yes" required> <span>${esc(text || 'I confirm I am not under an exclusive agency contract, or my agency or management contract lets me accept bookings on my own, and that Embr is not responsible if a booking breaks an agreement I have.')}</span></label></div>`;
 A['ob-role'] = (el) => {
   document.querySelectorAll('[data-a=ob-role]').forEach((b) => b.setAttribute('aria-pressed', b === el));
   setVia({ ...via(), as: el.dataset.r });

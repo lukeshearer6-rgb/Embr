@@ -2,6 +2,15 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-25: Talent demo fixes: photos keep your details, ID check, travel, new roles, agency status
+- **Photos no longer wipe the profile form.** Adding, removing or choosing a cover photo redrew the whole profile page, so anything typed but not saved was lost. Only the work sections are redrawn now, and typed model details are kept too.
+- **ID check no longer says "under 18" after a pass.** Stripe only returns the date of birth when asked for it by name; Embr wasn't asking, so a passed check had no date of birth and was treated as under 18. Embr now asks for it, and if a passed check ever arrives without one it goes to "Confirming your age" for staff to check, never "under 18". The test Stripe stand-in now behaves like real Stripe here.
+- **Travel is a preference, not yes/no.** Talent pick how far they'll travel (local, region, anywhere in the UK, UK and abroad) and how costs work (brand covers travel, nearby included, agree per booking). The form says they still decide offer by offer. Brands and the Book-me page show the new wording.
+- **Hair stylist and Nail technician** added to the things talent can do (3 photos each).
+- **Agency status declaration** at talent sign-up, and a prompt for existing talent; profiles stay hidden until it's confirmed. The wording is a DRAFT for solicitor review: `docs/dev/agency-declaration.md`.
+- Files: `supabase/migrations/20261125000001_talent_snags.sql`, `supabase/functions/_shared/payments.ts`, `scripts/fake-stripe.mjs`, `src/api.js`, `src/ui.js`, `src/views/auth.js`, `src/views/talent.js`, `src/views/brand.js`, `src/views/public.js`, `docs/dev/agency-declaration.md`.
+- Tests: db 69 checks (new: declaration required and stored, travel range and costs, new roles, passed check without date of birth goes to review), e2e 36 checks (new: sign-up tick box, travel saved, photo upload keeps unsaved fields, ID check needs the date of birth asked for by name).
+
 ## 2026-11-25: "I already have a code" on the sign-in screen
 - If the sign-in email can't be sent, or someone already has a code from an earlier email, they can tap "I already have a code" and type it in. Until Embr has its own domain, Resend only emails the account owner, so in testing Embr staff make the codes for test accounts and pass them on.
 - Files: `src/views/auth.js`, `tests/e2e.test.mjs` (the café brand signs in this way).
