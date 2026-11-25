@@ -213,6 +213,17 @@ F['f-job'] = async (form) => {
   rerender();
   A.job({ dataset: { id } });
 };
+// why each person is in the best-fit list, checked against the brief (Pin, Wrangle, Braintrust, Upwork candidate lists)
+function fitLines(t, j) {
+  const diff = (t.day_rate || 0) - j.day_rate;
+  const rows = [
+    [true, `Free ${dMed(j.shoot_date)}${j.days > 1 ? ' for ' + j.days + ' days' : ''}`],
+    [true, t.away ? `Travels from ${t.city}` : `Based in ${j.city}`],
+    t.day_rate ? [diff <= 0, diff <= 0 ? `${pounds(t.day_rate)} a day, within your rate` : `${pounds(t.day_rate)} a day, ${pounds(diff)} over yours`] : [false, 'No day rate set'],
+    ...(specsTxt(j.specs) ? [[true, 'Matches your model details']] : []),
+  ];
+  return `<ul class="fit" aria-label="Why ${esc(t.name)} fits">${rows.map(([ok, l]) => `<li class="${ok ? 'ok' : 'no'}">${esc(l)}</li>`).join('')}</ul>`;
+}
 A.job = async (el) => {
   const j = await rpc('brief_detail', { p_id: el.dataset.id });
   openLayer({
@@ -222,7 +233,7 @@ A.job = async (el) => {
     ${specsTxt(j.specs) ? `<p class="mt16"><b>Model details:</b> ${esc(specsTxt(j.specs))}</p>` : ''}
     ${j.description ? `<p class="measure mt24">${esc(j.description)}</p>` : ''}${j.usage ? `<p class="s g mt8">Usage: ${esc(j.usage)}</p>` : ''}
     <h3 class="mt32 mb8">Best fit for this brief</h3><p class="s g mb16">${specsTxt(j.specs) ? 'Only models who match your details. ' : ''}Ranked by who's free on ${dMed(j.shoot_date)}, where they're based and how close their day rate is to yours. You choose who gets an offer.</p>
-    ${j.ranked.length ? `<div class="comps" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:24px 16px">${j.ranked.map((t) => `<div>${comp(t, { save: false }).replace('data-a="talent"', `data-a="talent" data-brief="${j.id}"`)}${t.offered ? '<p class="xs g mt4">Offer sent</p>' : `<button class="btn sm full mt8" data-a="offer" data-id="${t.id}" data-brief="${j.id}">Send offer</button>`}</div>`).join('')}</div>`
+    ${j.ranked.length ? `<div class="comps fitgrid">${j.ranked.map((t) => `<div>${comp(t, { save: false }).replace('data-a="talent"', `data-a="talent" data-brief="${j.id}"`)}${fitLines(t, j)}${t.offered ? '<p class="xs g mt4">Offer sent</p>' : `<button class="btn sm full mt8" data-a="offer" data-id="${t.id}" data-brief="${j.id}">Send offer</button>`}</div>`).join('')}</div>`
       : '<div class="empty">No one free fits this brief yet. Try another date, or search the board.</div>'}
     ${j.bookings.length ? `<h3 class="mt32 mb8">Offers</h3><div class="list">${j.bookings.map(bookingItem).join('')}</div>` : ''}`,
     foot: j.status === 'open' ? `<button class="btn quiet" data-a="closejob" data-id="${j.id}">Close brief</button><span class="grow"></span><button class="btn" data-tab="board">Search the board instead</button>` : '<span class="s g">This brief is closed.</span>',

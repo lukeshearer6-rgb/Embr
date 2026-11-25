@@ -137,12 +137,15 @@ V.today = async () => {
   list.filter((b) => b.status === 'offer').forEach((b) => todo.push([b, 'New offer from ' + b.brand.name + ': ' + gbp(b.talent_fee_p) + ' to you', 'Review offer', true]));
   list.filter((b) => b.status === 'confirmed' && b.shoot_date <= today()).forEach((b) => todo.push([b, 'Mark the job wrapped so the brand can sign off', 'Mark wrapped']));
   const up = list.filter((b) => ['accepted', 'confirmed', 'wrapped'].includes(b.status)).sort((a, b) => a.shoot_date.localeCompare(b.shoot_date));
+  // what needs the talent comes first: offers to answer, then setup while they're new (eBay, Shopify, Grailed, Deel home screens)
+  const setupFirst = readiness(t).some((g) => !g[1]) || (life === 0 && strength(t, pulse).steps.length > 0);
+  const todoHTML = todo.length ? `<section class="todo" aria-label="Needs you">${todo.map(([b, txt, btn, p]) => `<div class="item">${thumb(b.brand, true)}<div class="grow"><div class="ttl">${esc(b.title)}</div><div class="meta"><span>${esc(txt)}</span></div></div><button class="btn ${p ? 'primary' : ''} sm" data-a="booking" data-id="${b.id}">${btn}</button></div>`).join('')}</section>` : '';
   return `<p class="g">${new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p><h1 class="display t-72 mt8">Hi ${esc(first(t.name) || 'there')}</h1>
+  ${todoHTML || setupFirst ? `<div class="needs mt32">${todoHTML}${setupFirst ? strengthPanel(t, pulse) : ''}</div>` : ''}
   <button class="earn mt32" data-tab="wallet"><span class="l">Paid to you this month</span><span class="big">${gbp(paidM)}</span><span class="earn-sub"><span><b>${gbp(onWay)}</b> on the way, deposits paid</span><span><b>${gbp(life)}</b> earned on Embr, 0% commission</span></span><span class="go">Wallet →</span></button>
   ${statsRow(pulse, t)}
   <div class="cols mt48"><div>
-    ${strengthPanel(t, pulse)}
-    ${todo.length ? `<section class="todo" aria-label="Needs you">${todo.map(([b, txt, btn, p]) => `<div class="item">${thumb(b.brand, true)}<div class="grow"><div class="ttl">${esc(b.title)}</div><div class="meta"><span>${esc(txt)}</span></div></div><button class="btn ${p ? 'primary' : ''} sm" data-a="booking" data-id="${b.id}">${btn}</button></div>`).join('')}</section>` : ''}
+    ${setupFirst ? '' : strengthPanel(t, pulse)}
     <h2 class="sec">Coming up</h2>${up.length ? `<div class="list">${up.map(bookingItem).join('')}</div>` : '<div class="empty">Nothing booked yet. Let work find you: brands book you straight from your profile.</div>'}
     ${monthsBars(list)}
     ${milestones(t, pulse)}

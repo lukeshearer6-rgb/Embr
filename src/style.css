@@ -594,3 +594,22 @@ fieldset.specs{border-top:1px solid var(--line);padding-top:18px;margin-top:8px}
 .pulse li{padding-left:14px;position:relative}
 .pulse li::before{content:"";position:absolute;left:0;top:.6em;width:6px;height:6px;border-radius:50%;background:var(--embr)}
 @media (max-width:380px){.tile .l{font-size:11px}.tile+.tile{padding-left:8px}}
+
+/* redesign 2026-11-25 (Mobbin-backed, docs/dev/interface-redesign.md) */
+/* brief best fit: wider cards and a checked reason under each person */
+.comps.fitgrid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:32px 20px}
+.fit{list-style:none;display:grid;gap:4px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:13px}
+.fit li{display:grid;grid-template-columns:14px 1fr;gap:6px;align-items:baseline}
+.fit li::before{font-weight:700;font-size:12px}
+.fit li.ok::before{content:"✓";color:var(--ok)}
+.fit li.no{color:var(--graphite)}
+.fit li.no::before{content:"–";color:var(--mist)}
+/* talent offer: the pay beside Accept */
+.payline{display:grid;grid-template-columns:max-content max-content;justify-content:start;align-items:baseline;gap:0 10px;margin-right:8px}
+.payline .l{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--graphite)}
+.payline .money{font-variation-settings:var(--wide);font-weight:800;font-size:24px;letter-spacing:-.02em;line-height:1}
+.payline .xs{grid-column:1/-1;margin-top:2px}
+@media (max-width:640px){.payline{flex-basis:100%;margin:0 0 6px}}
+/* talent Today: what needs you sits above the money */
+.needs .todo{margin-bottom:24px}
+.needs .panel{margin-bottom:0;padding-bottom:12px}

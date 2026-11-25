@@ -2,6 +2,14 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-25: Interface round 1: fit reasons, pay beside Accept, next step first
+- Brands: each person in "Best fit for this brief" now shows why they fit (free on the date, where they're based, day rate against the brief, model details). Cards are wider so names don't wrap.
+- Talent: a new offer shows "You get £X" in the footer beside Accept, so the pay is visible without scrolling.
+- Talent Today: offers to answer, and the setup panel while the profile is new, now come before the earnings figures.
+- Backed by Mobbin references: docs/dev/interface-redesign.md. Before/after: docs/dev/redesign/before-after-2026-11-25.png.
+- Files: `src/views/brand.js`, `src/views/booking.js`, `src/views/talent.js`, `src/style.css`, `tests/e2e.test.mjs`.
+- Tests: e2e 38 (new checks: fit reasons on the brief, pay in the offer footer, setup panel above earnings), db 77.
+
 ## 2026-11-25: "Set up payouts" works on Stripe's newer platforms
 - New Stripe platforms refuse to create connected accounts the old way (Accounts v1), so "Set up payouts" failed with a Stripe message. Talent payout accounts are now created with Stripe Accounts v2 as recipients (they receive transfers; Embr pays Stripe's fees and carries losses; Express dashboard), using the request Stripe's own error message set out. If Stripe refuses a v1 onboarding link for such an account, Embr uses a v2 link. Platforms without v2 still get v1 Express accounts.
 - Not yet proven against real Stripe: v1 transfers, account status and `account.updated` webhooks for v2 accounts (Stripe's docs say v2 account IDs work with v1 endpoints and v2 accounts still send `account.updated`). Check on the first test booking.

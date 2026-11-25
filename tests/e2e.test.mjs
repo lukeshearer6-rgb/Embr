@@ -200,6 +200,8 @@ try {
   assert.equal(await amara.locator('.tiles .tile').count(), 3);
   await amara.waitForSelector('.tile >> text=None yet this week');
   await amara.waitForSelector('text=Profile strength');
+  // new talent: the next setup step sits above the money, not below it
+  assert.ok(await amara.evaluate(() => !!(document.querySelector('.needs .panel')?.compareDocumentPosition(document.querySelector('.earn')) & Node.DOCUMENT_POSITION_FOLLOWING)));
   await amara.waitForSelector('.panel:has-text("This week on Embr") >> text=Brands are being invited in now');
   assert.equal(await amara.locator('.panel:has-text("This week on Embr") a, .panel:has-text("This week on Embr") button').count(), 0);
   await shot(amara, '03-talent-today-phone');
@@ -254,8 +256,12 @@ try {
   await rivet.waitForSelector('.sheet >> text=Womenswear · 172–183cm · dress UK 8, 10');
   await rivet.waitForSelector('h3:has-text("Best fit for this brief")');
   await rivet.waitForSelector('.sheet .comp >> text=Amara Okafor');
+  // each person in the best-fit list says why they fit, checked against the brief
+  const fit = await rivet.textContent('.sheet .fit');
+  assert.match(fit, /Free /); assert.match(fit, /Based in Manchester/); assert.match(fit, /£250 a day, £10 over yours/); assert.match(fit, /Matches your model details/);
+  await rivet.locator('.sheet button[data-a=offer]').scrollIntoViewIfNeeded();
   await shot(rivet, '05-brief-best-fit');
-  ok('brand posts a brief and Embr ranks who fits');
+  ok('brand posts a brief and Embr ranks who fits, with the reasons beside each person');
   await rivet.click('.sheet button[data-a=offer]');
   await rivet.waitForSelector('#f-offer');
   await rivet.waitForSelector('#quote >> text=Embr fee, 10%');
@@ -279,6 +285,9 @@ try {
   await amara.waitForSelector('.todo >> text=Review offer');
   await amara.click('.todo >> text=Review offer');
   await amara.waitForSelector('.sheet >> text=You get');
+  // the pay sits beside Accept, not only further down the sheet
+  assert.match(await amara.textContent('.sheet .ft .payline'), /You get£\d+/);
+  await amara.locator('.sheet .ft button[data-a=accept]').waitFor();
   await shot(amara, '07-talent-offer-phone');
   await amara.click('.sheet button[data-a=accept]');
   await amara.check('#f-accept [name=agree]');
