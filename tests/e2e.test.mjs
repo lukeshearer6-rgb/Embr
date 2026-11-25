@@ -127,7 +127,6 @@ try {
   await amara.waitForSelector('[data-role-sec="Model"]');
   await amara.waitForSelector('[data-role-sec="UGC creator"]');
   await amara.fill('#f-profile [name=handle]', 'amara');
-  await amara.fill('#f-profile [name=day_rate]', '250');
   await amara.fill('#f-profile [name=bio]', 'Manchester model and UGC creator. Streetwear, beauty and editorial. <img src=x onerror="window.__xss=1">');
   await amara.fill('#f-profile [name=tags]', 'streetwear, beauty');
   await amara.waitForSelector('#f-profile >> text=/"Around my region" from Manchester means Liverpool and Leeds/');
@@ -137,6 +136,46 @@ try {
   await toastHas(amara, /Fill in your work sections/);
   await amara.waitForSelector('[data-role-sec="Model"] .need >> text=/which sizes you model/');
   ok('a section per role, and the profile stays hidden until each is filled');
+  {
+    // Rates and availability: a summary card on Profile opens a full-screen editor with X and one sticky Save
+    assert.equal(await amara.locator('#f-profile [name=day_rate]').count(), 0);
+    await amara.waitForSelector('.ratecard >> text=No rate yet');
+    await amara.waitForSelector('#ready >> text=Set your day rate');
+    await amara.click('.ratecard [data-a=rates-edit]');
+    await amara.waitForSelector('.sheet #f-rates');
+    assert.ok(await amara.locator('#pe-half .pe-fields').isHidden(), 'half days start switched off when there is no half-day rate');
+    await amara.fill('#f-rates [name=day_rate]', '250');
+    await amara.fill('#f-rates [name=full_includes]', 'Two looks');
+    await amara.click('#pe-half .switch');
+    await amara.fill('#f-rates [name=half_rate]', '150');
+    await amara.selectOption('#f-rates [name=half_hours]', '4');
+    await amara.fill('#f-rates [name=half_includes]', 'One look, natural make-up');
+    await amara.waitForSelector('#pe-preview .pkg >> text=One look, natural make-up');
+    assert.match(await amara.textContent('#pe-preview'), /Full day.*Up to 8 hours.*Two looks.*£250.*Half day.*Up to 4 hours.*£150/s);
+    for (const sel of ['#f-rates [name=day_rate]', '#f-rates [name=full_hours]', '#pe-half .switch', '#f-block [name=from]', '#f-block button[type=submit]', '.sheet .ft .btn.primary']) assert.ok((await amara.locator(sel).boundingBox()).height >= 48, sel + ' is at least 48px tall');
+    await amara.locator('.sheet .bd').evaluate((el) => { el.scrollTop = 0; });
+    await shot(amara, '02e-rates-editor-phone');
+    // blocking a range saves straight away and lists it; the month grid shows the days struck through
+    await amara.fill('#f-block [name=from]', iso(38));
+    await amara.fill('#f-block [name=to]', iso(40));
+    await amara.click('#f-block button[type=submit]');
+    await amara.waitForSelector('#blk-list li >> text=3 days');
+    assert.equal(await amara.locator('#cal .d.off').count(), 3);
+    await amara.locator('#blk').scrollIntoViewIfNeeded();
+    await shot(amara, '02f-blocked-dates-phone');
+    // a single day can be freed from the grid, and the range list follows
+    await amara.click(`#cal .d.off[data-d="${iso(40)}"]`);
+    await amara.waitForSelector('#blk-list li >> text=2 days');
+    await amara.click(`#cal .d.free[data-d="${iso(40)}"]`);
+    await amara.waitForSelector('#blk-list li >> text=3 days');
+    await amara.click('.sheet .ft .btn.primary');
+    await toastHas(amara, /Rates saved/);
+    await amara.waitForSelector('.ratecard >> text=Half day');
+    assert.match(await amara.textContent('.ratecard'), /Full day.*£250.*Half day.*£150.*Blocked dates.*3 days/s);
+    const [r] = await sql("select day_rate, half_rate, packages, (select count(*)::int from talent_off_days o where o.talent_id = t.id) off from talents t where handle = 'amara'");
+    assert.deepEqual(r, { day_rate: 250, half_rate: 150, packages: { full: { hours: 8, includes: 'Two looks' }, half: { hours: 4, includes: 'One look, natural make-up' } }, off: 3 });
+    ok('Rates and availability: talent set full-day and half-day packages and block a date range from one editor');
+  }
   [tRow] = await sql("select travel_range, travel_costs, travels from talents where handle = 'amara'");
   assert.deepEqual(tRow, { travel_range: 'region', travel_costs: 'nearby_included', travels: true });
   ok('travel is saved as how far plus how costs work');
@@ -371,6 +410,55 @@ try {
     assert.equal(await phone.locator('#rosterbar').count(), 0);
     await phone.close();
     ok('Shoot Roster: "Add to shoot" starts a roster from a brief, the bar shows head count and day rates, and the roster flags missing roles');
+  }
+  {
+    // Creative detail: a pushed full screen with the photos edge to edge, packages and a sticky "Add to shoot" bar
+    const phone = await person('rivet-phone3', true);
+    await phone.goto(`${BASE}/signin`);
+    await signIn(phone, 'sam@rivet.test', '12345678');
+    await phone.waitForSelector('.feed .cc');
+    await phone.click('.feed .cc:has-text("Amara Okafor") .cc-nm');
+    await phone.waitForSelector('.sheet .cd-hero img');
+    assert.match(await phone.textContent('.sheet .cd-count'), /1 \/ 4/); // three photos and her first video link
+    assert.equal(await phone.locator('.sheet .pkg').count(), 2);
+    assert.equal(await phone.getAttribute('.sheet .pkg[data-k=full]', 'aria-checked'), 'true');
+    assert.match(await phone.textContent('.sheet .ft'), /£250\s*full day.*Add to shoot/s);
+    const ft = await phone.locator('.sheet .ft').boundingBox();
+    assert.ok(ft.y + ft.height >= 843, 'the bar sits at the bottom of the screen');
+    assert.ok(await phone.evaluate(() => !!document.elementFromPoint(195, 830)?.closest('.sheet')), 'the tab bar is covered while on the detail screen');
+    for (const sel of ['.sheet .pkg', '.sheet .cd-add', '.sheet .cd-save']) assert.ok((await phone.locator(sel).first().boundingBox()).height >= 48, sel + ' is at least 48px tall');
+    await shot(phone, '04i-creative-detail-phone');
+    await phone.locator('.sheet .cd-media').evaluate((m) => { m.scrollLeft = m.clientWidth; m.dispatchEvent(new Event('scroll')); });
+    await phone.waitForSelector('.sheet .cd-i >> text=2');
+    // picking the half day moves the price in the bar
+    await phone.click('.sheet .pkg[data-k=half]');
+    assert.match(await phone.textContent('.sheet .ft'), /£150\s*half day/);
+    assert.match(await phone.textContent('.sheet .pkg[data-k=half]'), /Up to 4 hours.*One look, natural make-up.*£150/s);
+    await phone.locator('.sheet .pkgs').scrollIntoViewIfNeeded();
+    await shot(phone, '04j-creative-detail-packages-phone');
+    // her blocked dates show as unavailable in the next six weeks
+    assert.equal(await phone.locator(`.sheet .cal .d.off[title*="unavailable"]`).count() >= 2, true);
+    // "Add to shoot" uses the Shoot Roster: the half day sets her rate and one day in the roster
+    await phone.click('.sheet .cd-add');
+    await phone.waitForSelector('.shootsheet');
+    await phone.click('.shootsheet .shoot-row:has-text("A new shoot")');
+    await phone.waitForSelector('.sheet #f-roster');
+    assert.match(await phone.textContent('#f-roster .rr-pkg'), /Half day · up to 4 hours · one day/);
+    assert.equal(await phone.inputValue('#f-roster [data-k=day_rate]'), '150');
+    await phone.waitForFunction(() => /half day at £150/.test(document.getElementById('rquote')?.textContent || ''));
+    // back on her profile the half day is still picked, and an offer on its own starts from it
+    await phone.click('.sheet:has(#f-roster) .xbtn');
+    await phone.waitForSelector('.sheet .pkg[data-k=half][aria-checked=true]');
+    await phone.click('.sheet .cd-single [data-a=offer]');
+    await phone.waitForSelector('#f-offer');
+    assert.equal(await phone.inputValue('#f-offer [name=day_rate]'), '150');
+    assert.equal(await phone.inputValue('#f-offer [name=days]'), '1');
+    assert.equal(await phone.inputValue('#f-offer [name=pkg]'), 'half');
+    assert.match(await phone.textContent('#pkg-note'), /Package: Half day, up to 4 hours\. Includes: One look, natural make-up\./);
+    await phone.click('#f-offer [data-a=offer-pkg][data-k=full]');
+    assert.equal(await phone.inputValue('#f-offer [name=day_rate]'), '250');
+    await phone.close();
+    ok('Creative detail: brands pick a full or half day, and the sticky "Add to shoot" bar feeds the Shoot Roster and the offer form');
   }
   await rivet.click('.sheet button[data-a=offer]');
   await rivet.waitForSelector('#f-offer');

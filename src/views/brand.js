@@ -3,9 +3,10 @@
 import { VIEWS, A, F, C, S, go, refreshMe, rerender } from '../state.js';
 import { rpc, photoUrl, roleRules, modelOptions } from '../api.js';
 import { specsFields, readSpecs, specsTxt, DRESS, SUITS } from './model.js';
-import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CATS, CITIES, USAGE, TERMS, toast, openLayer, closeLayer, replaceLayer, formData, loading, plural, first, whenTxt, rolesOf, rolesTxt, rolePlural, travelTxt } from '../ui.js';
+import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CATS, CITIES, USAGE, TERMS, toast, openLayer, closeLayer, replaceLayer, topLayer, formData, loading, plural, first, whenTxt, rolesOf, rolesTxt, rolePlural, travelTxt } from '../ui.js';
 import { ICON, RICON } from '../icons.js';
-import { creativeCard } from './card.js';
+import { creativeCard, videoHost } from './card.js';
+import { packagesOf, pkgOf, hoursTxt, pkgNote } from './rates.js';
 import { renderRosterBar } from './roster.js';
 import { comp, thumb, bookingItem, groupBookings, calendar, gallery, stHTML, workByRole } from './common.js';
 
@@ -171,30 +172,80 @@ A.save = async (el) => {
   toast(on ? 'Saved to your shortlist' : 'Removed from your shortlist');
 };
 
-// ---------------------------------------------------------------- talent profile sheet
+// ---------------------------------------------------------------- creative detail (brand-facing)
+// A pushed full screen with the tab bar hidden and one sticky bar, because it leads to a booking
+// (DESIGN_RULES 1.6, 3.3). Evidence for each part is in docs/dev/rates-and-detail.md.
+//   hero      swipeable photos edge to edge, then the showreel tile, with a "1 / 6" counter and a
+//             round heart (Booksy and Fiverr profile headers, DESIGN_RULES 2.4)
+//   packages  Full day and Half day as tappable rows with price and hours (Booksy service options,
+//             Fiverr package tabs); the picked one sets the price in the bar
+//   dates     the next six weeks, unavailable days struck through (Airbnb "When?")
+//   bar       price of the picked package beside "Add to shoot" (Peerspace and Airbnb listing bars)
+// Brand-only actions: talent never see this screen's bar, and nothing here lets talent apply.
+const PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>';
+function detailHero(t) {
+  const ph = (t.photos || []).map((p) => photoUrl(p.path));
+  const slides = ph.map((u, i) => `<div class="cd-slide"><img src="${esc(u)}" alt="${esc(t.name)}, photo ${i + 1}" loading="${i ? 'lazy' : 'eager'}" decoding="async" draggable="false"></div>`);
+  if (t.reel?.url) slides.push(`<a class="cd-slide cd-video" href="${esc(t.reel.url)}" target="_blank" rel="noopener"><span class="cc-play">${PLAY}</span><span class="cc-vt">${esc(t.reel.title || 'Video')}</span><span class="cc-vh">${esc(videoHost(t.reel.url))}</span></a>`);
+  if (!slides.length) slides.push(`<div class="cd-slide cd-empty"><span class="pname">${esc(t.name).replace(' ', '<br>')}</span></div>`);
+  const isB = S.me?.role === 'brand';
+  return `<div class="cd-hero"><div class="cd-media" tabindex="0" aria-label="Photos of ${esc(t.name)}">${slides.join('')}</div>
+    ${slides.length > 1 ? `<span class="cd-count" aria-hidden="true"><span class="cd-i">1</span> / ${slides.length}</span>` : ''}
+    ${isB ? `<button class="save cd-save" data-a="save" data-id="${t.id}" aria-pressed="${!!t.saved}" aria-label="${t.saved ? 'Remove from shortlist' : 'Save to shortlist'}">${ICON.heart}</button>` : ''}</div>`;
+}
+function pkgRows(t, picked) {
+  const pk = packagesOf(t);
+  if (!pk.length) return '';
+  return `<section class="cd-sec" aria-labelledby="cd-pk"><h3 id="cd-pk">Packages</h3>
+    <div class="pkgs mt12" role="radiogroup" aria-label="Packages">${pk.map((p) => `<button type="button" class="pkg" role="radio" aria-checked="${p.key === picked}" data-a="pick-pkg" data-k="${p.key}" data-price="${p.price}" data-label="${p.label}">
+      <span class="pk-dot" aria-hidden="true"></span><span class="grow"><b>${p.label}</b><span class="s g">${hoursTxt(p.hours)}</span>${p.includes ? `<span class="xs pk-inc">${esc(p.includes)}</span>` : ''}</span><b class="money">${pounds(p.price)}</b></button>`).join('')}</div>
+    <p class="xs g mt8">You set the date and terms in your shoot. ${esc(first(t.name))} accepts or declines the offer.</p></section>`;
+}
 export async function talentSheet(id, extra = {}) {
   const [t, rules] = await Promise.all([rpc('talent_detail', { p_id: id }), roleRules().catch(() => ({}))]);
+  return detailLayer(t, rules, extra);
+}
+function detailLayer(t, rules, extra) {
   const isB = S.me?.role === 'brand';
   const st = S.me.settings;
   const rate = t.booked_before >= st.loyal_after ? st.fee_loyal : t.booked_before >= 1 ? st.fee_repeat : st.fee_first;
+  const pk = pkgOf(t, extra.pkg || 'full');
+  const trust = [t.verified ? 'ID checked, 18+' : 'ID check not done yet', t.rebooked_by ? `Rebooked by ${plural(t.rebooked_by, 'brand')}` : '', t.completed ? `${plural(t.completed, 'job')} on Embr` : ''].filter(Boolean);
   return {
-    kind: 'sheet', label: t.name,
-    head: `<div class="grow"><div class="s g">${esc(rolesTxt(t))}, ${esc(t.city)}</div></div>`,
-    body: `${gallery(t)}<div class="mt32"><h2 class="pname">${esc(t.name)}${t.verified ? ICON.tick : ''}</h2>
-      <div class="rolebadges mt12" aria-label="What they do">${rolesOf(t).map((r) => `<span>${esc(r)}</span>`).join('')}</div>
-      ${t.verified ? '<p class="s g mt8">ID checked: 18+</p>' : '<p class="s g mt8">ID check not done yet. They\'ll need to pass it before they can accept.</p>'}
-      <dl class="statline">${t.height ? `<div><dt>Height</dt><dd>${esc(t.height)}</dd></div>` : ''}<div><dt>Day rate</dt><dd>${t.day_rate ? pounds(t.day_rate) : '–'}</dd></div>${t.half_rate ? `<div><dt>Half day</dt><dd>${pounds(t.half_rate)}</dd></div>` : ''}<div><dt>Travel</dt><dd>${esc(travelTxt(t))}</dd></div>${t.completed ? `<div><dt>Jobs on Embr</dt><dd>${t.completed}</dd></div>` : ''}</dl></div>
-      <div class="cs-grid"><div><p class="measure">${esc(t.bio) || '<span class="g">No bio yet.</span>'}</p>
+    kind: 'sheet', label: t.name, detail: { t, rules, extra },
+    head: `<div class="grow s g">${esc(rolesTxt(t))}, ${esc(t.city)}</div>`,
+    body: `${detailHero(t)}
+      <div class="cd-id"><h2 class="cd-name">${esc(t.name)}${t.verified ? ICON.tick : ''}</h2>
+        <div class="rolebadges mt12" aria-label="What they do">${rolesOf(t).map((r) => `<span>${esc(r)}</span>`).join('')}</div>
+        <p class="s g mt12">${trust.map(esc).join(' · ')}</p>
+        ${t.verified ? '' : '<p class="xs g mt4">They\'ll need to pass it before they can accept.</p>'}</div>
+      ${pkgRows(t, pk?.key)}
+      <section class="cd-sec"><h3>Details</h3><dl class="statline">${t.height ? `<div><dt>Height</dt><dd>${esc(t.height)}</dd></div>` : ''}<div><dt>Based in</dt><dd>${esc(t.city)}</dd></div><div><dt>Travel</dt><dd>${esc(travelTxt(t))}</dd></div></dl></section>
+      <section class="cd-sec"><h3 class="mb12">Next six weeks</h3>${calendar(t)}</section>
+      <section class="cd-sec"><h3>About</h3><p class="measure mt8">${esc(t.bio) || '<span class="g">No bio yet.</span>'}</p>
         ${t.tags?.length ? `<div class="chips mt16">${t.tags.map((x) => `<span class="chip" style="cursor:default">${esc(x)}</span>`).join('')}</div>` : ''}
-        ${t.comfort ? `<h3 class="mt24 mb8">Comfortable with</h3><p class="s">${esc(t.comfort)}</p>` : ''}
-        ${t.instagram ? `<p class="s g mt16">Instagram / TikTok: ${esc(t.instagram)}</p>` : ''}
-        ${workByRole(t, rules)}
-      </div><div><h3 class="mb12">Next six weeks</h3>${calendar(t)}</div></div>`,
-    foot: isB ? `<div class="grow"><div><b class="money">${t.day_rate ? pounds(t.day_rate) : ''}</b> <span class="s g">/ day + ${pct(rate)} Embr fee</span></div><div class="xs g">50% deposit when they accept · free cancellation until ${st.free_cancel_days} days before</div></div>
-      <button class="btn" data-a="save" data-id="${t.id}" aria-pressed="${t.saved}">${t.saved ? 'Saved' : 'Save'}</button>
-      <button class="btn primary" data-a="offer" data-id="${t.id}" ${extra.brief ? `data-brief="${extra.brief}"` : ''}>Book ${esc(first(t.name))}</button>` : '',
+        ${t.comfort ? `<h4 class="s mt24 mb8">Comfortable with</h4><p class="s">${esc(t.comfort)}</p>` : ''}
+        ${t.instagram ? `<p class="s g mt16">Instagram / TikTok: ${esc(t.instagram)}</p>` : ''}</section>
+      <section class="cd-sec cd-work">${workByRole(t, rules)}</section>
+      ${isB ? `<p class="cd-single"><button type="button" class="link s" data-a="offer" data-id="${t.id}" ${extra.brief ? `data-brief="${extra.brief}"` : ''} data-pkg="${pk?.key || ''}">Send ${esc(first(t.name))} an offer on their own</button></p>` : ''}`,
+    foot: isB ? `<div class="grow pbar cd-bar"><div><b class="money" id="cd-price">${pk ? pounds(pk.price) : '–'}</b> <span class="s" id="cd-pkg">${pk ? pk.label.toLowerCase() : ''}</span></div><div class="xs g">+ ${pct(rate)} Embr fee · nothing to pay until they accept</div></div>
+      <button class="btn primary cd-add" data-a="add-shoot" data-id="${t.id}" data-name="${esc(t.name)}" data-pkg="${pk?.key || ''}">${ICON.plus}Add to shoot</button>` : '',
+    after: (root) => {
+      const m = root.querySelector('.sheet:last-of-type .cd-media');
+      if (m) m.addEventListener('scroll', () => { const i = root.querySelector('.sheet:last-of-type .cd-i'); if (i) i.textContent = Math.round(m.scrollLeft / m.clientWidth) + 1; }, { passive: true });
+    },
   };
 }
+// picking a package moves the price in the sticky bar and what "Add to shoot" and the single offer carry
+A['pick-pkg'] = (el) => {
+  const top = topLayer();
+  if (top?.detail) { const d = top.detail; const nl = detailLayer(d.t, d.rules, { ...d.extra, pkg: el.dataset.k }); top.body = nl.body; top.foot = nl.foot; top.detail = nl.detail; }
+  const sheet = el.closest('.sheet');
+  sheet.querySelectorAll('[data-a=pick-pkg]').forEach((b) => b.setAttribute('aria-checked', b === el));
+  sheet.querySelector('#cd-price').textContent = pounds(+el.dataset.price);
+  sheet.querySelector('#cd-pkg').textContent = el.dataset.label.toLowerCase();
+  sheet.querySelectorAll('[data-pkg]').forEach((b) => { b.dataset.pkg = el.dataset.k; });
+};
 A.talent = async (el) => openLayer(await talentSheet(el.dataset.id, { brief: el.dataset.brief }));
 
 // ---------------------------------------------------------------- offer form
@@ -207,11 +258,18 @@ A.offer = async (el) => {
     : { title: '', date: addDays(14), days: 1, rate: t.day_rate || 200, usage: '' };
   const rs = rolesOf(t);
   const asRole = rs.includes(brief?.category) ? brief.category : rs[0];
+  // a package picked on their profile fills the day rate (and one day for a half day); brief rates win when starting from a brief
+  const pks = packagesOf(t);
+  const pk = !brief && el.dataset.pkg ? pkgOf(t, el.dataset.pkg) : null;
+  if (pk) { d.rate = pk.price; if (pk.days) d.days = pk.days; }
   const layer = {
     kind: 'sheet', label: 'Book ' + t.name,
     head: `<div class="grow s g">You set the terms. ${esc(first(t.name))} accepts or declines.</div>`,
     body: `<h2 class="display t-48">Book ${esc(t.name)}</h2>
-    <form id="f-offer" data-t="${t.id}" data-brief="${brief?.id || ''}" class="mt24" style="max-width:720px"><div class="fgrid">
+    <form id="f-offer" data-t="${t.id}" data-brief="${brief?.id || ''}" data-pks="${esc(JSON.stringify(pks))}" class="mt24" style="max-width:720px">
+    ${pks.length > 1 ? `<fieldset class="pkgpick mb24"><legend class="s mb8">Package</legend><div class="chips">${pks.map((p) => `<button type="button" class="chip" data-a="offer-pkg" data-k="${p.key}" data-rate="${p.price}" data-days="${p.days || ''}" aria-pressed="${pk?.key === p.key}">${p.label} · ${pounds(p.price)}</button>`).join('')}</div>
+      <input type="hidden" name="pkg" value="${pk?.key || ''}"><p class="xs g mt8" id="pkg-note">${pk ? esc(pkgNote(pk)) + ' This is added to the offer.' : 'Optional. Picking one fills the rate.'}</p></fieldset>` : ''}
+    <div class="fgrid">
       <label class="field ${rs.length > 1 ? '' : 'span'}">What's the job?<input class="in" name="title" required value="${esc(d.title)}" placeholder="Summer drop lookbook"></label>
       ${rs.length > 1 ? `<label class="field">Booking them as<select class="in" name="role">${opts(rs, asRole)}</select></label>` : `<input type="hidden" name="role" value="${esc(asRole || '')}">`}
       <label class="field">Shoot date<input class="in" type="date" name="shoot_date" required min="${today()}" value="${d.date}" data-change="quote"></label>
@@ -257,8 +315,23 @@ A['agreement-preview'] = () => openLayer({ kind: 'dialog', lg: true, head: '<h2 
   <ul class="s" style="padding-left:18px;line-height:1.9"><li>Embr provides the booking software and takes payment through Stripe. Embr is not an agency.</li><li>The talent is 18+ and ID-checked, and receives the talent fee in full.</li><li>The brand pays the Embr fee, a 50% deposit when the talent accepts, and the balance at sign-off.</li><li>Sign-off happens automatically ${S.me.settings.auto_signoff_hours} hours after the talent marks the job wrapped, unless a problem is reported.</li><li>Cancellation: full refund up to ${S.me.settings.free_cancel_days} days before. After that, the talent is paid ${pct(S.me.settings.late_cancel_share)} of the session fee.</li><li>Usage is limited to what's written in the booking. Nothing outside the agreed content can be asked on the day.</li><li>For 12 months, the brand books this talent through Embr.</li></ul>
   <p class="xs g mt16">Pilot draft, to be reviewed by a solicitor.</p>` });
 
+A['offer-pkg'] = (el) => {
+  const form = el.closest('form');
+  const p = JSON.parse(form.dataset.pks).find((x) => x.key === el.dataset.k);
+  form.querySelectorAll('[data-a=offer-pkg]').forEach((b) => b.setAttribute('aria-pressed', b === el));
+  form.pkg.value = p.key;
+  form.day_rate.value = p.price;
+  if (p.days) form.days.value = p.days;
+  $('#pkg-note').textContent = pkgNote(p) + ' This is added to the offer.';
+  quote();
+};
 F['f-offer'] = async (form) => {
   const d = formData(form);
+  if (d.pkg) {
+    const p = JSON.parse(form.dataset.pks || '[]').find((x) => x.key === d.pkg);
+    // only when the rate still matches the package, so a brand who changed the rate isn't told otherwise
+    if (p && +d.day_rate === p.price) d.notes = [pkgNote(p), d.notes].filter(Boolean).join('\n');
+  }
   const usage = d.usage_where ? `${d.usage_where}, ${d.usage_term}` : '';
   const id = await rpc('create_offer', { p: {
     talent_id: form.dataset.t, brief_id: form.dataset.brief || null, title: d.title, shoot_date: d.shoot_date, days: +d.days, day_rate: +d.day_rate,
