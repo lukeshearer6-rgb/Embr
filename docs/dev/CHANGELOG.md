@@ -2,6 +2,14 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-25: "Around my region" means nearby cities, and saving the profile keeps typed model details
+- Travel range now decides which other cities a talent appears in for brand search and brief matching. "Around my region" covers nearby cities only (North: Manchester, Liverpool, Leeds; Midlands: Birmingham; South: London, Bristol; Scotland: Glasgow); "Anywhere in the UK" and "UK and abroad" cover every city. Before, any travelling talent showed up everywhere. The profile form says which cities "around my region" covers for your city.
+- Saving the profile form no longer redraws the model details below it, so measurements typed but not saved stay put.
+- An ID check left on "Checking your ID…" now offers "Check again" and "Start again", instead of saying it went through.
+- Talent who haven't confirmed their agency status are hidden from brands until they do.
+- Files: `supabase/migrations/20261125000004_travel_regions.sql`, `src/ui.js`, `src/views/talent.js`.
+- Tests: db 77 checks (new: region talent appear in nearby cities only), e2e 38 checks (region hint shown).
+
 ## 2026-11-25: ID checks no longer get stuck after a pass
 - Stripe only shares the date of birth from an ID check with a restricted key allowed to read sensitive results. Embr asked for it with the standard key, Stripe refused, and a passed check stayed on "Checking your ID…". Embr now reads the date of birth with an optional restricted key (`STRIPE_IDENTITY_KEY`); if that's missing or refused, it reads the result without it and the check goes to "Confirming your age".
 - Staff see "ID checks to confirm" on the admin People page and can confirm 18+ after checking the session in Stripe (`ops_confirm_age`).

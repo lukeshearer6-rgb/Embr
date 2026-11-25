@@ -52,6 +52,9 @@ export const pickedRoles = (form) => [...form.querySelectorAll('[data-a=pick-rol
 // travel is a preference, not a promise: talent still decide offer by offer
 export const TRAVEL_RANGE = [['local', 'Local to my city'], ['region', 'Around my region'], ['uk', 'Anywhere in the UK'], ['international', 'UK and abroad']];
 export const TRAVEL_COSTS = [['paid', 'Brand covers travel'], ['nearby_included', 'Nearby travel included, further paid'], ['discuss', 'Agree it per booking']];
+// keep in step with _region() in the database
+export const REGIONS = { north: ['Manchester', 'Liverpool', 'Leeds'], midlands: ['Birmingham'], south: ['London', 'Bristol'], scotland: ['Glasgow'] };
+export const nearby = (city) => (Object.values(REGIONS).find((r) => r.includes(city)) || []).filter((c) => c !== city);
 export const travelTxt = (t) => {
   const r = (TRAVEL_RANGE.find(([k]) => k === (t.travel_range || (t.travels ? 'uk' : 'local'))) || TRAVEL_RANGE[0])[1];
   if ((t.travel_range || 'local') === 'local' && !t.travels) return r;

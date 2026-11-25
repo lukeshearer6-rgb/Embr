@@ -132,6 +132,11 @@ async function main() {
 
   // --- brand search and agency rules
   let res = await call(rivet, 'search_talent', { city: 'Manchester' });
+  assert.deepEqual(res.map((t) => t.name), ['Amara Okafor']);
+  res = await call(rivet, 'search_talent', { city: 'Bristol' });
+  assert.deepEqual(res.map((t) => t.name), ['Jay Patel']); ok('"around my region" shows talent in nearby cities only (London talent in Bristol, not Manchester)');
+  await call(jay, 'save_travel', { travel_range: 'uk' });
+  res = await call(rivet, 'search_talent', { city: 'Manchester' });
   assert.deepEqual(res.map((t) => t.name), ['Amara Okafor', 'Jay Patel']);
   assert.equal(res[1].away, true); ok('brand search: local talent first, travelling talent after');
   res = await call(rivet, 'search_talent', { category: 'UGC creator' });
