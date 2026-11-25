@@ -24,6 +24,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | ID | What Luke needs to do | Why |
 |---|---|---|
 | B2 | Create Supabase, Stripe (test mode), Resend and Cloudflare accounts (docs/builds/SETUP.md). Supabase signed up 2026-11-24; Stripe CLI installed on Luke's Mac (~/Documents/EMBR/tools/stripe-cli), login pending | Only Luke can sign up and hold the passwords |
+| D7 | Approve the brand-facing line "Talent can see how many brands viewed or saved their profile, never which brand" (talent Today screen, docs/dev/talent-engagement.md) before real brands join; it also belongs in the privacy notice | Public copy and a UK GDPR privacy-notice item |
 | D6 | Add the talent agency-status declaration to the BPP review (docs/dev/agency-declaration.md, draft wording live in the test app only) | Legal wording needs the solicitor before real talent sign up |
 | D4 | Send the enquiry to BPP's free online business clinic (draft: docs/dev/bpp-enquiry-draft.md; form linked in docs/research/r3-agreement-review-shortlist.md) | Contacting BPP is Luke's to do |
 
