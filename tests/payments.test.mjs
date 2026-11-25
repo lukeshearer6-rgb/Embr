@@ -118,6 +118,29 @@ async function main() {
   assert.equal(payouts_enabled, false);
   ok('chargebacks, failed payouts and disconnected Stripe accounts are flagged to Embr staff');
 
+  // payout accounts: new Stripe platforms refuse Accounts v1 creation, so Embr uses Accounts v2
+  const [pa] = await q("insert into auth.users (email) values ('payee@test.com') returning id");
+  await q("insert into profiles (id, role, email) values ($1,'talent','payee@test.com')", [pa.id]);
+  await q("insert into talents (id, name, roles) values ($1, 'Pay Ee', '{Model}')", [pa.id]);
+  stripe._state.v1Blocked = true;
+  const v2before = stripe._state.v2Created || 0;
+  const ob = await P.connectOnboard(stripe, rpc, env, pa.id);
+  assert.match(ob.url, /onboard/);
+  assert.equal((stripe._state.v2Created || 0) - v2before, 1);
+  const [{ stripe_account: v2acct }] = await q('select stripe_account from talents where id = $1', [pa.id]);
+  assert.ok(v2acct);
+  stripe._state.v1LinksBlocked = true;
+  assert.match((await P.connectOnboard(stripe, rpc, env, pa.id)).url, /onboard/);
+  stripe._state.v1LinksBlocked = false;
+  assert.equal((stripe._state.v2Created || 0) - v2before, 1); ok('payout accounts are created with Stripe Accounts v2 when v1 is blocked, once per talent, with a v2 onboarding link if needed');
+  stripe._state.v1Blocked = false; stripe._state.noV2 = true;
+  const [pb] = await q("insert into auth.users (email) values ('payee2@test.com') returning id");
+  await q("insert into profiles (id, role, email) values ($1,'talent','payee2@test.com')", [pb.id]);
+  await q("insert into talents (id, name, roles) values ($1, 'Pay Bee', '{Model}')", [pb.id]);
+  await P.connectOnboard(stripe, rpc, env, pb.id);
+  const [{ stripe_account: v1acct }] = await q('select stripe_account from talents where id = $1', [pb.id]);
+  assert.ok(v1acct); stripe._state.noV2 = false; ok('platforms without Accounts v2 fall back to v1 Express accounts');
+
   // ID check: Stripe refuses the date of birth to a standard key
   const [it] = await q("insert into auth.users (email) values ('id@test.com') returning id");
   await q("insert into profiles (id, role, email) values ($1,'talent','id@test.com')", [it.id]);

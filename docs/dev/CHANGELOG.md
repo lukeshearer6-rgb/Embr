@@ -2,6 +2,12 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-25: "Set up payouts" works on Stripe's newer platforms
+- New Stripe platforms refuse to create connected accounts the old way (Accounts v1), so "Set up payouts" failed with a Stripe message. Talent payout accounts are now created with Stripe Accounts v2 as recipients (they receive transfers; Embr is responsible for fees and losses; Express dashboard), using the request Stripe's own error message set out. If Stripe refuses a v1 onboarding link for such an account, Embr uses a v2 link. Platforms without v2 still get v1 Express accounts.
+- Not yet proven against real Stripe: v1 transfers, account status and `account.updated` webhooks for v2 accounts (Stripe's docs say v2 account IDs work with v1 endpoints and v2 accounts still send `account.updated`). Check on the first test booking.
+- Files: `supabase/functions/_shared/payments.ts`, `supabase/functions/_shared/deps.ts`, `scripts/fake-stripe.mjs`, `tests/payments.test.mjs`.
+- Tests: payments 10 checks (new: v2 account created once when v1 is blocked, v2 onboarding link fallback, v1 fallback without v2), e2e 38 (payout setup now goes through the v2 path).
+
 ## 2026-11-25: Clearer staff email when an ID check needs confirming
 - The staff alert now says what to do ("go to People, and tap Confirm 18+ under ID checks to confirm") and its button opens the admin People page.
 - Files: `supabase/migrations/20261125000005_id_alert_wording.sql`, `tests/db.test.mjs`.
