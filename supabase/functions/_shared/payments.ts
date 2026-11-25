@@ -60,7 +60,7 @@ export async function connectOnboard(stripe: any, rpc: Rpc, env: Env, userId: st
 
 // New Stripe platforms can't create connected accounts with Accounts v1, so talent
 // payout accounts are made with Accounts v2 as "recipients" (they receive transfers,
-// Embr is responsible for fees and losses, Express dashboard), as Stripe's own error
+// Embr pays Stripe's fees, Stripe carries losses, Express dashboard), as Stripe's own error
 // message sets out. Older platforms without v2 access fall back to v1 Express.
 export async function createRecipientAccount(stripe: any, email: string, userId: string): Promise<string> {
   let v2err = '';
@@ -70,7 +70,8 @@ export async function createRecipientAccount(stripe: any, email: string, userId:
         contact_email: email,
         identity: { country: 'GB' },
         dashboard: 'express',
-        defaults: { responsibilities: { fees_collector: 'application', losses_collector: 'application' } },
+        // Stripe requires itself as losses collector for new platforms (account_creation_losses_collector_unavailable)
+        defaults: { responsibilities: { fees_collector: 'application', losses_collector: 'stripe' } },
         configuration: { recipient: { capabilities: { stripe_balance: { stripe_transfers: { requested: true } } } } },
         metadata: { user_id: userId },
       }, 'acct2-' + userId);
