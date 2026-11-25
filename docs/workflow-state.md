@@ -4,7 +4,7 @@ This file is the single source of truth for what's happening. Every session read
 
 Statuses: `todo`, `doing`, `blocked`, `needs-approval`, `done`. Agents: `researcher`, `developer`, `app-builder`, `marketer`, `luke`, `orchestrator`.
 
-Last updated: 2026-11-24
+Last updated: 2026-11-25
 
 ## Current focus
 
@@ -14,7 +14,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 | Agent | Working on | Status |
 |---|---|---|
-| researcher | R2 Incorporation and domain brief | todo |
+| researcher | R4 Competitor brief | todo |
 | developer | No unblocked task (D2, D3, D5 waiting) | blocked |
 | app-builder | B5 Release checklist for the invite-only pilot | todo |
 | marketer | M1 Positioning pack | todo |
@@ -23,6 +23,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 | ID | What Luke needs to do | Why |
 |---|---|---|
+| R2 | Approve the incorporation and domain spend (verified: £100 Companies House + £52 ICO tier 1 + $5.66 .co.uk at Porkbun; docs/research/r2-incorporation-and-domain.md). Check the ICO tier 1 price on its fee form and whether embr.co.uk is free | Spending money is Luke's call |
 | B2 | Create Supabase, Stripe (test mode), Resend and Cloudflare accounts (docs/builds/SETUP.md). Supabase signed up 2026-11-24; Stripe CLI installed on Luke's Mac (~/Documents/EMBR/tools/stripe-cli), login pending | Only Luke can sign up and hold the passwords |
 | D7 | Approve the brand-facing line "Talent can see how many brands viewed or saved their profile, never which brand" (talent Today screen, docs/dev/talent-engagement.md) before real brands join; it also belongs in the privacy notice | Public copy and a UK GDPR privacy-notice item |
 | D6 | Add the talent agency-status declaration to the BPP review (docs/dev/agency-declaration.md, draft wording live in the test app only) | Legal wording needs the solicitor before real talent sign up |
@@ -35,12 +36,12 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | ID | Task | Agent | Status | Verify by | Next action |
 |---|---|---|---|---|---|
 | R1 | Check Cloudflare Pages free-plan terms allow a commercial app | researcher | done | Every quote re-read on the live pages 2026-11-24; brief docs/research/r1-cloudflare-pages-free-plan.md | Unclear, leaning allowed; keep talent photos in Supabase Storage |
-| R2 | Incorporation and domain: steps, official fees, cheapest compliant option | researcher | todo | Companies House and registrar pages cited | Write brief for Luke to approve spend |
+| R2 | Incorporation and domain: steps, official fees, cheapest compliant option | researcher | done | Figures re-read on gov.uk, ICO and Porkbun 2026-11-25; docs/research/r2-incorporation-and-domain.md | Luke approves spend; ICO tier 1 price conflicts (£52 vs £40) |
 | R3 | Routes to a specialist agency-law opinion at zero or low cost (law clinics, pro bono, founder schemes) | researcher | done | Quotes re-read on live pages 2026-11-24; docs/research/r3-agreement-review-shortlist.md | Luke chooses who to contact |
 | R4 | Competitor brief: UK platforms where brands book unsigned models and creatives | researcher | todo | Every claim linked to the platform's own pages | Write brief; hand to marketer |
 | R5 | Brand interview kit: Manchester independent brand target list and interview script | researcher | todo | Public sources for each brand | Draft only; Luke makes contact |
 | R7 | Book now, pay later: how talent get paid at sign-off before the brand pays. Cover credit risk and who carries it, Embr's cash position (zero), UK B2B pay-later and invoice-finance partners (e.g. Kriya, Two) and their terms, fit with Stripe Connect, whether it's FCA-regulated, and partner fees and who absorbs them | researcher | todo | Every figure and rule cited to the provider's pages, FCA or legislation.gov.uk | Write brief; Luke picks a partner to approach |
-| R6 | CAP Code checklist for launch claims ("0% of your earnings", fee claims) | researcher | todo | CAP Code sections cited | Hand to marketer |
+| R6 | CAP Code checklist for launch claims ("0% of your earnings", fee claims) | researcher | done | Rule numbers and quotes re-read on asa.org.uk 2026-11-25; docs/research/r6-cap-code-checklist.md | Marketer uses the checklist for M1-M5 |
 
 ### Development
 
@@ -79,6 +80,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 Newest first. One line per session: date, agent, what happened.
 
+- 2026-11-25 daily run: R2 incorporation and domain brief and R6 CAP Code checklist done, every figure and rule re-read on the live pages; spend approval added to Waiting on Luke.
 - 2026-11-25 marketer: talent engagement design written (docs/dev/talent-engagement.md; Mobbin studied, 6 features ranked, build spec for developer); no app code changed; Luke to review and hand to developer.
 - 2026-11-24 orchestrator: pushed the daily run (PR #3, Luke approved); R3 shortlist done (MMU Business Law Cafe, BPP Enterprise Clinic, Law Society Find a Solicitor), quotes verified; PR #3 merged by Luke; R3 pushed.
 - 2026-11-24 orchestrator: Luke loosened the approval gates (agents push and merge their own PRs, change test setup); CLAUDE.md and decisions updated; .claude/settings.json left for Luke.
