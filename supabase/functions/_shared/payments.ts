@@ -63,6 +63,7 @@ export async function connectOnboard(stripe: any, rpc: Rpc, env: Env, userId: st
 // Embr is responsible for fees and losses, Express dashboard), as Stripe's own error
 // message sets out. Older platforms without v2 access fall back to v1 Express.
 export async function createRecipientAccount(stripe: any, email: string, userId: string): Promise<string> {
+  let v2err = '';
   if (stripe.v2) {
     try {
       const a = await stripe.v2('/v2/core/accounts', {
@@ -75,10 +76,13 @@ export async function createRecipientAccount(stripe: any, email: string, userId:
       }, 'acct2-' + userId);
       return a.id;
     } catch (e) {
-      console.warn('connect: Accounts v2 create failed, trying v1', (e as Error).message);
+      v2err = (e as Error).message;
+      console.warn('connect: Accounts v2 create failed, trying v1', v2err);
     }
   }
-  const a = await stripe.accounts.create({
+  let a: any;
+  try {
+    a = await stripe.accounts.create({
     type: 'express',
     country: 'GB',
     email,
@@ -86,7 +90,11 @@ export async function createRecipientAccount(stripe: any, email: string, userId:
     capabilities: { transfers: { requested: true } },
     business_profile: { product_description: 'Freelance modelling and creative work booked through Embr', mcc: '7929' },
     metadata: { user_id: userId },
-  }, { idempotencyKey: 'acct-' + userId });
+    }, { idempotencyKey: 'acct-' + userId });
+  } catch (e) {
+    // show why the newer way failed too, not only the v1 refusal
+    throw new Error(v2err ? `Stripe (Accounts v2): ${v2err}` : (e as Error).message);
+  }
   return a.id;
 }
 
