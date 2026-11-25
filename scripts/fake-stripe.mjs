@@ -30,9 +30,11 @@ export function createFakeStripe(baseUrl) {
       createLoginLink: async (aid) => ({ url: `${baseUrl}/__fake_stripe/express?account=${aid}` }),
     },
     // Accounts v2 (JSON) stand-in: recipient accounts behave like v1 Express ones afterwards.
-    // st.noV2 makes v2 fail (older platform); st.v1Blocked makes v1 account creation fail (new platform)
+    // st.noV2 makes v2 fail (older platform); st.profileUnfinished = platform profile not done; st.v1Blocked makes v1 account creation fail (new platform)
     v2: async (path, body, key) => {
       if (st.noV2) throw new Error('Accounts v2 is not enabled for this platform');
+      if (path === '/v2/core/accounts' && st.profileUnfinished) throw new Error('You tried to create a connected account with your platform as the losses collector. / account_creation_losses_collector_unavailable / HTTP 400');
+      if (path === '/v2/core/accounts' && body.defaults?.responsibilities?.losses_collector !== 'application') throw new Error('Losses collector can only be "application" for the set of configurations this account has. / invalid_fields / HTTP 400');
       if (path === '/v2/core/accounts') return once(key, () => { st.v2Created = (st.v2Created || 0) + 1; const a = { id: id('acct'), email: body.contact_email, metadata: body.metadata, payouts_enabled: false, details_submitted: false, capabilities: { transfers: 'inactive' } }; st.accounts[a.id] = a; return a; });
       if (path === '/v2/core/account_links') return { url: `${baseUrl}/__fake_stripe/onboard?account=${body.account}&return=${encodeURIComponent(body.use_case.account_onboarding.return_url)}` };
       throw new Error('unknown v2 path ' + path);

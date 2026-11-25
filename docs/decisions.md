@@ -48,3 +48,7 @@ Locked decisions from Luke. Change one only when Luke says so, and record the da
 
 ## Autonomy (2026-11-24)
 - Agents may push branches, open and merge their own PRs once CI is green, and change the pilot's test setup (Supabase test project, Stripe sandbox) without asking. Public deploys, publishing, contacting people, spending, credentials and live money still need Luke. Decision (Luke, 2026-11-24).
+
+## Payout account losses (2026-11-25)
+
+- Talent payout accounts are Stripe Accounts v2 recipients. Stripe only accepts Embr (the platform) as losses collector for this kind of account (Stripe API error, 2026-11-25), so Embr carries negative balances on talent accounts, as it already carries chargebacks on its own charges under separate charges and transfers. Needs Embr's Connect platform profile finished in Stripe.
