@@ -57,6 +57,15 @@ async function compress(file, max = 1600, quality = 0.82) {
   return new Promise((ok) => c.toBlob(ok, 'image/jpeg', quality));
 }
 
+// a brand's moodboard image: same bucket and folder rule as portfolio photos, but not added to a profile
+export async function uploadImage(userId, file, prefix = 'mood') {
+  const blob = await compress(file);
+  const path = `${userId}/${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+  const { error } = await sb.storage.from('photos').upload(path, blob, { contentType: 'image/jpeg', upsert: false, cacheControl: '31536000' });
+  if (error) throw new ApiError(error.message);
+  return path;
+}
+
 export async function uploadPhoto(userId, file, role = null) {
   const blob = await compress(file);
   const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;

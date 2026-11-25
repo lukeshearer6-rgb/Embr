@@ -8,6 +8,7 @@ import { ICON, RICON } from '../icons.js';
 import { creativeCard, videoHost } from './card.js';
 import { packagesOf, pkgOf, hoursTxt, pkgNote } from './rates.js';
 import { renderRosterBar } from './roster.js';
+import { shootsSection } from './shoot.js';
 import { comp, thumb, bookingItem, groupBookings, calendar, gallery, stHTML, workByRole } from './common.js';
 
 const V = VIEWS.brand;
@@ -414,7 +415,8 @@ export async function bookingsView() {
   const list = await rpc('my_bookings');
   const g = groupBookings(list);
   const sec = (t, l, empty) => `<h2 class="sec mt32">${t}</h2>${l.length ? `<div class="list">${l.map(bookingItem).join('')}</div>` : `<div class="empty" style="padding:16px 0">${empty}</div>`}`;
-  return `<h1 class="display t-48 mb24">Bookings</h1>${g.needs.length ? sec('Needs you', g.needs, '') : ''}${sec('Coming up', g.upcoming, S.me.role === 'talent' ? 'Nothing booked yet. Let work find you: brands book you straight from your profile.' : 'Nothing coming up. Find someone on the board.')}${g.past.length ? sec('Past', g.past, '') : ''}`;
+  const shoots = S.me.role === 'brand' ? await shootsSection() : '';
+  return `<h1 class="display t-48 mb24">Bookings</h1>${shoots}${g.needs.length ? sec('Needs you', g.needs, '') : ''}${sec('Coming up', g.upcoming, S.me.role === 'talent' ? 'Nothing booked yet. Let work find you: brands book you straight from your profile.' : 'Nothing coming up. Find someone on the board.')}${g.past.length ? sec('Past', g.past, '') : ''}`;
 }
 V.bookings = bookingsView;
 export async function inboxView() {
