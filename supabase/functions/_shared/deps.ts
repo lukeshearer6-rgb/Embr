@@ -15,8 +15,8 @@ export function makeDeps(): Deps {
     const r = await fetch('https://api.stripe.com' + path, { method: 'POST', body: JSON.stringify(body), headers: {
       Authorization: 'Bearer ' + env.STRIPE_SECRET_KEY, 'Stripe-Version': env.STRIPE_V2_VERSION || '2026-11-18.endive',
       'Content-Type': 'application/json', ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}) } });
-    const j = await r.json();
-    if (!r.ok) throw new Error(j?.error?.message || 'Stripe v2 request failed (' + r.status + ')');
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error([j?.error?.message || 'request failed', j?.error?.code, 'HTTP ' + r.status].filter(Boolean).join(' / '));
     return j;
   };
   const admin = createClient(env.SUPABASE_URL!, env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });

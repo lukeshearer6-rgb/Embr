@@ -139,7 +139,13 @@ async function main() {
   await q("insert into talents (id, name, roles) values ($1, 'Pay Bee', '{Model}')", [pb.id]);
   await P.connectOnboard(stripe, rpc, env, pb.id);
   const [{ stripe_account: v1acct }] = await q('select stripe_account from talents where id = $1', [pb.id]);
-  assert.ok(v1acct); stripe._state.noV2 = false; ok('platforms without Accounts v2 fall back to v1 Express accounts');
+  assert.ok(v1acct);
+  stripe._state.v1Blocked = true;
+  const [pc] = await q("insert into auth.users (email) values ('payee3@test.com') returning id");
+  await q("insert into profiles (id, role, email) values ($1,'talent','payee3@test.com')", [pc.id]);
+  await q("insert into talents (id, name, roles) values ($1, 'Pay Cee', '{Model}')", [pc.id]);
+  await assert.rejects(P.connectOnboard(stripe, rpc, env, pc.id), /Accounts v2.*not enabled/);
+  stripe._state.v1Blocked = false; stripe._state.noV2 = false; ok('platforms without Accounts v2 fall back to v1 Express accounts; if both fail, the Accounts v2 reason is shown');
 
   // ID check: Stripe refuses the date of birth to a standard key
   const [it] = await q("insert into auth.users (email) values ('id@test.com') returning id");
