@@ -6,6 +6,7 @@ import { specsFields, readSpecs, specsTxt, DRESS, SUITS } from './model.js';
 import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CATS, CITIES, USAGE, TERMS, toast, openLayer, closeLayer, replaceLayer, formData, loading, plural, first, whenTxt, rolesOf, rolesTxt, rolePlural, travelTxt } from '../ui.js';
 import { ICON, RICON } from '../icons.js';
 import { creativeCard } from './card.js';
+import { renderRosterBar } from './roster.js';
 import { comp, thumb, bookingItem, groupBookings, calendar, gallery, stHTML, workByRole } from './common.js';
 
 const V = VIEWS.brand;
@@ -141,6 +142,16 @@ function results(list) {
   return (here.length ? `<div class="feed">${here.map(feedCard).join('')}</div>` : '') +
     (away.length ? `<h2 class="sec mt48">Will travel to ${esc(f.city)}</h2><p class="s g mb24">Based elsewhere. Check each profile for how travel costs work.</p><div class="feed">${away.map(feedCard).join('')}</div>` : '');
 }
+// from the Shoot Roster's "Need a make-up artist?": the board on that role, free on the shoot date
+A['board-find'] = async ({ role = '', date = '' }) => {
+  Object.assign(f, { category: role, date: date && date >= today() ? date : '', specs: {} });
+  if (S.tab !== 'board' || !$('#results')) return go('/board');
+  document.querySelectorAll('[data-a=board-cat]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.cat === role));
+  document.querySelector(`[data-a=board-cat][data-cat="${role}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  window.scrollTo({ top: 0 });
+  await runSearch();
+  renderRosterBar();
+};
 A['board-reset'] = async () => { Object.assign(f, { date: '', city: '', max_rate: '', specs: {} }); await runSearch(); };
 async function runSearch() {
   if (!$('#results')) return;
