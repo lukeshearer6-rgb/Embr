@@ -3,8 +3,9 @@
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
 ## 2026-11-25: "Set up payouts" works on Stripe's newer platforms
-- New Stripe platforms refuse to create connected accounts the old way (Accounts v1), so "Set up payouts" failed with a Stripe message. Talent payout accounts are now created with Stripe Accounts v2 as recipients (they receive transfers; Embr is responsible for fees and losses; Express dashboard), using the request Stripe's own error message set out. If Stripe refuses a v1 onboarding link for such an account, Embr uses a v2 link. Platforms without v2 still get v1 Express accounts.
+- New Stripe platforms refuse to create connected accounts the old way (Accounts v1), so "Set up payouts" failed with a Stripe message. Talent payout accounts are now created with Stripe Accounts v2 as recipients (they receive transfers; Embr pays Stripe's fees and Stripe carries losses, as Stripe requires for new platforms; Express dashboard), using the request Stripe's own error message set out. If Stripe refuses a v1 onboarding link for such an account, Embr uses a v2 link. Platforms without v2 still get v1 Express accounts.
 - Not yet proven against real Stripe: v1 transfers, account status and `account.updated` webhooks for v2 accounts (Stripe's docs say v2 account IDs work with v1 endpoints and v2 accounts still send `account.updated`). Check on the first test booking.
+- Stripe refused Embr as the losses collector on a new platform (`account_creation_losses_collector_unavailable`), so Stripe is now the losses collector for talent accounts; Embr still pays the fees.
 - If both ways fail, the error now shows Stripe's Accounts v2 reason (with its code), not only the v1 refusal.
 - Files: `supabase/functions/_shared/payments.ts`, `supabase/functions/_shared/deps.ts`, `scripts/fake-stripe.mjs`, `tests/payments.test.mjs`.
 - Tests: payments 10 checks (new: v2 account created once when v1 is blocked, v2 onboarding link fallback, v1 fallback without v2), e2e 38 (payout setup now goes through the v2 path).
