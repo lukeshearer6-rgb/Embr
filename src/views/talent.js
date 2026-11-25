@@ -5,7 +5,7 @@ import { VIEWS, A, F, C, S, go, refreshMe, rerender } from '../state.js';
 import { rpc, action, uploadPhoto, deletePhoto, photoUrl, roleRules, modelOptions, agencyText } from '../api.js';
 import { agencyBox } from './auth.js';
 import { statsForm } from './model.js';
-import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CITIES, rolesOf, rolesTxt, roleChips, pickedRoles, USAGE, TERMS, TRAVEL_RANGE, TRAVEL_COSTS, toast, openLayer, closeLayer, formData, plural, first, busy, confirmDialog } from '../ui.js';
+import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CITIES, rolesOf, rolesTxt, rolePlural, roleChips, pickedRoles, USAGE, TERMS, TRAVEL_RANGE, TRAVEL_COSTS, toast, openLayer, closeLayer, formData, plural, first, busy, confirmDialog } from '../ui.js';
 import { ICON } from '../icons.js';
 import { thumb, calendar, groupBookings, bookingItem, linkCards } from './common.js';
 import { bookingsView, inboxView } from './brand.js';
@@ -37,10 +37,98 @@ function readyPanel(t) {
 }
 
 // ---------------------------------------------------------------- Today
+// What talent see once setup is done (docs/dev/talent-engagement.md). Counts only:
+// never which brand looked, never a brief, nothing to respond to. Brands make the first move.
+const POLISH = [
+  [(t) => (t.photos || []).length >= 6, 10, 'Add more photos. Six or more shows your range.', 'towork'],
+  [(t) => (t.bio || '').trim().length >= 80, 8, 'Write a bio in your own words. Two or three sentences is plenty.', 'profile'],
+  [(t) => (t.tags || []).length >= 3, 5, 'Add three tags that describe your style.', 'profile'],
+  [(t) => !!(t.comfort || '').trim(), 4, 'Say what content you\'re comfortable with, so brands know before they book.', 'profile'],
+  [(t) => !!(t.instagram || '').trim(), 4, 'Add your Instagram or TikTok.', 'profile'],
+  [(t) => !!t.half_rate, 3, 'Add a half-day rate.', 'profile'],
+  [(t, p) => !!p?.dates_confirmed_at && Date.now() - new Date(p.dates_confirmed_at) < 14 * 864e5, 6, 'Confirm your dates are up to date.', 'confirm-dates'],
+];
+export function strength(t, pulse) {
+  const gates = readiness(t);
+  const gateScore = Math.round(60 * gates.filter((g) => g[1]).length / gates.length);
+  const polish = POLISH.map(([test, pts, label, action]) => ({ ok: test(t, pulse), pts, label, action }));
+  return { score: gateScore + polish.filter((x) => x.ok).reduce((n, x) => n + x.pts, 0), steps: polish.filter((x) => !x.ok) };
+}
+export function weekLines(e) {
+  if (!e) return [];
+  const w = e.week || {}; const l = e.lifetime || {};
+  const n = (k, one, many) => `${k} ${k === 1 ? one : many}`;
+  if ((w.total || 0) >= 3) {
+    return [
+      w.briefs > 0 && `${n(w.briefs, 'brief', 'briefs')} posted by brands ${e.scope === 'city' ? 'in ' + e.city : 'across the UK'}`,
+      w.bookings > 0 && `${n(w.bookings, 'booking', 'bookings')} confirmed`,
+      w.brands > 0 && `${n(w.brands, 'new brand', 'new brands')} joined`,
+      ...(e.my_roles || []).map((r) => `${n(r.briefs, 'brief', 'briefs')} asked for ${rolePlural(r.role)}`),
+    ].filter(Boolean);
+  }
+  const life = [l.briefs > 0 && n(l.briefs, 'brief', 'briefs') + ' posted', l.bookings > 0 && n(l.bookings, 'booking', 'bookings') + ' confirmed', l.brands > 0 && n(l.brands, 'brand', 'brands') + ' joined'].filter(Boolean);
+  return life.length ? ['Since the pilot began: ' + life.join(', ')] : [];
+}
+const tile = (label, fig, sub, live = true) => (live ? `<div class="tile">` : `<button type="button" class="tile off" data-a="towork">`) + `<span class="l">${label}</span><span class="fig">${fig}</span><span class="sub">${sub}</span>` + (live ? '</div>' : '</button>');
+function statsRow(p, t) {
+  if (!p) return '';
+  const live = !!t.published;
+  const seen = live ? tile('Seen by brands', p.views_7d, p.views_7d ? (p.views_prev_7d ? `this week, ${p.views_prev_7d} last week` : 'this week') : 'None yet this week')
+    : tile('Seen by brands', 'Not live yet', 'Goes live when your profile is complete', false);
+  const saved = live ? tile('Saved by brands', p.saves_total, p.saves_7d > 0 ? `${p.saves_7d} new this week` : 'in total')
+    : tile('Saved by brands', 'Not live yet', 'Brands save profiles they like', false);
+  const offers = tile('Offers', p.offers_total, p.offers_total ? 'on Embr' : 'Brands book you from your profile');
+  return `<section class="tiles mt24" aria-label="Seen and saved">${seen}${saved}${offers}</section>
+    <p class="xs g mt8">You see how many brands, never which. Brands make the first move.</p>`;
+}
+function strengthPanel(t, p) {
+  if (readiness(t).some((g) => !g[1])) return readyPanel(t);
+  const { score, steps } = strength(t, p);
+  if (!steps.length) return `<section class="panel mb24"><div class="row between"><h3>Profile strength</h3><span class="st ok">Profile complete</span></div><p class="s g mt8">You're all set for now. Check back as bookings come in.</p></section>`;
+  const [next, ...more] = steps;
+  const btn = next.action === 'confirm-dates' ? '<button class="btn sm primary" data-a="confirm-dates">Confirm my dates</button>'
+    : next.action === 'towork' ? '<button class="btn sm primary" data-a="towork">Open profile</button>' : '<button class="btn sm primary" data-tab="profile">Open profile</button>';
+  return `<section class="panel mb24"><div class="row between"><h3>Profile strength</h3><span class="money">${score}%</span></div>
+    <div class="meter mt12" role="progressbar" aria-valuenow="${score}" aria-valuemin="0" aria-valuemax="100" aria-label="Profile strength"><span style="width:${score}%"></span></div>
+    <div class="row between top-al mt12" style="gap:12px"><p class="s"><b>Next:</b> ${esc(next.label)}</p>${btn}</div>
+    ${more.slice(0, 2).map((x) => `<p class="s g mt4">${esc(x.label)}</p>`).join('')}</section>`;
+}
+function monthsBars(list) {
+  const now = new Date();
+  const months = [...Array(6)].map((_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+    return { key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, label: d.toLocaleDateString('en-GB', { month: 'short' }), p: 0 };
+  });
+  const done = list.filter((b) => b.status === 'completed');
+  done.forEach((b) => { const m = months.find((x) => x.key === (b.updated_at || '').slice(0, 7)); if (m) m.p += b.talent_fee_p; });
+  const max = Math.max(...months.map((m) => m.p), 1);
+  const year = done.filter((b) => (b.updated_at || '').slice(0, 4) === String(now.getFullYear())).reduce((n, b) => n + b.talent_fee_p, 0);
+  return `<h2 class="sec mt48">Last 6 months</h2><div class="bar6" role="img" aria-label="Paid to you each month for the last 6 months">${months.map((m) => `<div class="b"><span class="v">${m.p ? gbp(m.p) : ''}</span><span class="bar" style="height:${m.p ? Math.max(6, Math.round(100 * m.p / max)) : 2}%"></span><span class="m">${m.label}</span></div>`).join('')}</div>
+    <p class="s g mt8">${year ? `Earned on Embr this year: <b>${gbp(year)}</b>` : 'Paid when the brand signs off. 0% commission.'}</p>`;
+}
+function milestones(t, p) {
+  if (!p) return '';
+  const m = [['Profile live', t.published], ['First brand view', p.views_total > 0], ['First save', p.saves_total > 0], ['First offer', p.offers_total > 0], ['First booking paid', p.bookings_completed > 0]];
+  return `<h2 class="sec mt48">Your Embr so far</h2><div class="miles">${m.map(([l, ok]) => `<span class="mile${ok ? ' done' : ''}">${ok ? '✓ ' : ''}${l}</span>`).join('')}</div>`;
+}
+function weekPanel(e) {
+  if (!e) return '';
+  const lines = weekLines(e);
+  return `<div class="panel"><h3>This week on Embr</h3>${lines.length ? `<ul class="pulse mt8">${lines.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : '<p class="s mt8">Brands are being invited in now. Activity will appear here as it happens.</p>'}
+    <p class="xs g mt12">Anonymised totals from Embr. Let work find you: brands make the first move, so there's nothing to apply for.</p></div>`;
+}
+function datesPanel(t, p) {
+  if (!t.published || !p) return '';
+  const at = p.dates_confirmed_at ? Math.floor((Date.now() - new Date(p.dates_confirmed_at)) / 864e5) : null;
+  const line = at === null ? 'Brands only see you for dates you\'re free. Check yours now.' : at === 0 ? 'Confirmed today.' : `Last confirmed ${plural(at, 'day')} ago.`;
+  return `<div class="panel"><h3>Your dates</h3><p class="s g mt8">${line}</p><div class="row mt12"><button class="btn sm ${at === 0 ? '' : 'primary'}" data-a="confirm-dates">Confirm my dates</button><button class="btn sm quiet" data-tab="profile">Edit dates</button></div></div>`;
+}
+A['confirm-dates'] = async (el) => { busy(el, true, 'Saving…'); await rpc('confirm_dates'); toast('Dates confirmed'); rerender(); };
+
 V.today = async () => {
   await refreshMe();
   const t = T();
-  const list = await rpc('my_bookings');
+  const [list, pulse, ep] = await Promise.all([rpc('my_bookings'), rpc('talent_pulse').catch(() => null), rpc('embr_pulse').catch(() => null)]);
   const month = today().slice(0, 7);
   const paidM = list.filter((b) => b.status === 'completed' && (b.updated_at || '').slice(0, 7) === month).reduce((s, b) => s + b.talent_fee_p, 0);
   const onWay = list.filter((b) => ['confirmed', 'wrapped'].includes(b.status)).reduce((s, b) => s + b.talent_fee_p, 0);
@@ -51,12 +139,17 @@ V.today = async () => {
   const up = list.filter((b) => ['accepted', 'confirmed', 'wrapped'].includes(b.status)).sort((a, b) => a.shoot_date.localeCompare(b.shoot_date));
   return `<p class="g">${new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p><h1 class="display t-72 mt8">Hi ${esc(first(t.name) || 'there')}</h1>
   <button class="earn mt32" data-tab="wallet"><span class="l">Paid to you this month</span><span class="big">${gbp(paidM)}</span><span class="earn-sub"><span><b>${gbp(onWay)}</b> on the way, deposits paid</span><span><b>${gbp(life)}</b> earned on Embr, 0% commission</span></span><span class="go">Wallet →</span></button>
+  ${statsRow(pulse, t)}
   <div class="cols mt48"><div>
-    ${readyPanel(t)}
+    ${strengthPanel(t, pulse)}
     ${todo.length ? `<section class="todo" aria-label="Needs you">${todo.map(([b, txt, btn, p]) => `<div class="item">${thumb(b.brand, true)}<div class="grow"><div class="ttl">${esc(b.title)}</div><div class="meta"><span>${esc(txt)}</span></div></div><button class="btn ${p ? 'primary' : ''} sm" data-a="booking" data-id="${b.id}">${btn}</button></div>`).join('')}</section>` : ''}
     <h2 class="sec">Coming up</h2>${up.length ? `<div class="list">${up.map(bookingItem).join('')}</div>` : '<div class="empty">Nothing booked yet. Let work find you: brands book you straight from your profile.</div>'}
+    ${monthsBars(list)}
+    ${milestones(t, pulse)}
   </div><aside class="stack">
-    <div class="panel"><h3>Let work find you</h3><p class="s g mt8">There's nothing to apply for. Brands search Embr and post briefs, and Embr shows them who fits. Keep your photos, rate and free dates up to date.</p><button class="btn sm mt12" data-tab="profile">Update profile</button></div>
+    ${weekPanel(ep)}
+    ${datesPanel(t, pulse)}
+    <div class="panel"><h3>Let work find you</h3><p class="s g mt8">Brands search Embr and post briefs, and Embr shows them who fits. Keep your photos, rate and free dates up to date.</p><button class="btn sm mt12" data-tab="profile">Update profile</button></div>
     ${t.handle ? `<div class="panel"><h3>Your Book-me page</h3><p class="s g mt8">Put it in your Instagram bio. Brands who find you there book you through Embr.</p><p class="s mt8"><b>${esc(appOrigin().replace(/^https?:\/\//, ''))}/@${esc(t.handle)}</b></p><div class="row mt12"><button class="btn sm" data-a="copy" data-text="${esc(appOrigin())}/@${esc(t.handle)}">Copy link</button><a class="btn sm quiet" href="/@${esc(t.handle)}" target="_blank" rel="noopener">Preview</a></div></div>` : ''}
     <div class="panel"><h3>Got an enquiry on Instagram?</h3><p class="s g mt8">Send the brand a booking link and the job moves onto Embr: deposit paid up front, terms in writing, paid at sign-off.</p><button class="btn sm mt12" data-tab="invite">Create a booking link</button></div>
   </aside></div>`;

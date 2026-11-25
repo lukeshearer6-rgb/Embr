@@ -273,6 +273,38 @@ async function main() {
   bk = await call(ops, 'booking_detail', b3); assert.equal(bk.status, 'completed'); assert.equal(bk.refunded_p, 11550);
   ok('Embr resolves a problem and records the split');
 
+  // --- talent Today: who's looking (counts only) and what's happening on Embr
+  const walkinBrand = (await db.query('select id from brands where id = $1', [walkin.id])).rows.length ? walkin : null;
+  await db.query('delete from profile_views where talent_id = $1', [amara.id]);
+  let pulse;
+  await call(rivet, 'talent_detail', amara.id); await call(rivet, 'talent_detail', amara.id);
+  assert.equal((await db.query('select count(*)::int n from profile_views where talent_id = $1 and brand_id = $2', [amara.id, rivet.id])).rows[0].n, 1);
+  if (walkinBrand) await call(walkin, 'talent_detail', amara.id);
+  await call(ops, 'talent_detail', amara.id); await call(amara, 'talent_detail', amara.id);
+  pulse = await call(amara, 'talent_pulse');
+  assert.equal(pulse.views_7d, walkinBrand ? 2 : 1); assert.equal(pulse.views_total, walkinBrand ? 2 : 1);
+  ok('a brand opening a profile counts once a day; staff and the talent themselves are not counted');
+  for (const b of [rivet.id, walkin.id]) assert.ok(!JSON.stringify(pulse).includes(b));
+  assert.ok(pulse.offers_total >= 1); ok('talent see how many brands looked, saved and made offers, never which brand');
+  await db.query('delete from notifications where user_id = $1', [amara.id]);
+  if (await call(rivet, 'toggle_shortlist', amara.id) === false) await call(rivet, 'toggle_shortlist', amara.id);
+  await call(rivet, 'toggle_shortlist', amara.id); await call(rivet, 'toggle_shortlist', amara.id);
+  const saveNotes = (await db.query("select text, email from notifications where user_id = $1", [amara.id])).rows;
+  assert.equal(saveNotes.length, 1); assert.equal(saveNotes[0].email, false); assert.doesNotMatch(saveNotes[0].text, /Rivet/);
+  ok('a save sends one quiet in-app note a day, with no brand name and no email');
+  const ep = await call(amara, 'embr_pulse');
+  assert.ok(ep.week.briefs >= 4 && ep.lifetime.briefs >= 4 && ep.lifetime.brands >= 1);
+  assert.deepEqual(ep.my_roles.map((r) => r.role), ['Model']);
+  assert.ok(!/title|brand_id|"id"|day_rate|Drop 4|Rivet/.test(JSON.stringify(ep)));
+  ok('this week on Embr: totals only, no titles, ids, names or rates; a role line needs 2 or more briefs');
+  await fails(call(rivet, 'embr_pulse'), /not allowed/i); await fails(call(rivet, 'talent_pulse'), /not allowed/i);
+  await fails(as(amara, (q) => q('select * from profile_views')), /permission denied/);
+  await fails(as(amara, (q) => q('select * from briefs')), /permission denied/);
+  ok('only talent get these totals, and talent still can\'t read briefs or view logs');
+  const conf = await call(amara, 'confirm_dates');
+  assert.ok(conf); assert.ok((await call(amara, 'talent_pulse')).dates_confirmed_at);
+  await fails(call(rivet, 'confirm_dates'), /not allowed/i); ok('talent confirm their free dates in one tap');
+
   // --- public Book-me page
   const bm = await call('anon', 'public_talent', 'AMARA');
   assert.equal(bm.name, 'Amara Okafor'); assert.equal(bm.off_days, undefined); ok('public Book-me page by handle');
