@@ -192,6 +192,11 @@ async function main() {
   await call('service', 'svc_identity_result', amara.id, 'vs_0', 'verified', null);
   me = await call(amara, 'me'); assert.equal(me.talent.identity_status, 'review');
   ok('a passed ID check with no date of birth goes to Embr review, never "under 18"');
+  await fails(call(rivet, 'ops_confirm_age', amara.id), /not allowed/i);
+  await call(ops, 'ops_confirm_age', amara.id);
+  me = await call(amara, 'me'); assert.equal(me.talent.identity_status, 'verified'); assert.equal(me.talent.verified, true);
+  await fails(call(ops, 'ops_confirm_age', amara.id), /isn't waiting/);
+  ok('Embr staff can confirm 18+ for an ID check waiting on review, and only then');
   await call('service', 'svc_identity_result', amara.id, 'vs_1', 'verified', '1999-04-02');
   await fails(call(amara, 'respond_offer', b1, true, true, null), /payouts/); ok('talent without payouts can\'t accept');
   await call('service', 'svc_set_stripe_account', amara.id, 'acct_amara');

@@ -36,6 +36,8 @@ export function createFakeStripe(baseUrl) {
         // like real Stripe: the date of birth is only included when expanded by name
         retrieve: async (sid, o = {}) => {
           const s = st.identity[sid];
+          // like a standard secret key: reading the date of birth is refused (set by tests)
+          if (st.refuseSensitive && (o.expand || []).includes('verified_outputs.dob')) throw Object.assign(new Error('This API key cannot access sensitive verification results'), { type: 'StripePermissionError' });
           if (!s?.verified_outputs || (o.expand || []).includes('verified_outputs.dob')) return s;
           const { dob, ...rest } = s.verified_outputs;
           return { ...s, verified_outputs: rest };

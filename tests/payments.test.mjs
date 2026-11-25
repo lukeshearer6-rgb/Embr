@@ -118,6 +118,28 @@ async function main() {
   assert.equal(payouts_enabled, false);
   ok('chargebacks, failed payouts and disconnected Stripe accounts are flagged to Embr staff');
 
+  // ID check: Stripe refuses the date of birth to a standard key
+  const [it] = await q("insert into auth.users (email) values ('id@test.com') returning id");
+  await q("insert into profiles (id, role, email) values ($1,'talent','id@test.com')", [it.id]);
+  await q("insert into talents (id, name, roles) values ($1, 'Ida Test', '{Model}')", [it.id]);
+  const vs1 = await P.identityStart(stripe, rpc, env, it.id);
+  const sid1 = Object.keys(stripe._state.identity).pop();
+  stripe._finishIdentity(sid1, '1995-06-01');
+  stripe._state.refuseSensitive = true;
+  await P.handleEvent(stripe, rpc, { id: 'evt_id1', type: 'identity.verification_session.verified', data: { object: { id: sid1 } } });
+  let [idr] = await q('select identity_status, age_verified from talents where id = $1', [it.id]);
+  assert.deepEqual(idr, { identity_status: 'review', age_verified: false });
+  ok('a passed ID check whose date of birth Stripe won\'t share goes to staff review, not "under 18" or stuck');
+  stripe.identityReader = { identity: { verificationSessions: { retrieve: async (sid) => stripe._state.identity[sid] } } };
+  const vs2 = await P.identityStart(stripe, rpc, env, it.id);
+  const sid2 = Object.keys(stripe._state.identity).pop();
+  stripe._finishIdentity(sid2, '1995-06-01');
+  await P.handleEvent(stripe, rpc, { id: 'evt_id2', type: 'identity.verification_session.verified', data: { object: { id: sid2 } } });
+  [idr] = await q('select identity_status, age_verified from talents where id = $1', [it.id]);
+  assert.deepEqual(idr, { identity_status: 'verified', age_verified: true });
+  delete stripe.identityReader; stripe._state.refuseSensitive = false;
+  assert.ok(vs1.url && vs2.url); ok('with the restricted Identity key, the date of birth is read and the talent verified 18+');
+
   console.log(`\n${passed} checks passed`);
 }
 main().then(() => db.end()).catch((e) => { console.error('\n✗ FAILED:', e.message); console.error(e.stack); db.end(); process.exit(1); });

@@ -2,7 +2,7 @@
 // their rankings (Luke checks each list by eye in the pilot), and invites.
 import { VIEWS, A, F, S, rerender } from '../state.js';
 import { rpc } from '../api.js';
-import { esc, gbp, pounds, dMed, ago, toast, opts, formData, plural, rolesTxt } from '../ui.js';
+import { esc, gbp, pounds, dMed, ago, toast, opts, formData, plural, rolesTxt, confirmDialog } from '../ui.js';
 import { bookingItem, thumb, comp } from './common.js';
 
 const V = VIEWS.ops;
@@ -30,11 +30,21 @@ A.opsfilter = (el) => { filter = el.dataset.s; rerender(); };
 
 V.people = async () => {
   const p = await rpc('ops_people');
-  const idSt = (t) => (t.verified ? '<span class="st ok">18+ verified</span>' : t.identity_status === 'under_18' ? '<span class="st bad">Under 18</span>' : t.identity_status ? `<span class="st wait">${esc(t.identity_status)}</span>` : '<span class="st off">No ID check</span>');
+  const idSt = (t) => (t.verified ? '<span class="st ok">18+ verified</span>' : t.identity_status === 'under_18' ? '<span class="st bad">Under 18</span>' : t.identity_status === 'review' ? '<span class="st warn">ID: confirm age</span>' : t.identity_status ? `<span class="st wait">${esc(t.identity_status)}</span>` : '<span class="st off">No ID check</span>');
+  const review = p.talent.filter((t) => t.identity_status === 'review' && !t.verified);
   return `<h1 class="display t-48 mb24">People</h1>
+  ${review.length ? `<section class="panel mb24"><h3>ID checks to confirm (${review.length})</h3><p class="s g mt8">Stripe passed these ID checks but Embr couldn't read the date of birth. Open Stripe (Identity, Verification sessions), find the person, check the date of birth shows 18 or over, then confirm.</p>
+    <div class="list mt12">${review.map((t) => `<div class="item"><div class="grow"><div class="ttl">${esc(t.name || '(no name yet)')}</div><div class="meta"><span>${esc(t.email)}</span></div></div><a class="btn sm quiet" href="https://dashboard.stripe.com/test/identity/verification-sessions" target="_blank" rel="noopener">Open Stripe</a><button class="btn sm primary" data-a="confirm-age" data-id="${t.id}" data-name="${esc(t.name || t.email)}">Confirm 18+</button></div>`).join('')}</div></section>` : ''}
   <h2 class="sec">Talent (${p.talent.length})</h2>${p.talent.length ? `<div class="list mb48">${p.talent.map((t) => `<button class="item" data-a="talent" data-id="${t.id}">${thumb(t)}<div class="grow"><div class="ttl">${esc(t.name || '(no name yet)')}${t.handle ? ' <span class="s g">@' + esc(t.handle) + '</span>' : ''}</div><div class="meta"><span>${esc(t.email)}</span><span>${esc(rolesTxt(t))}, ${esc(t.city)}</span>${t.published ? "" : "<span>Hidden: profile not finished</span>"}<span>${t.day_rate ? pounds(t.day_rate) + ' a day' : 'No rate'}</span><span>Joined ${dMed(t.joined)}</span><span>${plural(t.bookings, 'booking')}</span></div></div>
     <div class="amt"><div>${idSt(t)}</div><div class="mt4">${t.payouts_enabled ? '<span class="st ok">Payouts</span>' : '<span class="st off">No payouts</span>'}</div><div class="mt4">${t.published ? '<span class="st ok">Live</span>' : '<span class="st off">Hidden</span>'}</div></div></button>`).join('')}</div>` : '<div class="empty">No talent yet. Send some invites.</div>'}
   <h2 class="sec">Brands (${p.brands.length})</h2>${p.brands.length ? `<div class="list">${p.brands.map((b) => `<div class="item">${thumb(b, true)}<div class="grow"><div class="ttl">${esc(b.name || '(no name yet)')}</div><div class="meta"><span>${esc(b.contact_name || '')}</span><span>${esc(b.email)}</span><span>${esc(b.city)}</span><span>Joined ${dMed(b.joined)}</span><span>${plural(b.briefs, 'brief')}, ${plural(b.bookings, 'booking')}</span></div></div></div>`).join('')}</div>` : '<div class="empty">No brands yet.</div>'}`;
+};
+
+A['confirm-age'] = async (el) => {
+  const yes = await confirmDialog({ title: `Confirm ${el.dataset.name} is 18 or over?`, body: 'Only confirm after checking the date of birth on their passed ID check in Stripe.', yes: 'Confirm 18+' });
+  if (!yes) return;
+  await rpc('ops_confirm_age', { p_id: el.dataset.id });
+  toast('Confirmed 18+'); rerender();
 };
 
 V.briefs = async () => {

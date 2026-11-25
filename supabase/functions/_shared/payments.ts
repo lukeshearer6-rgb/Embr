@@ -93,8 +93,17 @@ export async function identityStart(stripe: any, rpc: Rpc, env: Env, userId: str
 }
 
 export async function identitySync(stripe: any, rpc: Rpc, sessionId: string, userId?: string) {
-  // Stripe only returns the date of birth when it's asked for by name
-  const s = await stripe.identity.verificationSessions.retrieve(sessionId, { expand: ['verified_outputs', 'verified_outputs.dob'] });
+  // Stripe only returns the date of birth when it's asked for by name, and only to a
+  // restricted key allowed to read sensitive results (stripe.identityReader). If that
+  // isn't set up or is refused, read the session without it: a passed check with no
+  // date of birth goes to staff review, never "under 18".
+  let s: any;
+  try {
+    s = await (stripe.identityReader || stripe).identity.verificationSessions.retrieve(sessionId, { expand: ['verified_outputs', 'verified_outputs.dob'] });
+  } catch (e) {
+    console.warn('identity: date of birth not readable, using staff review', (e as Error).message);
+    s = await stripe.identity.verificationSessions.retrieve(sessionId, { expand: ['verified_outputs'] });
+  }
   const user = userId || s.metadata?.user_id;
   if (!user) return;
   const dob = s.verified_outputs?.dob;
