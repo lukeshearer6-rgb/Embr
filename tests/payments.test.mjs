@@ -146,6 +146,9 @@ async function main() {
   await q("insert into talents (id, name, roles) values ($1, 'Pay Cee', '{Model}')", [pc.id]);
   await assert.rejects(P.connectOnboard(stripe, rpc, env, pc.id), /Accounts v2.*not enabled/);
   stripe._state.v1Blocked = false; stripe._state.noV2 = false; ok('platforms without Accounts v2 fall back to v1 Express accounts; if both fail, the Accounts v2 reason is shown');
+  stripe._state.v1Blocked = true; stripe._state.profileUnfinished = true;
+  await assert.rejects(P.connectOnboard(stripe, rpc, env, pc.id), /losses_collector_unavailable.*Platform profile/);
+  stripe._state.v1Blocked = false; stripe._state.profileUnfinished = false; ok('if the Stripe platform profile is unfinished, the error says how to fix it');
 
   // ID check: Stripe refuses the date of birth to a standard key
   const [it] = await q("insert into auth.users (email) values ('id@test.com') returning id");

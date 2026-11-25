@@ -60,8 +60,9 @@ export async function connectOnboard(stripe: any, rpc: Rpc, env: Env, userId: st
 
 // New Stripe platforms can't create connected accounts with Accounts v1, so talent
 // payout accounts are made with Accounts v2 as "recipients" (they receive transfers,
-// Embr pays Stripe's fees, Stripe carries losses, Express dashboard), as Stripe's own error
-// message sets out. Older platforms without v2 access fall back to v1 Express.
+// Embr pays Stripe's fees and carries losses, Express dashboard). Stripe only allows
+// "application" as losses collector for recipient-only accounts, and only once the
+// platform profile in the Stripe Dashboard is finished. Older platforms without v2 access fall back to v1 Express.
 export async function createRecipientAccount(stripe: any, email: string, userId: string): Promise<string> {
   let v2err = '';
   if (stripe.v2) {
@@ -70,14 +71,15 @@ export async function createRecipientAccount(stripe: any, email: string, userId:
         contact_email: email,
         identity: { country: 'GB' },
         dashboard: 'express',
-        // Stripe requires itself as losses collector for new platforms (account_creation_losses_collector_unavailable)
-        defaults: { responsibilities: { fees_collector: 'application', losses_collector: 'stripe' } },
+        // recipient-only accounts: Stripe accepts only "application" here
+        defaults: { responsibilities: { fees_collector: 'application', losses_collector: 'application' } },
         configuration: { recipient: { capabilities: { stripe_balance: { stripe_transfers: { requested: true } } } } },
         metadata: { user_id: userId },
       }, 'acct2-' + userId);
       return a.id;
     } catch (e) {
       v2err = (e as Error).message;
+      if (/losses_collector_unavailable/.test(v2err)) v2err += ' / Fix: finish the Connect platform profile in the Stripe Dashboard (Settings, Connect, Platform profile) and choose the platform as responsible for losses.';
       console.warn('connect: Accounts v2 create failed, trying v1', v2err);
     }
   }
