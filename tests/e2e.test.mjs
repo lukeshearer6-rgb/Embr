@@ -130,6 +130,7 @@ try {
   await amara.fill('#f-profile [name=day_rate]', '250');
   await amara.fill('#f-profile [name=bio]', 'Manchester model and UGC creator. Streetwear, beauty and editorial. <img src=x onerror="window.__xss=1">');
   await amara.fill('#f-profile [name=tags]', 'streetwear, beauty');
+  await amara.waitForSelector('#f-profile >> text=/"Around my region" from Manchester means Liverpool and Leeds/');
   await amara.selectOption('#f-profile [name=travel_range]', 'region');
   await amara.selectOption('#f-profile [name=travel_costs]', 'nearby_included');
   await amara.click('#f-profile button[type=submit]');

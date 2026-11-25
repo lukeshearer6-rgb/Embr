@@ -5,7 +5,7 @@ import { VIEWS, A, F, C, S, go, refreshMe, rerender } from '../state.js';
 import { rpc, action, uploadPhoto, deletePhoto, photoUrl, roleRules, modelOptions, agencyText } from '../api.js';
 import { agencyBox } from './auth.js';
 import { statsForm } from './model.js';
-import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CITIES, rolesOf, rolesTxt, rolePlural, roleChips, pickedRoles, USAGE, TERMS, TRAVEL_RANGE, TRAVEL_COSTS, toast, openLayer, closeLayer, formData, plural, first, busy, confirmDialog } from '../ui.js';
+import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CITIES, rolesOf, rolesTxt, rolePlural, roleChips, pickedRoles, USAGE, TERMS, TRAVEL_RANGE, TRAVEL_COSTS, nearby, toast, openLayer, closeLayer, formData, plural, first, busy, confirmDialog } from '../ui.js';
 import { ICON } from '../icons.js';
 import { thumb, calendar, groupBookings, bookingItem, linkCards } from './common.js';
 import { bookingsView, inboxView } from './brand.js';
@@ -231,7 +231,7 @@ V.profile = async () => {
     <label class="field">Half-day rate, £<input class="in" type="number" name="half_rate" min="5" step="5" value="${t.half_rate ?? ''}"></label>
     <label class="field">How far you'll travel<select class="in" name="travel_range">${TRAVEL_RANGE.map(([k, l]) => `<option value="${k}" ${(t.travel_range || 'local') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     <label class="field">Travel costs<select class="in" name="travel_costs">${TRAVEL_COSTS.map(([k, l]) => `<option value="${k}" ${(t.travel_costs || 'discuss') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-    <p class="hint span" style="margin-top:-8px">Your usual preference. You still decide on every offer, so you can say yes to a trip one week and no the next. Brands in other cities see you if you travel beyond your city.</p>
+    <p class="hint span" style="margin-top:-8px">Your usual preference. You still decide on every offer, so you can say yes to a trip one week and no the next. ${nearby(t.city).length ? `"Around my region" from ${esc(t.city)} means ${esc(nearby(t.city).join(' and '))}.` : 'Brands in other cities see you if you travel beyond your city.'}</p>
     <label class="field">Book-me name<input class="in" name="handle" required pattern="[A-Za-z0-9_.]{2,30}" value="${esc(t.handle)}" placeholder="yourname"><span class="hint">Your page: ${esc(appOrigin().replace(/^https?:\/\//, ''))}/@${esc(t.handle || 'yourname')}</span></label>
     <label class="field">Instagram or TikTok<input class="in" name="instagram" value="${esc(t.instagram)}" placeholder="@handle"></label>
     <label class="field span">Bio<textarea class="in" name="bio" maxlength="1200" placeholder="Who you are, your experience, and what you love working on">${esc(t.bio)}</textarea></label>
@@ -324,7 +324,7 @@ F['f-profile'] = async (form) => {
   S.me = await rpc('save_talent', { p: d });
   S.me = await rpc('save_travel', { p: travel });
   toast(S.me.talent.published ? 'Saved. Brands can see your profile.' : 'Saved. Fill in your work sections to go live.');
-  rerender();
+  await refreshWork(); // keeps model details typed below but not yet saved
 };
 C.photos = async (input) => {
   const files = [...input.files].slice(0, MAXP - (T().photos || []).length);
