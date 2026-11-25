@@ -223,14 +223,18 @@ try {
   await rivet.click('#f-onboard button[type=submit]');
   await rivet.waitForSelector('h1:has-text("Find talent")');
   await rivet.waitForSelector('.comp >> text=Amara Okafor');
-  // photos lead on the board: name, role and day rate sit on the photo; the search sits in the black band
-  assert.match(await rivet.textContent('.comps.photo .ov'), /Amara Okafor.*Model and UGC creator.*Manchester.*£250 a day/s);
-  assert.equal(await rivet.locator('.band #f-search').count(), 1);
+  // photos lead on the board: the day rate sits on a small pill on the photo, name, roles and city below it
+  assert.match(await rivet.textContent('.feed .fcard .rate'), /£250 a day/);
+  assert.match(await rivet.textContent('.feed .fcard'), /Amara Okafor.*Model and UGC creator.*Manchester/s);
+  assert.equal(await rivet.locator('.band [name=q]').count(), 1);
+  assert.equal(await rivet.getAttribute('.cats [data-cat=""]', 'aria-pressed'), 'true');
+  assert.match(await rivet.textContent('#frow'), /Filters.*Any date.*Manchester.*Any day rate/s);
   await shot(rivet, '04-brand-board');
   ok('brand joins and finds talent on the board');
-  await rivet.selectOption('#f-search [name=category]', 'UGC creator');
+  await rivet.click('.cats [data-cat="UGC creator"]');
+  await rivet.waitForFunction(() => document.querySelector('.cats [data-cat="UGC creator"]').getAttribute('aria-pressed') === 'true');
   await rivet.waitForSelector('.comp >> text=Amara Okafor');
-  assert.match(await rivet.textContent('#f-search [name=category] option:checked'), /UGC creators/);
+  assert.equal(await rivet.getAttribute('.cats [data-cat=""]', 'aria-pressed'), 'false');
   await rivet.click('.comp >> text=Amara Okafor');
   await rivet.waitForSelector('.sheet .role-sec h3:has-text("UGC creator")');
   await rivet.waitForSelector('.sheet .linkcard >> text=Skincare ad');
@@ -243,8 +247,39 @@ try {
   await rivet.locator('.sheet .role-sec >> nth=0').scrollIntoViewIfNeeded();
   await shot(rivet, '04b-brand-profile-roles');
   await rivet.keyboard.press('Escape');
-  await rivet.selectOption('#f-search [name=category]', '');
-  ok('brand searches UGC creators and sees each role\'s work on the profile');
+  await rivet.click('.cats [data-cat=""]');
+  ok('brand switches to UGC creators with a role pill and sees each role\'s work on the profile');
+  {
+    // on a phone the board's filters live in one bottom sheet; pills and hearts are 48px to tap
+    const phone = await person('rivet-phone', true);
+    await phone.goto(`${BASE}/signin`);
+    await signIn(phone, 'sam@rivet.test', '12345678');
+    await phone.waitForSelector('.feed .fcard');
+    for (const sel of ['.cats .cat', '.frow .fpill', '.fcard .save']) assert.ok((await phone.locator(sel).first().boundingBox()).height >= 48, sel + ' is at least 48px tall');
+    await phone.click('.frow [data-sec=rate]');
+    await phone.waitForSelector('.dialog.fsheet [data-a=fapply]:has-text("Show 1 person")');
+    const sheet = await phone.evaluate(() => { const d = document.querySelector('.dialog.fsheet'); return { radius: getComputedStyle(d).borderTopLeftRadius, grabber: getComputedStyle(d, '::before').display }; });
+    assert.deepEqual(sheet, { radius: '16px', grabber: 'block' });
+    await phone.fill('#f-filters [name=max_rate]', '200');
+    await phone.waitForSelector('[data-a=fapply]:has-text("No one matches")');
+    await phone.fill('#f-filters [name=max_rate]', '300');
+    await phone.click('#f-filters [data-k=date][data-v="' + iso(0) + '"]');
+    await phone.waitForSelector('#f-filters [data-k=date][data-v="' + iso(0) + '"][aria-pressed=true]');
+    await phone.waitForSelector('[data-a=fapply]:has-text("Show 1 person")');
+    await shot(phone, '04c-board-filters-phone');
+    await phone.click('[data-a=fapply]');
+    await phone.waitForFunction(() => /Today.*Up to £300/s.test(document.getElementById('frow').textContent));
+    assert.match(await phone.textContent('#frow .fbadge'), /^3$/);
+    assert.match(await phone.textContent('#count'), /^1 person$/);
+    await phone.click('.fbtn');
+    await phone.click('[data-a=fclear]');
+    await phone.waitForSelector('#f-filters [data-k=city][data-v=""][aria-pressed=true]');
+    await phone.click('[data-a=fapply]');
+    await phone.waitForFunction(() => /Any date.*Anywhere.*Any day rate/s.test(document.getElementById('frow').textContent));
+    assert.equal(await phone.locator('#frow .fbadge').count(), 0);
+    await phone.close();
+    ok('on a phone, brands switch roles with pills and narrow the board in one filter sheet with a live count');
+  }
   await rivet.click('nav.main >> text=Jobs');
   await rivet.click('button[data-a=postjob]');
   await rivet.fill('#f-job [name=title]', 'Drop 4 lookbook');

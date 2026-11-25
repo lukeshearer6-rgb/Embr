@@ -106,7 +106,7 @@ function drawLayers(focusNew) {
       return `<div class="scrim${over}" data-a="close"></div><section class="sheet" role="dialog" aria-modal="true" aria-label="${esc(l.label || '')}" style="z-index:${41 + i * 2}">
         <div class="hd">${l.head || ''}${x}</div><div class="bd">${l.body}</div>${l.foot ? `<div class="ft">${l.foot}</div>` : ''}</section>`;
     }
-    return `<div class="scrim${over}" data-a="close" style="z-index:${42 + i * 2}"></div><section class="dialog${l.lg ? ' lg' : ''}" role="dialog" aria-modal="true" style="z-index:${43 + i * 2}">
+    return `<div class="scrim${over}" data-a="close" style="z-index:${42 + i * 2}"></div><section class="dialog${l.lg ? ' lg' : ''}${l.cls ? ' ' + l.cls : ''}" role="dialog" aria-modal="true" style="z-index:${43 + i * 2}">
       <div class="hd">${l.head || ''}${x}</div><div class="bd">${l.body}</div>${l.foot ? `<div class="ft">${l.foot}</div>` : ''}</section>`;
   }).join('');
   if (focusNew && stack.length) {

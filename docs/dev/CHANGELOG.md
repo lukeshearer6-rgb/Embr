@@ -2,6 +2,14 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-25: Brand board rebuilt as a native phone screen (held for the final UI round)
+- Brands switch roles with a sideways row of pills (All, Model, UGC creator …, each with an icon) instead of a dropdown in a sentence.
+- Applied filters show as pills (Filters with a count, date, city, day rate); each opens one filter sheet with Availability, Location, Day rate and, for models, sizes and height. The sheet's button shows how many people match before applying; "Clear all" resets.
+- Board cards: photo first with the day rate on a small black pill, name, roles and city below; 48px save heart. Count reads "people", not "persons".
+- Notes, Mobbin references and before/after: docs/dev/board-mobile.md.
+- Files: `src/views/brand.js`, `src/icons.js`, `src/style.css`, `src/ui.js` (dialogs accept an extra class), `tests/e2e.test.mjs`.
+- Tests: e2e 39 (new phone check for the filter sheet, live count and 48px targets), db 77.
+
 ## 2026-11-25: Interface round 2: black header and money, photo-led board, orange "needs you", motion
 - Every screen: black header bar. Brand board: search in a black band; talent photos edge to edge with name, role, city, height and day rate on the photo (also on the shortlist).
 - Talent Today: offers and setup in an orange block; earnings and seen/saved counts in one black block.
