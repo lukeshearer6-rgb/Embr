@@ -200,6 +200,8 @@ try {
   assert.equal(await amara.locator('.tiles .tile').count(), 3);
   await amara.waitForSelector('.tile >> text=None yet this week');
   await amara.waitForSelector('text=Profile strength');
+  // the money and the seen/saved counts sit together in one block
+  assert.equal(await amara.locator('.moneyblk .earn').count(), 1); assert.equal(await amara.locator('.moneyblk .tiles').count(), 1);
   // new talent: the next setup step sits above the money, not below it
   assert.ok(await amara.evaluate(() => !!(document.querySelector('.needs .panel')?.compareDocumentPosition(document.querySelector('.earn')) & Node.DOCUMENT_POSITION_FOLLOWING)));
   await amara.waitForSelector('.panel:has-text("This week on Embr") >> text=Brands are being invited in now');
@@ -221,6 +223,9 @@ try {
   await rivet.click('#f-onboard button[type=submit]');
   await rivet.waitForSelector('h1:has-text("Find talent")');
   await rivet.waitForSelector('.comp >> text=Amara Okafor');
+  // photos lead on the board: name, role and day rate sit on the photo; the search sits in the black band
+  assert.match(await rivet.textContent('.comps.photo .ov'), /Amara Okafor.*Model and UGC creator.*Manchester.*£250 a day/s);
+  assert.equal(await rivet.locator('.band #f-search').count(), 1);
   await shot(rivet, '04-brand-board');
   ok('brand joins and finds talent on the board');
   await rivet.selectOption('#f-search [name=category]', 'UGC creator');
