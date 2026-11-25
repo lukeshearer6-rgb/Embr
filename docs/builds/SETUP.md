@@ -73,6 +73,8 @@ npx supabase functions deploy cron --no-verify-jwt
 npx supabase functions deploy send-email --no-verify-jwt
 ```
 
+**ID check date of birth (Stripe restricted key).** Stripe only shares the date of birth from an ID check with a restricted key. In Stripe (test mode): Developers → API keys → Create restricted key, name it "Embr Identity", set **Identity → Verification sessions and reports: Read** and **Access recent sensitive verification results: Read** (if offered), create it, then save it with `npx supabase secrets set STRIPE_IDENTITY_KEY=rk_test_...` (paste it into a hidden prompt, never into chat or a file). Without it, passed ID checks wait for staff to confirm on the admin People page.
+
 Then open **SQL Editor** in Supabase, paste `supabase/setup/after-deploy.sql`, replace the three values in angle brackets, and run it. The last line gives you your **staff invite code**. Keep it.
 
 ## 5. Stripe webhooks (how Stripe tells Embr a payment went through)

@@ -2,6 +2,12 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-25: ID checks no longer get stuck after a pass
+- Stripe only shares the date of birth from an ID check with a restricted key allowed to read sensitive results. Embr asked for it with the standard key, Stripe refused, and a passed check stayed on "Checking your ID…". Embr now reads the date of birth with an optional restricted key (`STRIPE_IDENTITY_KEY`); if that's missing or refused, it reads the result without it and the check goes to "Confirming your age".
+- Staff see "ID checks to confirm" on the admin People page and can confirm 18+ after checking the session in Stripe (`ops_confirm_age`).
+- Files: `supabase/functions/_shared/payments.ts`, `supabase/functions/_shared/deps.ts`, `supabase/migrations/20261125000003_id_review.sql`, `src/views/ops.js`, `scripts/fake-stripe.mjs`, `docs/builds/SETUP.md`.
+- Tests: payments 8 checks (new: refused date of birth goes to review; with the restricted key the talent is verified), db 76 checks (new: staff confirm 18+ only for checks waiting on review).
+
 ## 2026-11-25: Talent Today screen has something to see after setup
 - **Seen and saved:** three tiles under the earnings card: how many brands opened your profile this week, how many have saved you, and offers received. Counts only, never which brand ("Brands make the first move"). Before the profile is live the tiles say "Not live yet" and lead to the profile.
 - **Profile strength:** once you're ready to be booked, the checklist becomes a strength bar with one "Next" step (more photos, bio, tags, comfort note, Instagram, half-day rate, dates confirmed). No claim that it ranks you higher.
