@@ -14,6 +14,8 @@ Embr is a UK marketplace where brands book unsigned models and creatives directl
 
 The locked business rules are in `docs/decisions.md`. Read it before any product, copy or legal-adjacent work.
 
+The mobile design rules are in `DESIGN_RULES.md` (tab bar, safe areas and touch targets, sheets vs modals, colour and photos, each backed by Mobbin screens). Read it before any UI task.
+
 ## Hard rules (never break these)
 
 1. **No estimated figures.** Every number (market size, price, fee, statistic, date) carries a source link and the date it was checked. If no source exists, write "unverified: needs measuring" instead of a guess. Luke's own decisions count as a source: cite them as "Decision (Luke, date)".
@@ -76,6 +78,7 @@ To save tokens and time: give agents file paths, not pasted content. Use one age
 
 ```
 CLAUDE.md                 this guide
+DESIGN_RULES.md           mobile design rules, read before any UI task
 .claude/agents/           the four sub-agents
 .claude/settings.json     approval gates as permission rules
 .github/workflows/ci.yml  runs database and browser tests on every push
@@ -117,6 +120,7 @@ More detail is in `docs/dev/architecture.md`.
 - Each schema change is a new file in `supabase/migrations/`. Never edit a migration that has already been deployed.
 - Every feature or fix comes with a test in `tests/`, plus an entry in `docs/dev/CHANGELOG.md`.
 - Phone first, UK English, GBP, en-GB dates. Keep the premium look of `src/style.css`.
+- Every UI change follows `DESIGN_RULES.md`. If a rule doesn't fit, say why in the task note.
 - Small commits with plain-English messages that say what changed for users.
 
 ### Running tests locally
