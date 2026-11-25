@@ -25,11 +25,19 @@ export function createFakeStripe(baseUrl) {
   const stripe = {
     _state: st,
     accounts: {
-      create: async (p, o) => once(opt(o), () => { const a = { id: id('acct'), ...p, payouts_enabled: false, details_submitted: false, capabilities: { transfers: 'inactive' } }; st.accounts[a.id] = a; return a; }),
+      create: async (p, o) => { if (st.v1Blocked) throw new Error('Stripe no longer recommends Accounts v1 for new Connect integrations.'); return once(opt(o), () => { const a = { id: id('acct'), ...p, payouts_enabled: false, details_submitted: false, capabilities: { transfers: 'inactive' } }; st.accounts[a.id] = a; return a; }); },
       retrieve: async (aid) => { const a = st.accounts[aid]; if (!a) throw Object.assign(new Error('No such account'), { code: 'resource_missing' }); return a; },
       createLoginLink: async (aid) => ({ url: `${baseUrl}/__fake_stripe/express?account=${aid}` }),
     },
-    accountLinks: { create: async (p) => ({ url: `${baseUrl}/__fake_stripe/onboard?account=${p.account}&return=${encodeURIComponent(p.return_url)}` }) },
+    // Accounts v2 (JSON) stand-in: recipient accounts behave like v1 Express ones afterwards.
+    // st.noV2 makes v2 fail (older platform); st.v1Blocked makes v1 account creation fail (new platform)
+    v2: async (path, body, key) => {
+      if (st.noV2) throw new Error('Accounts v2 is not enabled for this platform');
+      if (path === '/v2/core/accounts') return once(key, () => { st.v2Created = (st.v2Created || 0) + 1; const a = { id: id('acct'), email: body.contact_email, metadata: body.metadata, payouts_enabled: false, details_submitted: false, capabilities: { transfers: 'inactive' } }; st.accounts[a.id] = a; return a; });
+      if (path === '/v2/core/account_links') return { url: `${baseUrl}/__fake_stripe/onboard?account=${body.account}&return=${encodeURIComponent(body.use_case.account_onboarding.return_url)}` };
+      throw new Error('unknown v2 path ' + path);
+    },
+    accountLinks: { create: async (p) => (st.v1LinksBlocked ? Promise.reject(new Error('Use v2 account links for this account')) : { url: `${baseUrl}/__fake_stripe/onboard?account=${p.account}&return=${encodeURIComponent(p.return_url)}` }) },
     identity: {
       verificationSessions: {
         create: async (p) => { const s = { id: id('vs'), status: 'requires_input', metadata: p.metadata, return_url: p.return_url, verified_outputs: null }; s.url = `${baseUrl}/__fake_stripe/identity?session=${s.id}`; st.identity[s.id] = s; return s; },

@@ -40,25 +40,54 @@ export async function connectOnboard(stripe: any, rpc: Rpc, env: Env, userId: st
   if (!t) throw new HttpError(403, 'Only talent accounts set up payouts');
   let account = t.stripe_account;
   if (!account) {
-    const a = await stripe.accounts.create({
-      type: 'express',
-      country: 'GB',
-      email: t.email,
-      business_type: 'individual',
-      capabilities: { transfers: { requested: true } },
-      business_profile: { product_description: 'Freelance modelling and creative work booked through Embr', mcc: '7929' },
-      metadata: { user_id: userId },
-    }, { idempotencyKey: 'acct-' + userId });
-    account = a.id;
+    account = await createRecipientAccount(stripe, t.email, userId);
     await rpc('svc_set_stripe_account', { p_user: userId, p_account: account });
   }
-  const link = await stripe.accountLinks.create({
-    account,
-    type: 'account_onboarding',
-    refresh_url: appUrl(env) + '/wallet?stripe=refresh',
-    return_url: appUrl(env) + '/wallet?stripe=done',
-  });
-  return { url: link.url };
+  const back = { refresh_url: appUrl(env) + '/wallet?stripe=refresh', return_url: appUrl(env) + '/wallet?stripe=done' };
+  let url: string;
+  try {
+    url = (await stripe.accountLinks.create({ account, type: 'account_onboarding', ...back })).url;
+  } catch (e) {
+    // v1 account links may refuse an Accounts v2 account: use the v2 link
+    if (!stripe.v2) throw e;
+    console.warn('connect: v1 account link refused, using v2', (e as Error).message);
+    const l = await stripe.v2('/v2/core/account_links', { account,
+      use_case: { type: 'account_onboarding', account_onboarding: { configurations: ['recipient'], ...back } } });
+    url = l.url;
+  }
+  return { url };
+}
+
+// New Stripe platforms can't create connected accounts with Accounts v1, so talent
+// payout accounts are made with Accounts v2 as "recipients" (they receive transfers,
+// Embr is responsible for fees and losses, Express dashboard), as Stripe's own error
+// message sets out. Older platforms without v2 access fall back to v1 Express.
+export async function createRecipientAccount(stripe: any, email: string, userId: string): Promise<string> {
+  if (stripe.v2) {
+    try {
+      const a = await stripe.v2('/v2/core/accounts', {
+        contact_email: email,
+        identity: { country: 'GB' },
+        dashboard: 'express',
+        defaults: { responsibilities: { fees_collector: 'application', losses_collector: 'application' } },
+        configuration: { recipient: { capabilities: { stripe_balance: { stripe_transfers: { requested: true } } } } },
+        metadata: { user_id: userId },
+      }, 'acct2-' + userId);
+      return a.id;
+    } catch (e) {
+      console.warn('connect: Accounts v2 create failed, trying v1', (e as Error).message);
+    }
+  }
+  const a = await stripe.accounts.create({
+    type: 'express',
+    country: 'GB',
+    email,
+    business_type: 'individual',
+    capabilities: { transfers: { requested: true } },
+    business_profile: { product_description: 'Freelance modelling and creative work booked through Embr', mcc: '7929' },
+    metadata: { user_id: userId },
+  }, { idempotencyKey: 'acct-' + userId });
+  return a.id;
 }
 
 export async function connectRefresh(stripe: any, rpc: Rpc, userId: string) {

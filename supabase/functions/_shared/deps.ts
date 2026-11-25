@@ -10,6 +10,15 @@ export function makeDeps(): Deps {
   // "access recent sensitive verification results" (Identity). Optional: without it, passed
   // checks go to staff review.
   if (env.STRIPE_IDENTITY_KEY) (stripe as any).identityReader = new Stripe(env.STRIPE_IDENTITY_KEY, { apiVersion: '2024-12-18.acacia' as any, httpClient: Stripe.createFetchHttpClient() });
+  // Accounts v2 calls (JSON, own API version). Stripe's error for this platform named 2026-11-18.endive.
+  (stripe as any).v2 = async (path: string, body: unknown, idempotencyKey?: string) => {
+    const r = await fetch('https://api.stripe.com' + path, { method: 'POST', body: JSON.stringify(body), headers: {
+      Authorization: 'Bearer ' + env.STRIPE_SECRET_KEY, 'Stripe-Version': env.STRIPE_V2_VERSION || '2026-11-18.endive',
+      'Content-Type': 'application/json', ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}) } });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j?.error?.message || 'Stripe v2 request failed (' + r.status + ')');
+    return j;
+  };
   const admin = createClient(env.SUPABASE_URL!, env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
   const crypto = Stripe.createSubtleCryptoProvider();
   return {
