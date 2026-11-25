@@ -2,6 +2,10 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-25: "I already have a code" on the sign-in screen
+- If the sign-in email can't be sent, or someone already has a code from an earlier email, they can tap "I already have a code" and type it in. Until Embr has its own domain, Resend only emails the account owner, so in testing Embr staff make the codes for test accounts and pass them on.
+- Files: `src/views/auth.js`, `tests/e2e.test.mjs` (the café brand signs in this way).
+
 ## 2026-11-24: "Copy invite link" works on the admin site
 - The copy button's code only loaded in the app, so on the admin site "Copy invite link" did nothing. It now lives in shared code used by both.
 - Files: `src/views/common.js`, `src/views/talent.js`, `tests/e2e.test.mjs` (clicks Copy invite link on the admin site and checks it copied).

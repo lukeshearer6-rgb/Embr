@@ -43,9 +43,9 @@ async function person(name, mobile = false) {
   page.setDefaultTimeout(8000);
   return page;
 }
-async function signIn(page, email, code = '123456') {
+async function signIn(page, email, code = '123456', haveCode = false) {
   await page.fill('input[name=email]', email);
-  await page.click('#f-email button[type=submit]');
+  await page.click(haveCode ? '#f-email [data-a=have-code]' : '#f-email button[type=submit]');
   await page.fill('input[name=token]', code);
   await page.click('#f-code button[type=submit]');
 }
@@ -317,7 +317,7 @@ try {
   await cafe.waitForSelector('text=£231');
   await shot(cafe, '10-link-landing-phone');
   await cafe.click('button[data-a=pub-join]');
-  await signIn(cafe, 'owner@cafe.test');
+  await signIn(cafe, 'owner@cafe.test', '123456', true); // "I already have a code": no new email sent
   await cafe.waitForSelector('#f-onboard[data-role=brand]');
   await cafe.fill('#f-onboard [name=name]', 'Northern Café');
   await cafe.fill('#f-onboard [name=contact_name]', 'Jo');

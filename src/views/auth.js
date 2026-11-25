@@ -37,6 +37,7 @@ VIEWS.auth.signin = (app) => {
     <form id="f-email" class="mt24" style="max-width:420px">
       <label class="field">Email<input class="in" type="email" name="email" required autocomplete="email" inputmode="email" placeholder="you@example.com"></label>
       <button class="btn primary full mt16" type="submit">Email me a code</button>
+      <p class="s g mt16"><button class="link s" type="button" data-a="have-code">I already have a code</button></p>
     </form>
     <form id="f-code" class="mt24" style="max-width:420px" hidden>
       <p class="s">We sent a code to <b id="code-to"></b>. It can take a minute to arrive.</p>
@@ -48,16 +49,25 @@ VIEWS.auth.signin = (app) => {
 };
 
 let pendingEmail = '';
+function showCodeForm(email, sent = true) {
+  pendingEmail = email;
+  $('#f-email').hidden = true;
+  const f2 = $('#f-code');
+  f2.hidden = false;
+  f2.querySelector('p.s').innerHTML = sent ? `We sent a code to <b>${esc(email)}</b>. It can take a minute to arrive.` : `Enter the code for <b>${esc(email)}</b>.`;
+  f2.querySelector('input').focus();
+}
 F['f-email'] = async (form, btn) => {
   const email = formData(form).email.trim().toLowerCase();
   btn.textContent = 'Sending…';
   await sendCode(email);
-  pendingEmail = email;
-  form.hidden = true;
-  const f2 = $('#f-code');
-  f2.hidden = false;
-  $('#code-to').textContent = email;
-  f2.querySelector('input').focus();
+  showCodeForm(email);
+};
+// a code from an earlier email (or, in testing, one Embr staff made), when a new email can't be sent
+A['have-code'] = () => {
+  const input = $('#f-email input[name=email]');
+  if (!input.reportValidity()) return;
+  showCodeForm(input.value.trim().toLowerCase(), false);
 };
 F['f-code'] = async (form, btn) => {
   btn.textContent = 'Checking…';
