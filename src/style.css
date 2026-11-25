@@ -987,3 +987,55 @@ body.has-rbar main.shell{padding-bottom:180px}
 /* every tap target in the thread and checkout is at least 48px (DESIGN_RULES 2.2) */
 .ocard .btn,.chcard .btn,.askrow .btn,.sbrief .btn,.scheck .btn{height:48px}
 .scheck .link{min-height:24px}
+
+/* ---------------------------------------------------------------- Shoot Day Hub (docs/dev/shoot-day-hub.md) */
+.sdlink{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px 16px;margin-bottom:12px;background:var(--ink);color:#fff;border-radius:var(--r);text-align:left}
+.sdlink .grow{display:flex;flex-direction:column;line-height:1.3}
+.sdlink .g{color:#c9cbd0}
+.dirbtn .ric{width:18px;height:18px}
+.btn.sm.dirbtn{height:48px}
+.sd-band{background:var(--ink);color:#fff;border-radius:var(--r);padding:18px 16px 16px}
+.sd-when{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:#d7d8dc}
+.sd-tag{background:#fff;color:var(--ink);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:var(--r)}
+.sd-kv{display:grid;grid-template-columns:auto 1fr;gap:20px;margin-top:16px}
+.sd-kv div{display:flex;flex-direction:column;min-width:0}
+.sd-kv .xs{color:#a9abb1;text-transform:uppercase;letter-spacing:.08em}
+.sd-kv b{font-size:22px;font-variation-settings:var(--wide);font-weight:800;line-height:1.15;overflow-wrap:anywhere}
+.sd-acts{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:16px}
+.sd-acts .btn{height:48px;padding:0 18px}
+.btn.onblack{background:#fff;color:var(--ink);border-color:#fff}
+.btn.quiet.onblack{background:transparent;color:#fff;border-color:#5b5e64}
+.sd-roster,.sd-pend{display:flex;flex-direction:column}
+.sd-row{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:8px 0;border-bottom:1px solid var(--line);text-align:left}
+.sd-row .thumb{width:44px;height:44px;border-radius:50%;flex:none}
+.sd-row .grow{display:flex;flex-direction:column;line-height:1.3;min-width:0}
+.sd-nm{font-weight:700;display:flex;align-items:center;gap:6px}
+.sd-nm .flag{position:static;width:8px;height:8px;border-radius:50%;background:var(--embr)}
+.sd-r{display:flex;flex-direction:column;align-items:flex-end;line-height:1.3;text-align:right}
+.sd-call{font-size:17px}
+.sd-pend summary{min-height:48px;display:flex;align-items:center;cursor:pointer;color:var(--graphite)}
+.sd-pend .sd-row{opacity:.7}
+.sd-chat{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.sd-msg{display:flex;flex-direction:column;line-height:1.35;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.sd-chat .scompose{display:flex;gap:8px}
+.sd-chat .scompose .in{flex:1;min-height:48px}
+.sd-chat .scompose .btn,.sd-thread{height:48px}
+.sd-thread .ric{width:18px;height:18px}
+.sd-track{list-style:none;display:flex;flex-direction:column}
+.sd-track li{position:relative;display:flex;gap:14px;padding-bottom:18px}
+.sd-track li:before{content:"";position:absolute;left:6px;top:18px;bottom:0;width:2px;background:var(--line)}
+.sd-track li:last-child:before{display:none}
+.sd-track li.done:before{background:var(--ink)}
+.sd-dot{flex:none;width:14px;height:14px;margin-top:4px;border-radius:50%;border:2px solid var(--line2);background:var(--paper);position:relative;z-index:1}
+.sd-track li.done .sd-dot{background:var(--ink);border-color:var(--ink)}
+.sd-track li.now .sd-dot{border-color:var(--ink);box-shadow:0 0 0 4px var(--backdrop)}
+.sd-track li.now.act .sd-dot{border-color:var(--embr);box-shadow:0 0 0 4px var(--embr-tint)}
+.sd-track li.soon .sd-dot{border-style:dashed}
+.sd-track li.soon b{color:var(--mist);font-weight:600}
+.sd-l{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:22px}
+.sd-now{margin-top:10px;border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--backdrop2)}
+.sd-sign{display:flex;align-items:center;gap:10px}
+.sd-sign .thumb{width:36px;height:36px;border-radius:50%;flex:none}
+.sd-sign .grow{display:flex;flex-direction:column;line-height:1.3}
+.sd-sign .btn{height:48px}
+@media (max-width:560px){.shootday .bd{padding-top:14px}}

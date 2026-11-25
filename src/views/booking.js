@@ -6,6 +6,7 @@ import { $, esc, gbp, pounds, pct, dMed, dLong, dShort, dWeekday, tShort, ago, t
 import { ICON } from '../icons.js';
 import { thumb, status, stHTML } from './common.js';
 import { talentShootSec, talentChangeSec, continueShootPay } from './shoot.js';
+import { dirBtn } from './shootday.js';
 
 function money(b, r) {
   const rows = [
@@ -93,7 +94,7 @@ function sheet(b, sh = null) {
     <div class="cs-grid"><div>
       ${sh?.shoot && r === 'brand' ? `<div class="cs-sec"><button class="btn sm" data-a="shoot" data-id="${sh.shoot.id}" data-who="${b.id}">Open the shoot thread</button></div>` : ''}
       ${r === 'talent' ? talentShootSec(b, sh) : ''}
-      <div class="cs-sec"><h4>The day</h4><dl class="kv"><dt>Where</dt><dd>${esc(b.location) || '<span class="g">To confirm in messages</span>'}</dd><dt>Call time</dt><dd>${esc(b.call_time) || '<span class="g">To confirm in messages</span>'}</dd>${b.usage ? `<dt>Usage</dt><dd>${esc(b.usage)}${b.usage_fee ? ' (' + pounds(b.usage_fee) + ')' : ''}</dd>` : ''}${b.content_agreed ? `<dt>Content agreed</dt><dd>${esc(b.content_agreed)}</dd>` : ''}${b.notes ? `<dt>Notes</dt><dd style="white-space:pre-wrap">${esc(b.notes)}</dd>` : ''}</dl></div>
+      <div class="cs-sec"><h4>The day</h4><dl class="kv"><dt>Where</dt><dd>${esc(b.location) || '<span class="g">To confirm in messages</span>'}</dd><dt>Call time</dt><dd>${esc(b.call_time) || '<span class="g">To confirm in messages</span>'}</dd>${b.usage ? `<dt>Usage</dt><dd>${esc(b.usage)}${b.usage_fee ? ' (' + pounds(b.usage_fee) + ')' : ''}</dd>` : ''}${b.content_agreed ? `<dt>Content agreed</dt><dd>${esc(b.content_agreed)}</dd>` : ''}${b.notes ? `<dt>Notes</dt><dd style="white-space:pre-wrap">${esc(b.notes)}</dd>` : ''}</dl>${['accepted', 'confirmed', 'wrapped'].includes(b.status) ? `<div class="mt12">${dirBtn(b.location, 'sm')}</div>` : ''}</div>
       <div class="cs-sec"><h4>People</h4><div class="people">
         <div class="person"><div class="thumb" style="${ph ? `background-image:url('${ph}')` : ''}">${ph ? '' : esc(t.name[0] || '')}</div><div><div style="font-weight:700">${esc(t.name)}${t.verified ? ICON.tick : ''}</div><div class="s g">${b.role ? "Booked as " + esc(b.role) : esc(t.category)}, ${esc(t.city)}</div></div></div>
         <div class="person">${thumb(br, true)}<div><div style="font-weight:700">${esc(br.name)}</div><div class="s g">${esc(br.contact_name || '')}${br.instagram ? ' · ' + esc(br.instagram) : ''}</div></div></div></div></div>

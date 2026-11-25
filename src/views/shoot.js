@@ -25,6 +25,7 @@ import { $, esc, gbp, pounds, pct, dMed, dLong, ago, today, toast, openLayer, cl
 import { ICON } from '../icons.js';
 import { thumb, status } from './common.js';
 import { openBooking } from './booking.js';
+import { hasDay } from './shootday.js';
 
 const people = (n) => (n === 1 ? '1 person' : `${n} people`);
 const LIVE = (p) => !['declined', 'withdrawn', 'cancelled'].includes(p.status);
@@ -124,7 +125,8 @@ function shootLayer(s, who) {
   return {
     kind: 'sheet', cls: 'shootthread', shoot: s.id, who, label: s.title,
     head: `<div class="grow st-hd"><b class="st-ttl">${esc(s.title)}</b><span class="xs g">${dMed(s.shoot_date)}${callTxt(s) ? ' · ' + esc(callTxt(s)) : ''}</span></div>`,
-    body: `${briefCard(s)}
+    body: `${hasDay(s) ? `<button type="button" class="sdlink" data-a="shootday" data-id="${s.id}"><span class="grow"><b>Shoot day</b><span class="xs g">Call times, directions, group chat and sign-off</span></span><span aria-hidden="true">›</span></button>` : ''}
+      ${briefCard(s)}
       <nav class="speople" aria-label="Who you're talking to">
         <button type="button" class="pchip all" data-a="shoot-who" data-id="${s.id}" data-who="all" aria-pressed="${who === 'all'}"><span class="pc-av pc-stack">${s.people.slice(0, 3).map((x) => thumb(x.talent)).join('')}</span><span class="pc-nm">Everyone</span></button>
         ${s.people.map((x) => chip(x, s, who)).join('')}</nav>
@@ -278,7 +280,7 @@ export async function shootsSection() {
   return `<h2 class="sec mt32">Shoots</h2><div class="list">${list.map((s) => {
     const live = s.people.filter(LIVE);
     const tag = s.to_pay ? `<span class="st act">Pay ${plural(s.to_pay, 'deposit')}</span>` : s.changes ? `<span class="st act">${plural(s.changes, 'change')} asked</span>` : s.unread ? '<span class="st act">New message</span>' : `<span class="st wait">${live.filter((p) => p.status !== 'offer').length} of ${live.length} accepted</span>`;
-    return `<button class="item" data-a="shoot" data-id="${s.id}"><span class="pc-stack sh-faces" aria-hidden="true">${s.people.slice(0, 3).map((p) => thumb(p)).join('')}</span>
+    return `<button class="item" data-a="${hasDay(s) ? 'shootday' : 'shoot'}" data-id="${s.id}"><span class="pc-stack sh-faces" aria-hidden="true">${s.people.slice(0, 3).map((p) => thumb(p)).join('')}</span>
       <div class="grow"><div class="ttl">${esc(s.title)}</div><div class="meta"><span>${dMed(s.shoot_date)}</span><span>${people(s.people.length)}</span>${s.location ? `<span>${esc(s.location)}</span>` : ''}</div></div>
       <div class="amt">${tag}</div></button>`;
   }).join('')}</div>`;

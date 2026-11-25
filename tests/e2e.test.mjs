@@ -804,6 +804,61 @@ try {
     // the roster total was for the offers as sent (Amara's rate changed to £280 afterwards)
     const sumP = rows.reduce((n, r) => n + r.total_p, 0) - (rows[0].total_p - sentTotal);
     assert.equal('£' + (sumP / 100).toLocaleString('en-GB', sumP % 100 ? { minimumFractionDigits: 2 } : {}), total);
+    // Shoot Day Hub: once people are confirmed the shoot opens on its day screen
+    await phone.goto(`${BASE}/bookings`);
+    await phone.click('h2:has-text("Shoots") + .list .item:has-text("Autumn campaign")');
+    await phone.waitForSelector('.sheet.shootday .sd-band >> text=In 30 days');
+    assert.equal(await phone.locator('.shootday .sd-roster .sd-row').count(), 2);
+    const band = await phone.textContent('.shootday .sd-band');
+    assert.match(band, /8am/); assert.match(band, /Mayfield Depot/);
+    assert.equal(await phone.getAttribute('.shootday .sd-band a.dirbtn', 'href'), 'https://www.google.com/maps/dir/?api=1&destination=Mayfield%20Depot');
+    assert.equal(await phone.getAttribute('.shootday .sd-band a.dirbtn', 'target'), '_blank');
+    assert.match(await phone.textContent('.shootday .sd-roster'), /Amara Okafor.*Model.*8am.*Confirmed.*Jade Park.*Make-up artist.*8am.*Confirmed/s);
+    assert.doesNotMatch(await phone.textContent('.shootday .bd'), /£/); // a day screen, not a money screen: money stays on each booking
+    for (const sel of ['.shootday .sd-row', '.shootday a.dirbtn', '.shootday [data-a=copy-place]', '#f-daymsg .in', '#f-daymsg .btn', '.shootday .sd-thread']) assert.ok((await phone.locator(sel).first().boundingBox()).height >= 48, sel + ' is at least 48px tall');
+    assert.match(await phone.textContent('.shootday .sd-track li.now'), /Shoot day.*Next/s);
+    assert.equal(await phone.locator('.shootday .sd-track li.now.act').count(), 0); // nothing needs the brand before the day, so no orange
+    assert.equal(await phone.locator('.shootday .sd-track li.soon').count(), 2);
+    await shot(phone, '22-shoot-day-hub-phone');
+    // the group chat: one message reaches everyone, each in their own chat, and shows once
+    await phone.fill('#f-daymsg [name=body]', 'Running 10 minutes late, start at 8.10.');
+    await phone.click('#f-daymsg button[type=submit]');
+    await toastHas(phone, /Sent to 2 people/);
+    await phone.waitForSelector('.shootday .sd-msg:has-text("You to everyone") >> text=Running 10 minutes late');
+    assert.equal(await phone.locator('.shootday .sd-msg:has-text("Running 10 minutes late")').count(), 1);
+    assert.equal((await sql(`select count(*)::int n from messages where body = 'Running 10 minutes late, start at 8.10.' and booking_id in ($1, $2)`, [amaraB, jadeB]))[0].n, 2);
+    // a roster row opens that person's own chat in the shoot thread
+    await phone.click('.shootday .sd-row:has-text("Jade")');
+    await phone.waitForSelector('.shootthread .pchip[aria-pressed=true]:has-text("Jade")');
+    await phone.click('.shootthread .sdlink');
+    await phone.waitForSelector('.sheet.shootday');
+    // on the day: Amara wraps on her booking (which now has Directions too), so sign-off becomes the step that needs the brand
+    await sql(`update bookings set shoot_date = current_date where id in ($1, $2)`, [amaraB, jadeB]);
+    await sql(`update shoots set shoot_date = current_date where title = 'Autumn campaign'`);
+    await amara.goto(`${BASE}/booking/${amaraB}`);
+    assert.equal(await amara.getAttribute('.sheet a.dirbtn', 'href'), 'https://www.google.com/maps/dir/?api=1&destination=Mayfield%20Depot');
+    await amara.click('.sheet button[data-a=wrap]');
+    await amara.click('[data-a=cd-yes]');
+    await amara.waitForSelector('.sheet .st:has-text("Wrapped")');
+    await phone.click('.shootday .sd-thread');
+    await phone.waitForSelector('.sheet.shootthread');
+    await phone.click('.shootthread .sdlink');
+    await phone.waitForSelector('.shootday .sd-band >> text=Today');
+    assert.match(await phone.textContent('.shootday .sd-track li.now'), /Signed off and paid.*Needs you.*0 of 2 signed off.*Amara has wrapped.*Signs off automatically/s);
+    assert.match(await phone.textContent('.shootday .sd-track'), /1 of 2 marked wrapped/);
+    await phone.locator('.shootday .sd-track').scrollIntoViewIfNeeded();
+    await shot(phone, '23-shoot-day-tracker-phone');
+    // signing off goes through the booking, which shows the balance first; payments are the existing sign-off
+    await phone.click('.shootday .sd-sign [data-a=booking]');
+    await phone.click('.sheet button[data-a=signoff]');
+    await phone.click('[data-a=cd-yes]');
+    await phone.waitForSelector('.sheet .st:has-text("Paid")');
+    assert.equal((await sql(`select status from bookings where id = $1`, [amaraB]))[0].status, 'completed');
+    await phone.goto(`${BASE}/bookings`);
+    await phone.click('h2:has-text("Shoots") + .list .item:has-text("Autumn campaign")');
+    await phone.waitForSelector('.shootday .sd-track >> text=1 of 2 signed off');
+    assert.match(await phone.textContent('.shootday .sd-roster'), /Amara Okafor.*Paid/s);
+    ok('Shoot Day Hub: confirmed roster with call times, one-tap directions, a group message that shows once, and a tracker that follows wrap and sign-off');
     await phone.close();
     ok('Shoot Roster sends one offer per creative with the shared date, place and call time; the total matches the two offers');
   }
