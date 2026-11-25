@@ -62,6 +62,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | B4 | Run five full test-mode bookings, including a cancellation and a refund | app-builder | blocked | Build log with each booking's result | Waits on B3 |
 | B5 | Release checklist for opening the invite-only pilot | app-builder | todo | Every item ticked with evidence | Write docs/builds/release-checklist.md |
 | B6 | Domain and Resend sender on the domain | app-builder | blocked | Test email arrives from the domain | Waits on R2 and spend approval |
+| B7 | Stripe restricted key for ID-check date of birth (STRIPE_IDENTITY_KEY: "Identity Verification Results" + "Recent Detailed Verification Results", Read). Not offered in the test sandbox on 2026-11-25; until then passed checks go to admin People, "ID checks to confirm" | luke | blocked | A passed test ID check shows Verified 18+ without staff | Retry when Identity is activated for the account, before launch |
 
 ### Marketing
 
