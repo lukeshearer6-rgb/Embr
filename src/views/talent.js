@@ -9,6 +9,7 @@ import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CITIES, ro
 import { ICON } from '../icons.js';
 import { thumb, calendar, groupBookings, bookingItem, linkCards } from './common.js';
 import { bookingsView, inboxView } from './brand.js';
+import { modeBlock } from './mode.js';
 
 const V = VIEWS.talent;
 const T = () => S.me.talent;
@@ -224,6 +225,7 @@ V.profile = async () => {
         : t.identity_status === 'review' ? '<span class="st wait">Confirming your age</span>'
           : t.identity_status === 'requires_input' ? '<span class="st warn">Needs another try</span>' : '<span class="st wait">Not done</span>';
   return `<div class="row between top-al wrap mb24"><h1 class="display t-48">Profile</h1>${t.handle && t.published ? `<a class="btn" href="/@${esc(t.handle)}" target="_blank" rel="noopener">See your Book-me page</a>` : ''}</div>
+  ${modeBlock([['invite', 'Booking links', 'Move an enquiry from Instagram, WhatsApp or email onto Embr']])}
   <div id="ready">${readyPanel(t)}</div>
   ${t.agency_declared ? '' : `<form id="f-agency" class="panel mb24"><h3>Confirm your agency status</h3><p class="s g mt8">Embr is for models and creatives who are free to take bookings themselves. Brands can't see your profile until you confirm this.</p><div class="mt12">${agencyBox(agency)}</div><button class="btn primary sm mt12" type="submit">Confirm</button></form>`}
   <div class="cols" style="grid-template-columns:minmax(0,1fr) 400px"><div><form id="f-profile"><div class="fgrid">

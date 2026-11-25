@@ -2,6 +2,14 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-25: One sign-in, brand and creative modes, with a switch on Account/Profile (held for the final UI round)
+- A brand can add a creative profile (or a creative a brand profile) to the same sign-in with an invite for that mode, then switch with a black "Switch to creative/brand" pill above the phone tab bar, or the header link on a computer.
+- Each mode has its own 5-tab phone bar (Board, Bookings, Messages, Shortlist, Account / Today, Bookings, Wallet, Messages, Profile). "More" is gone; Jobs and Booking links are rows at the top of Account and Profile.
+- The active mode is saved on the account (profiles.role) so every database rule keeps checking it. Creative mode still can't read briefs, search or make offers; each mode only opens its own bookings; nobody can book or save themselves. Payments unchanged.
+- Notes, Mobbin references, open questions and before/after: docs/dev/mode-switcher.md.
+- Files: `supabase/migrations/20261125000007_dual_mode.sql` (new), `src/views/mode.js` (new), `src/state.js`, `src/main.js`, `src/views/brand.js`, `src/views/talent.js`, `src/style.css`, `tests/db.test.mjs`, `tests/e2e.test.mjs`.
+- Tests: db 84, e2e 45, payments 11.
+
 ## 2026-11-25: Shoot Roster: group creatives under one shoot and send their offers together (held for the final UI round)
 - "Add to shoot" now adds the creative to a shoot roster (from a brief or a new shoot) and keeps the brand on the board, with a black roster bar showing the shoot, head count and day rates.
 - The roster has one shared date, days, location and call time, a row per creative (role, day rate, remove), "Need a make-up artist?" prompts that open the board on that role and date, and the combined cost from the same per-person quotes.

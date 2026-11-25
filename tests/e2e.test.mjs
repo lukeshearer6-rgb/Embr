@@ -39,7 +39,7 @@ async function person(name, mobile = false) {
   const ctx = await browser.newContext(mobile ? { ...base, viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true } : { ...base, viewport: { width: 1280, height: 860 }, deviceScaleFactor: 2 });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(`${name}: ${e.message}`));
-  page.on('console', (m) => { if (m.type() === 'error' && !/fonts\.g|Failed to load resource|Pick at least one thing you do/.test(m.text())) errors.push(`${name} console: ${m.text()}`); });
+  page.on('console', (m) => { if (m.type() === 'error' && !/fonts\.g|Failed to load resource|Pick at least one thing you do|invite code isn't valid/.test(m.text())) errors.push(`${name} console: ${m.text()}`); });
   page.setDefaultTimeout(8000);
   return page;
 }
@@ -624,6 +624,56 @@ try {
     assert.equal('£' + (sumP / 100).toLocaleString('en-GB', sumP % 100 ? { minimumFractionDigits: 2 } : {}), total);
     await phone.close();
     ok('Shoot Roster sends one offer per creative with the shared date, place and call time; the total matches the two offers');
+  }
+
+  // ---------------------------------------------------------------- one sign-in, brand and creative modes (phone)
+  {
+    await sql("insert into public.invites (code, role, note) values ('T-DUAL01', 'talent', 'Sam as a creative')");
+    const phone = await person('Sam (two modes)', true);
+    await phone.goto(`${BASE}/signin`);
+    await signIn(phone, 'sam@rivet.test', '12345678');
+    await phone.waitForSelector('.botnav');
+    const tabs = async () => (await phone.locator('.botnav button').allTextContents()).map((t) => t.trim());
+    assert.deepEqual(await tabs(), ['Board', 'Bookings', 'Messages', 'Shortlist', 'Account']);
+    await phone.click('.botnav >> text=Account');
+    await phone.waitForSelector('.mode-card');
+    assert.equal(await phone.locator('#modepill').count(), 0);
+    await phone.click('.menu-rows >> text=Jobs');
+    await phone.waitForSelector('h1:has-text("Jobs")');
+    assert.equal(await phone.getAttribute('.botnav [data-tab=account]', 'aria-current'), 'page');
+    ok('phone tab bar has 5 labelled tabs per mode, Account last; Jobs opens from Account');
+    await phone.click('.botnav >> text=Account');
+    await phone.click('.mode-card [data-a=add-mode]');
+    await phone.fill('#f-addmode [name=invite]', 'T-NOPE00');
+    await phone.fill('#f-addmode [name=name]', 'Sam Rivet');
+    await phone.click('#f-addmode [data-a=pick-role][data-role=Photographer]');
+    await phone.fill('#f-addmode [name=dob]', '1994-03-02');
+    await phone.check('#f-addmode [name=agency]');
+    await phone.click('#f-addmode button[type=submit]');
+    await toastHas(phone, /isn't valid/);
+    assert.equal(await phone.locator('#f-addmode').count(), 1);
+    await phone.fill('#f-addmode [name=invite]', 'T-DUAL01');
+    await phone.click('#f-addmode button[type=submit]');
+    await phone.waitForSelector('.botnav >> text=Wallet');
+    assert.deepEqual(await tabs(), ['Today', 'Bookings', 'Wallet', 'Messages', 'Profile']);
+    await phone.waitForSelector('#modepill >> text=Switch to brand');
+    assert.equal(await phone.locator('nav >> text=Jobs').count(), 0);
+    ok('a brand adds a creative profile with its own invite (a wrong code keeps the form open) and the tabs swap to creative');
+    await phone.click('.botnav >> text=Bookings');
+    await phone.waitForSelector('h1');
+    assert.ok(!(await phone.textContent('main')).includes('Autumn campaign'));
+    assert.equal(await phone.locator('#modepill').count(), 0);
+    ok('creative mode shows none of the brand\'s bookings, and the switch only sits on Profile');
+    await phone.click('.botnav >> text=Profile');
+    await phone.click('#modepill');
+    await phone.waitForSelector('.botnav >> text=Shortlist');
+    assert.deepEqual(await tabs(), ['Board', 'Bookings', 'Messages', 'Shortlist', 'Account']);
+    assert.equal((await sql(`select p.role from profiles p join auth.users u on u.id = p.id where u.email = 'sam@rivet.test'`))[0].role, 'brand');
+    await phone.click('.botnav >> text=Account');
+    await phone.waitForSelector('#modepill >> text=Switch to creative');
+    await shot(phone, '17-mode-switch-phone');
+    await phone.close();
+    ok('Switch to brand brings the brand tabs back, and the mode is saved on the account');
   }
 
   if (errors.length) { console.log('\nBrowser errors:\n' + errors.join('\n')); throw new Error(errors.length + ' browser errors'); }

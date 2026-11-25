@@ -3,7 +3,7 @@ import './style.css';
 import { sb, rpc } from './api.js';
 import { $, esc, toast, closeLayer, closeAll, layerCount, loading, openLayer } from './ui.js';
 import { ICON, NICON, LOGO } from './icons.js';
-import { S, A, F, C, VIEWS, NAV, go, onRoute, refreshMe, renderBell, SITE, BASE } from './state.js';
+import { S, A, F, C, VIEWS, NAV, TABS, go, onRoute, refreshMe, renderBell, SITE, BASE } from './state.js';
 // role chips anywhere in a form toggle on and off
 A['pick-role'] = (el) => {
   const form = el.closest('form');
@@ -17,6 +17,7 @@ import './views/auth.js';
 import './views/brand.js';
 import './views/booking.js';
 import { renderRosterBar } from './views/roster.js';
+import { renderModePill, headerSwitch } from './views/mode.js';
 // the app never loads the staff screens; the admin site never loads the talent or public ones
 if (SITE === 'admin') await import('./views/ops.js');
 else await Promise.all([import('./views/talent.js'), import('./views/public.js')]);
@@ -26,16 +27,21 @@ const app = $('#app');
 function shell(role, tab) {
   const nav = NAV[role];
   const flags = S.flags || {};
-  const mob = nav.length > 5 ? nav.slice(0, 4) : nav;
+  const mob = TABS[role] || (nav.length > 5 ? nav.slice(0, 4) : nav);
+  const more = !TABS[role] && nav.length > 5;
+  // a destination that left the bar still shows its dot, on the last tab where its row now lives
+  const off = TABS[role] ? nav.filter(([k]) => !mob.some(([m]) => m === k)).some(([k]) => flags[k]) : false;
+  const dot = (k, i) => flags[k] || (off && i === mob.length - 1);
   return `<header class="top"><div class="shell topbar">
       <button class="brandmark" data-go="/" aria-label="Embr home"><img src="${LOGO}" alt="Embr"></button>
       <nav class="main" aria-label="Main">${nav.map(([k, l]) => `<button data-tab="${k}" ${tab === k ? 'aria-current="page"' : ''}>${l}${flags[k] ? '<span class="flag" aria-label="needs attention"></span>' : ''}</button>`).join('')}</nav>
-      <div class="who"><span class="s g whoami">${esc(S.me.brand?.name || S.me.talent?.name || S.me.email)}${role === 'ops' ? ' · Embr admin' : ''}</span>
+      <div class="who"><span class="s g whoami">${esc((role === 'talent' ? S.me.talent?.name : S.me.brand?.name) || S.me.email)}${role === 'ops' ? ' · Embr admin' : ''}</span>
+        ${SITE === 'admin' ? '' : headerSwitch()}
         <span id="bell"></span>
         <button class="link s" data-a="signout">Sign out</button></div>
     </div></header>
     <main class="shell" id="main">${loading()}</main>
-    ${SITE === 'admin' ? '' : `<nav class="botnav" aria-label="Main">${mob.map(([k, l]) => `<button data-tab="${k}" ${tab === k ? 'aria-current="page"' : ''}>${NICON[k] || NICON.today}<span>${l}</span>${flags[k] ? '<span class="flag"></span>' : ''}</button>`).join('')}${nav.length > 5 ? `<button data-a="more" ${nav.slice(4).some(([k]) => k === tab) ? 'aria-current="page"' : ''}>${NICON.more}<span>More</span></button>` : ''}</nav>`}`;
+    ${SITE === 'admin' ? '' : `<nav class="botnav" aria-label="Main">${mob.map(([k, l], i) => `<button data-tab="${k}" ${tab === k ? 'aria-current="page"' : ''}>${NICON[k] || NICON.today}<span>${l}</span>${dot(k, i) ? '<span class="flag"></span>' : ''}</button>`).join('')}${more ? `<button data-a="more" ${nav.slice(4).some(([k]) => k === tab) ? 'aria-current="page"' : ''}>${NICON.more}<span>More</span></button>` : ''}</nav>`}`;
 }
 
 export const bare = (inner) => `<header class="top"><div class="shell topbar"><a class="brandmark" href="/" data-go="/"><img src="${LOGO}" alt="Embr"></a>
@@ -72,6 +78,9 @@ async function render() {
   else {
     document.querySelectorAll('header [data-tab], .botnav [data-tab]').forEach((b) => { if (b.dataset.tab === tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   }
+  // Jobs and Booking links open from the last tab on a phone, so that tab stays lit
+  const bar = [...document.querySelectorAll('.botnav [data-tab]')];
+  if (TABS[role] && bar.length && !bar.some((b) => b.dataset.tab === tab)) bar.at(-1).setAttribute('aria-current', 'page');
   renderBell();
   const main = $('#main');
   try {
@@ -83,7 +92,7 @@ async function render() {
     console.error(e);
     main.innerHTML = `<div class="callout bad mt24">Couldn't load this page: ${esc(e.message)}. <button class="link" data-a="reload">Try again</button></div>`;
   }
-  if (SITE === 'app') renderRosterBar();
+  if (SITE === 'app') { renderRosterBar(); renderModePill(); }
   if (openBooking && layerCount() === 0) A.booking({ dataset: { id: openBooking } });
 }
 onRoute(render);

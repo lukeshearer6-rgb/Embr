@@ -7,9 +7,12 @@ import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CATS, CITI
 import { ICON, RICON } from '../icons.js';
 import { creativeCard } from './card.js';
 import { renderRosterBar } from './roster.js';
+import { modeBlock } from './mode.js';
 import { comp, thumb, bookingItem, groupBookings, calendar, gallery, stHTML, workByRole } from './common.js';
 
 const V = VIEWS.brand;
+// someone with a creative profile too never sees themselves on their own board (the database also refuses self-bookings)
+const notMe = (list) => list.filter((t) => t.id !== S.me.id);
 // city starts as null so the brand's own city is only filled in once; '' means anywhere
 const f = { category: '', city: null, date: '', max_rate: '', q: '', specs: {} };
 const people = (n) => (n === 1 ? '1 person' : `${n} people`);
@@ -21,7 +24,8 @@ const query = (x) => ({ ...x, city: x.city || '' });
 // with a live count on its button (Airbnb, Fiverr, Klook). Brand-only: talent never see it.
 V.board = async () => {
   if (f.city === null) f.city = S.me.brand?.city || 'Manchester';
-  const [bookings, talent] = await Promise.all([rpc('my_bookings'), rpc('search_talent', { f: query(f) })]);
+  const [bookings, all] = await Promise.all([rpc('my_bookings'), rpc('search_talent', { f: query(f) })]);
+  const talent = notMe(all);
   const todo = [];
   bookings.filter((b) => b.status === 'accepted').forEach((b) => todo.push([b, `${first(b.talent.name)} accepted. Pay the ${gbp(b.deposit_p)} deposit to confirm`, 'Pay deposit', 'pay', true]));
   bookings.filter((b) => b.status === 'wrapped' && b.balance_checkout_url).forEach((b) => todo.push([b, `Your bank needs you to confirm the ${gbp(b.balance_p)} balance`, 'Confirm payment', 'booking', true]));
@@ -78,7 +82,7 @@ function sheetBody(d) {
 async function recount() {
   const btn = $('[data-a=fapply]');
   if (!btn) return;
-  const n = (await rpc('search_talent', { f: query(draft) })).length;
+  const n = notMe(await rpc('search_talent', { f: query(draft) })).length;
   if (document.contains(btn)) btn.textContent = n ? `Show ${people(n)}` : 'No one matches';
 }
 const recountSoon = () => { clearTimeout(cT); cT = setTimeout(recount, 200); };
@@ -156,7 +160,7 @@ A['board-reset'] = async () => { Object.assign(f, { date: '', city: '', max_rate
 async function runSearch() {
   if (!$('#results')) return;
   f.q = $('.band [name=q]')?.value || '';
-  const list = await rpc('search_talent', { f: query(f) });
+  const list = notMe(await rpc('search_talent', { f: query(f) }));
   $('#results').innerHTML = results(list);
   $('#count').textContent = people(list.length);
   $('#frow').innerHTML = filterRow();
@@ -367,7 +371,7 @@ V.shortlist = async () => {
 V.account = async () => {
   const b = S.me.brand;
   const st = S.me.settings;
-  return `<h1 class="display t-48 mb24">Account</h1><div class="cols"><form id="f-brand"><div class="fgrid">
+  return `<h1 class="display t-48 mb24">Account</h1>${modeBlock([['jobs', 'Jobs', 'Your briefs and who fits them']])}<div class="cols"><form id="f-brand"><div class="fgrid">
     <label class="field span">Brand or company name<input class="in" name="name" required value="${esc(b.name)}"></label>
     <label class="field">Your name<input class="in" name="contact_name" value="${esc(b.contact_name)}"></label>
     <label class="field">City<select class="in" name="city">${opts(CITIES, b.city)}</select></label>

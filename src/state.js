@@ -17,6 +17,12 @@ export const NAV = {
   talent: [['today', 'Today'], ['bookings', 'Bookings'], ['wallet', 'Wallet'], ['inbox', 'Messages'], ['profile', 'Profile'], ['invite', 'Links']],
   ops: [['overview', 'Overview'], ['bookings', 'Bookings'], ['people', 'People'], ['briefs', 'Briefs'], ['invites', 'Invites']],
 };
+// Phone tab bar: 4 or 5 tabs per mode, Account/Profile last (DESIGN_RULES 1.1, 1.2, 1.7).
+// Destinations left off the bar are rows at the top of that last tab.
+export const TABS = {
+  brand: [['board', 'Board'], ['bookings', 'Bookings'], ['inbox', 'Messages'], ['shortlist', 'Shortlist'], ['account', 'Account']],
+  talent: [['today', 'Today'], ['bookings', 'Bookings'], ['wallet', 'Wallet'], ['inbox', 'Messages'], ['profile', 'Profile']],
+};
 
 let routeFn = () => {};
 export const onRoute = (fn) => { routeFn = fn; };

@@ -329,6 +329,51 @@ async function main() {
   const ob = await call(ops, 'ops_briefs'); assert.equal(ob.length, 4);
   await fails(call(rivet, 'ops_people'), /not allowed/i); ok('admin view is for Embr staff only');
 
+  // --- one sign-in, two modes (brand and creative)
+  await fails(call(rivet, 'switch_mode', 'talent'), /add a creative profile first/i);
+  await fails(call(amara, 'switch_mode', 'brand'), /add a brand profile first/i);
+  await fails(call(ops, 'switch_mode', 'brand'), /not allowed/i);
+  await fails(call(ops, 'add_mode', 'brand', bInv, { name: 'x' }), /not allowed/i);
+  ok('nobody switches into a mode they don\'t hold, and staff accounts never switch');
+  const dualInv = await call(ops, 'ops_create_invite', 'talent', 'Sam (Rivet) as a creative');
+  const dualB = await call(ops, 'ops_create_invite', 'brand', 'spare');
+  const sam = { name: 'Sam Rivet', roles: ['Photographer'], city: 'Manchester', dob: '1994-03-02', agency: 'yes' };
+  await fails(call(rivet, 'add_mode', 'talent', dualB, sam), /for a brand account/);
+  await fails(call(rivet, 'add_mode', 'talent', tInv, sam), /isn't valid or has been used/);
+  await fails(call(rivet, 'add_mode', 'talent', null, sam), /isn't valid/);
+  await fails(call(rivet, 'add_mode', 'talent', dualInv, { ...sam, dob: today(-365 * 17) }), /18 and over/);
+  await fails(call(rivet, 'add_mode', 'talent', dualInv, { ...sam, agency: '' }), /agency status/);
+  ok('adding a creative profile needs its own unused creative invite, 18+ and the agency declaration');
+  const dm = await call(rivet, 'add_mode', 'talent', dualInv, sam);
+  assert.equal(dm.role, 'talent'); assert.ok(dm.brand && dm.talent); assert.equal(dm.talent.name, 'Sam Rivet');
+  assert.equal((await db.query('select used_by from invites where code = $1', [dualInv])).rows[0].used_by, rivet.id);
+  await fails(call(rivet, 'add_mode', 'talent', dualB, sam), /already have a creative profile/);
+  ok('a brand adds a creative profile to the same sign-in and lands in creative mode');
+  await fails(call(rivet, 'create_brief', { title: 'x', category: 'Model', city: 'Manchester', shoot_date: today(10), day_rate: 200 }), /not allowed/i);
+  await fails(call(rivet, 'brief_detail', briefId), /not allowed/i);
+  await fails(call(rivet, 'my_briefs'), /not allowed/i);
+  await fails(call(rivet, 'search_talent', {}), /not allowed/i);
+  await fails(call(rivet, 'create_offer', { talent_id: amara.id, title: 'x', shoot_date: today(40), day_rate: 100, agree: true }), /not allowed/i);
+  assert.deepEqual(await call(rivet, 'my_bookings'), []);
+  await fails(call(rivet, 'booking_detail', b1), /booking not found/i);
+  ok('in creative mode the same person can\'t read briefs (even their own), search the board, make offers or open their brand bookings');
+  const bm2 = await call(rivet, 'switch_mode', 'brand');
+  assert.equal(bm2.role, 'brand'); assert.ok(bm2.talent);
+  assert.ok((await call(rivet, 'my_bookings')).some((b) => b.id === b1));
+  assert.equal((await call(rivet, 'booking_detail', b1)).id, b1);
+  await fails(call(rivet, 'talent_pulse'), /not allowed/i);
+  await fails(call(rivet, 'save_travel', { travel_range: 'uk' }), /not allowed/i);
+  ok('switching back to brand mode brings back the brand side only; creative tools refuse');
+  await db.query('update talents set published = true where id = $1', [rivet.id]);
+  await fails(call(rivet, 'create_offer', { talent_id: rivet.id, title: 'Me', shoot_date: today(41), day_rate: 100, agree: true }), /own creative profile/);
+  await fails(call(rivet, 'toggle_shortlist', rivet.id), /own creative profile/);
+  await call(rivet, 'talent_detail', rivet.id);
+  assert.equal((await db.query('select count(*)::int n from profile_views where talent_id = $1', [rivet.id])).rows[0].n, 0);
+  ok('nobody can book or save their own creative profile, and looking at it doesn\'t count as a brand view');
+  const people2 = await call(ops, 'ops_people');
+  assert.ok(people2.talent.some((t) => t.id === rivet.id) && people2.brands.some((b) => b.id === rivet.id));
+  ok('staff see a two-mode person under both talent and brands');
+
   console.log(`\n${passed} checks passed`);
   await db.end();
 }

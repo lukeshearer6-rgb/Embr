@@ -84,6 +84,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 Newest first. One line per session: date, agent, what happened.
 
+- 2026-11-25 developer: D11 brand/creative mode switcher on a PR stacked on D10 (not merged); db 84, e2e 45. Open questions in docs/dev/mode-switcher.md.
 - 2026-11-25 developer: D10 Shoot Roster on a PR stacked on D9 (not merged); e2e 41, db 77.
 - 2026-11-25 developer: D9 CreativeCard on a PR stacked on D8 (not merged); e2e 40, db 77.
 - 2026-11-25 developer: D8 brand board rebuilt as a native phone screen on a PR (not merged; Luke wants all UI fixes in one final round); e2e 39, db 77.
