@@ -54,6 +54,9 @@ begin
 end $$;
 
 
+-- talent who haven't confirmed their agency status stay hidden until they do (Profile prompts them)
+update talents set published = false where published and agency_declared_at is null;
+
 revoke execute on function public._region(text), public._travels_to(talents, text) from public, anon, authenticated;
 grant execute on function public.search_talent(jsonb) to authenticated;
 grant execute on all functions in schema public to service_role;

@@ -5,6 +5,8 @@ Newest first. One entry per change: date, what changed for users, files, and tes
 ## 2026-11-25: "Around my region" means nearby cities, and saving the profile keeps typed model details
 - Travel range now decides which other cities a talent appears in for brand search and brief matching. "Around my region" covers nearby cities only (North: Manchester, Liverpool, Leeds; Midlands: Birmingham; South: London, Bristol; Scotland: Glasgow); "Anywhere in the UK" and "UK and abroad" cover every city. Before, any travelling talent showed up everywhere. The profile form says which cities "around my region" covers for your city.
 - Saving the profile form no longer redraws the model details below it, so measurements typed but not saved stay put.
+- An ID check left on "Checking your ID…" now offers "Check again" and "Start again", instead of saying it went through.
+- Talent who haven't confirmed their agency status are hidden from brands until they do.
 - Files: `supabase/migrations/20261125000004_travel_regions.sql`, `src/ui.js`, `src/views/talent.js`.
 - Tests: db 77 checks (new: region talent appear in nearby cities only), e2e 38 checks (region hint shown).
 
