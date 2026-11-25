@@ -2,6 +2,15 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-25: Interface round 2: black header and money, photo-led board, orange "needs you", motion
+- Every screen: black header bar. Brand board: search in a black band; talent photos edge to edge with name, role, city, height and day rate on the photo (also on the shortlist).
+- Talent Today: offers and setup in an orange block; earnings and seen/saved counts in one black block.
+- Booking sheet: title block in black; the talent's offer bar ("You get", Decline, Accept) in black.
+- Motion: cards rise in, meters and bars fill, figures fade up, buttons press. Off when the device asks for reduced motion.
+- Notes and Mobbin references: docs/dev/interface-redesign.md (Round 2). Before/after: docs/dev/redesign/before-after-round2.png.
+- Files: `src/style.css`, `src/views/common.js`, `src/views/brand.js`, `src/views/talent.js`, `tests/e2e.test.mjs`.
+- Tests: e2e 38 (new checks: photo cards carry name, role and rate; search in the band; money block), db 77.
+
 ## 2026-11-25: Interface round 1: fit reasons, pay beside Accept, next step first
 - Brands: each person in "Best fit for this brief" now shows why they fit (free on the date, where they're based, day rate against the brief, model details). Cards are wider so names don't wrap.
 - Talent: a new offer shows "You get £X" in the footer beside Accept, so the pay is visible without scrolling.

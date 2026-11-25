@@ -7,16 +7,16 @@ import { statsHTML } from './model.js';
 
 export const role = () => S.me?.role;
 
-export function comp(t, { save = true } = {}) {
+export function comp(t, { save = true, photo = false } = {}) {
   const ph = photoUrl(t.photo);
   const rs = rolesOf(t);
   const stat2 = rs.includes('Model') && t.height ? ['Height', t.height] : ['Does', rs.length > 1 ? `${rs[0]} +${rs.length - 1}` : rs[0] || '–'];
   return `<div class="comp-wrap" style="position:relative"><button class="comp" data-a="talent" data-id="${t.id}" aria-label="${esc(t.name)}, ${esc(rolesTxt(t))}, ${esc(t.city)}">
-    <div class="shot" style="${ph ? `background-image:url('${ph}')` : ''}">${ph ? '' : `<span class="cat">${esc(rs[0] || '')}</span><span class="tname">${esc(t.name).replace(' ', '<br>')}</span>`}</div>
-    <div class="nm">${esc(t.name)}${t.verified ? ICON.tick : ''}</div>
-    <div class="xs g" style="margin-top:2px">${esc(rolesTxt(t))}</div>
+    <div class="shot" style="${ph ? `background-image:url('${ph}')` : ''}">${ph || photo ? '' : `<span class="cat">${esc(rs[0] || '')}</span><span class="tname">${esc(t.name).replace(' ', '<br>')}</span>`}${photo ? `<span class="ov"><span class="ov-nm">${esc(t.name)}${t.verified ? ICON.tick : ''}</span><span class="ov-r">${esc(rolesTxt(t))}</span><span class="ov-m">${[esc(t.city), rs.includes('Model') && t.height ? esc(t.height) : '', t.day_rate ? pounds(t.day_rate) + ' a day' : ''].filter(Boolean).join(' · ')}</span></span>` : ''}</div>
+    ${photo ? '' : `<div class="nm">${esc(t.name)}${t.verified ? ICON.tick : ''}</div>`}
+    ${photo ? '' : `<div class="xs g" style="margin-top:2px">${esc(rolesTxt(t))}</div>`}
     ${t.rebooked_by ? `<div class="xs" style="font-weight:600;color:var(--ok);margin-top:2px">Rebooked by ${plural(t.rebooked_by, 'brand')}</div>` : ''}
-    <dl class="meas"><div><dt>Based</dt><dd>${esc(t.city)}</dd></div><div><dt>${stat2[0]}</dt><dd>${esc(stat2[1])}</dd></div><div><dt>Day rate</dt><dd>${t.day_rate ? pounds(t.day_rate) : '–'}</dd></div></dl></button>
+    ${photo ? '' : `<dl class="meas"><div><dt>Based</dt><dd>${esc(t.city)}</dd></div><div><dt>${stat2[0]}</dt><dd>${esc(stat2[1])}</dd></div><div><dt>Day rate</dt><dd>${t.day_rate ? pounds(t.day_rate) : '–'}</dd></div></dl>`}</button>
     ${save && role() === 'brand' ? `<button class="save" data-a="save" data-id="${t.id}" aria-pressed="${!!t.saved}" aria-label="${t.saved ? 'Remove from shortlist' : 'Save to shortlist'}" style="position:absolute;top:10px;right:10px">${ICON.heart}</button>` : ''}</div>`;
 }
 

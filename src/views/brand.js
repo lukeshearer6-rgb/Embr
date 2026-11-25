@@ -21,14 +21,14 @@ V.board = async () => {
   const name = S.me.brand?.name;
   return `${!name ? '<div class="callout act mb24">Add your brand name in <button class="link" data-tab="account">Account</button> before you book anyone.</div>' : ''}
   ${todo.length ? `<section class="todo" aria-label="Needs you">${todo.slice(0, 6).map(([b, txt, btn, a, primary]) => `<div class="item">${thumb(b.talent)}<div class="grow"><div class="ttl">${esc(b.title)}</div><div class="meta"><span>${esc(txt)}</span></div></div><button class="btn ${primary ? 'primary' : ''} sm" data-a="${a}" data-id="${b.id}">${btn}</button></div>`).join('')}</section>` : ''}
-  <h1 class="display t-72">Find talent</h1>
+  <section class="band"><h1 class="display t-72">Find talent</h1>
   <form class="sentence mt24" id="f-search" aria-label="Search talent">Show me
     <select name="category" data-change="search" aria-label="Category"><option value="">everyone</option>${CATS.map((c) => `<option value="${c}" ${f.category === c ? 'selected' : ''}>${rolePlural(c)}</option>`).join('')}</select>
     in <select name="city" data-change="search" aria-label="City"><option value="">anywhere</option>${CITIES.map((c) => `<option ${f.city === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
     free on <input type="date" name="date" value="${f.date}" min="${today()}" data-change="search" aria-label="Date">
     up to £<input type="number" name="max_rate" value="${f.max_rate}" placeholder="any" min="0" step="10" data-change="search" aria-label="Maximum day rate" style="width:4em"> a day.
     <span id="mfilter">${modelFilter()}</span>
-  </form>
+  </form></section>
   <div class="toolbar"><label class="search">${ICON.search}<input type="search" name="q" form="f-search" value="${esc(f.q)}" placeholder="Search names, looks, skills" data-input="searchq" aria-label="Search"></label><span class="s g" id="count">${plural(talent.length, 'person')}</span></div>
   <div id="results">${results(talent)}</div>`;
 };
@@ -45,8 +45,9 @@ function modelFilter() {
 function results(list) {
   if (!list.length) return '<div class="empty">No one matches yet. Try another date, city or rate. Embr is invite-only during the pilot, so the board is still filling up.</div>';
   const here = list.filter((t) => !t.away), away = list.filter((t) => t.away);
-  return (here.length ? `<div class="comps">${here.map((t) => comp(t)).join('')}</div>` : '') +
-    (away.length ? `<h2 class="sec mt48">Will travel to ${esc(f.city)}</h2><p class="s g mb24">Based elsewhere. Check each profile for how travel costs work.</p><div class="comps">${away.map((t) => comp(t)).join('')}</div>` : '');
+  // photos lead on the board: edge-to-edge, name and rate on the photo (Meetup, Blackbird)
+  return (here.length ? `<div class="comps photo">${here.map((t) => comp(t, { photo: true })).join('')}</div>` : '') +
+    (away.length ? `<h2 class="sec mt48">Will travel to ${esc(f.city)}</h2><p class="s g mb24">Based elsewhere. Check each profile for how travel costs work.</p><div class="comps photo">${away.map((t) => comp(t, { photo: true })).join('')}</div>` : '');
 }
 async function runSearch() {
   const form = $('#f-search');
@@ -265,7 +266,7 @@ V.shortlist = async () => {
   const roster = Object.values(done).sort((a, b) => b.n - a.n);
   return `<h1 class="display t-48 mb24">Shortlist</h1>
   ${roster.length ? `<h2 class="sec">Booked before</h2><p class="s g mb12">Your fee drops to ${pct(S.me.settings.fee_repeat)} from the second booking with the same person and ${pct(S.me.settings.fee_loyal)} from the fifth.</p><div class="list mb48">${roster.map(({ t, n }) => `<div class="item">${thumb(t)}<div class="grow"><div class="ttl">${esc(t.name)}</div><div class="meta"><span>${plural(n, 'booking')}</span><span>Next booking: ${pct(n >= S.me.settings.loyal_after ? S.me.settings.fee_loyal : S.me.settings.fee_repeat)} fee</span></div></div><button class="btn sm" data-a="offer" data-id="${t.id}">Book again</button></div>`).join('')}</div>` : ''}
-  <h2 class="sec">Saved</h2>${saved.length ? `<div class="comps">${saved.map((t) => comp(t)).join('')}</div>` : '<div class="empty">Tap the heart on anyone\'s photo to save them here.</div>'}`;
+  <h2 class="sec">Saved</h2>${saved.length ? `<div class="comps photo">${saved.map((t) => comp(t, { photo: true })).join('')}</div>` : '<div class="empty">Tap the heart on anyone\'s photo to save them here.</div>'}`;
 };
 
 // ---------------------------------------------------------------- account

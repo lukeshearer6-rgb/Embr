@@ -142,8 +142,8 @@ V.today = async () => {
   const todoHTML = todo.length ? `<section class="todo" aria-label="Needs you">${todo.map(([b, txt, btn, p]) => `<div class="item">${thumb(b.brand, true)}<div class="grow"><div class="ttl">${esc(b.title)}</div><div class="meta"><span>${esc(txt)}</span></div></div><button class="btn ${p ? 'primary' : ''} sm" data-a="booking" data-id="${b.id}">${btn}</button></div>`).join('')}</section>` : '';
   return `<p class="g">${new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p><h1 class="display t-72 mt8">Hi ${esc(first(t.name) || 'there')}</h1>
   ${todoHTML || setupFirst ? `<div class="needs mt32">${todoHTML}${setupFirst ? strengthPanel(t, pulse) : ''}</div>` : ''}
-  <button class="earn mt32" data-tab="wallet"><span class="l">Paid to you this month</span><span class="big">${gbp(paidM)}</span><span class="earn-sub"><span><b>${gbp(onWay)}</b> on the way, deposits paid</span><span><b>${gbp(life)}</b> earned on Embr, 0% commission</span></span><span class="go">Wallet →</span></button>
-  ${statsRow(pulse, t)}
+  <section class="moneyblk mt32"><button class="earn" data-tab="wallet"><span class="l">Paid to you this month</span><span class="big">${gbp(paidM)}</span><span class="earn-sub"><span><b>${gbp(onWay)}</b> on the way, deposits paid</span><span><b>${gbp(life)}</b> earned on Embr, 0% commission</span></span><span class="go">Wallet →</span></button>
+  ${statsRow(pulse, t)}</section>
   <div class="cols mt48"><div>
     ${setupFirst ? '' : strengthPanel(t, pulse)}
     <h2 class="sec">Coming up</h2>${up.length ? `<div class="list">${up.map(bookingItem).join('')}</div>` : '<div class="empty">Nothing booked yet. Let work find you: brands book you straight from your profile.</div>'}

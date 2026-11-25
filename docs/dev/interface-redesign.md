@@ -23,3 +23,29 @@ Not taken: match percentages or scores (Juicebox, Employment Hero). A ticked lis
 ## Walked and kept as they are
 
 The brand board, talent profile sheet, welcome screen and admin People list were walked and not changed this round. Candidates for a later round: brand "Jobs" tab label (vs "Briefs"), and icons on the phone tab bar.
+
+# Round 2 (2026-11-25): bolder colour placement and motion
+
+Luke saw no difference after round 1 and asked for bolder. Three directions were mocked up (`/mnt/project-files/redesign/embr-round2-directions.png`): A black blocks, B orange on what matters, C photos lead. Luke (2026-11-25): "all of it, where necessary and where mobbin app research shows it beneficial. also add animations where mobbin suggests best for UI and engagement". Before/after: `docs/dev/redesign/before-after-round2.png`.
+
+| Where | Change | Direction and references |
+|---|---|---|
+| Header (every screen) | Black bar, white nav, orange underline on the current tab | A: [Revolut Business](https://mobbin.com/screens/1a103919-f36b-40e4-9824-b52b8c07f6a8), [Remote](https://mobbin.com/screens/61e12f77-0137-4c87-9007-dff96c94986c), [TikTok](https://mobbin.com/screens/b4f36b9a-f758-4300-b607-99330f057d02) |
+| Brand board | Search sentence sits in a black band under the header | A (same references) |
+| Brand board and shortlist | Photos edge to edge, 3px gaps, name, role, city, height and day rate on a dark strip over the photo; photo zooms slightly on hover | C: [Meetup](https://mobbin.com/screens/18da87c4-1da4-4965-8dbf-99a64a1d8541), [Blackbird](https://mobbin.com/screens/2f953cdf-6c52-498b-8179-d28be6fea273), [Behance](https://mobbin.com/screens/1369aff3-0254-4c0a-b909-5c702868d139) |
+| Talent Today | "Needs you" block (offers and setup) filled Embr orange with black buttons | B: [Zocdoc](https://mobbin.com/screens/3ca33e4a-c68f-4714-93e6-7267d2e4178a), [Turo](https://mobbin.com/screens/ce9c38cd-3099-4da4-aa5e-727c462679da), [Airtasker](https://mobbin.com/screens/ae12a89f-109e-4786-894b-5cec0a8a0c80) |
+| Talent Today | Earnings and seen/saved counts in one black block | A |
+| Booking sheet | Title and date in a black block; on a talent offer the "You get" bar is black | A |
+
+Not taken: C's own-photo header on Today (no reference shows a person's own photo heading their dashboard), and B's orange numbers (orange is kept for actions so it still means "do this").
+
+## Motion
+
+Mobbin shows still screens, so it can't show which motion helps. Motion here is my own judgement, kept short (under half a second, the bars 0.9s) and switched off for anyone whose device asks for reduced motion (existing global rule):
+- board and best-fit cards rise in, one after another
+- profile-strength meter and the 6-month bars fill in
+- the big money figures, the seen/saved counts and "You get" fade up
+- buttons press in slightly; the save heart pops
+- the Today blocks rise in
+
+Tests run with reduced motion, so screenshots show the final state.
