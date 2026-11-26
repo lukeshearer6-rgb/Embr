@@ -2,7 +2,7 @@
 // talent and Embr staff, plus the payment actions.
 import { A, F, S, go, rerender, refreshMe } from '../state.js';
 import { rpc, action, photoUrl } from '../api.js';
-import { $, esc, gbp, pounds, pct, dMed, dLong, dShort, dWeekday, tShort, ago, today, toast, openLayer, closeLayer, refreshTop, topLayer, confirmDialog, formData, first, busy, whenTxt, dRange, addDays, andList } from '../ui.js';
+import { $, esc, gbp, pounds, pct, dMed, dLong, dShort, dWeekday, tShort, ago, today, toast, openLayer, closeLayer, refreshTop, topLayer, confirmDialog, formData, first, busy, whenTxt, dRange, addDays, andList, cancelWindow } from '../ui.js';
 import { ICON, RICON } from '../icons.js';
 import { thumb, status, stHTML } from './common.js';
 import { talentShootSec, talentChangeSec, continueShootPay } from './shoot.js';
@@ -116,7 +116,7 @@ function sheet(b, sh = null) {
       <div class="cs-sec"><h4>${r === 'talent' ? 'Your pay' : 'Money'}</h4>${money(b, r)}</div>
       <div class="cs-sec"><h4>Progress</h4>${steps(b)}</div>
       <div class="cs-sec"><h4>Agreement</h4>${signedRecord(b)}<button class="btn sm mt8" data-a="agreement" data-id="${b.id}">Read or save a copy</button></div>
-      ${r !== 'talent' && b.status === 'confirmed' ? `<div class="cs-sec"><h4>Cancelling</h4><p class="s g">${b.free_cancel_until >= today() ? `Free cancellation until ${dMed(b.free_cancel_until)}. After that, ${esc(first(t.name))} is paid ${gbp(b.late_cancel_p)} from the deposit.` : `Less than ${S.me.settings.free_cancel_days} days to go: if you cancel, ${esc(first(t.name))} is paid ${gbp(b.late_cancel_p)} from the deposit and the rest is refunded.`}</p></div>` : ''}
+      ${r !== 'talent' && b.status === 'confirmed' ? `<div class="cs-sec"><h4>Cancelling</h4><p class="s g">${b.free_cancel_until >= today() ? `Free cancellation until 11:59pm on ${dMed(b.free_cancel_until)} (${cancelWindow(S.me.settings)}). After that, ${esc(first(t.name))} is paid ${gbp(b.late_cancel_p)} from the deposit.` : `It's past the free cancellation time (${cancelWindow(S.me.settings)}): if you cancel, ${esc(first(t.name))} is paid ${gbp(b.late_cancel_p)} from the deposit and the rest is refunded.`}</p></div>` : ''}
       ${r === 'ops' ? `<div class="cs-sec"><h4>History</h4><div class="log">${b.events.map((e) => `<div><span>${dMed(e.at)} ${tShort(e.at)}</span><span>${esc(e.text)}</span></div>`).join('')}</div></div>` : ''}
     </aside></div>`,
     foot: footFor(b, r),
@@ -196,7 +196,7 @@ A.cancel = async (el) => {
   const late = r === 'brand' && b.free_cancel_until < today();
   const body = r === 'talent' ? `${esc(b.brand.name)} gets their ${gbp(b.deposit_p)} deposit back in full. Cancelling confirmed bookings affects whether brands book you again, so only do this if you have to.`
     : r === 'ops' ? `The brand's ${gbp(b.deposit_p)} deposit is refunded in full.`
-      : late ? `It's less than ${S.me.settings.free_cancel_days} days to the shoot, so ${esc(first(b.talent.name))} is paid ${gbp(b.late_cancel_p)} from your deposit and ${gbp(b.deposit_p - b.late_cancel_p)} is refunded to you.`
+      : late ? `It's less than ${cancelWindow(S.me.settings)}, so ${esc(first(b.talent.name))} is paid ${gbp(b.late_cancel_p)} from your deposit and ${gbp(b.deposit_p - b.late_cancel_p)} is refunded to you.`
         : `Your ${gbp(b.deposit_p)} deposit is refunded in full.`;
   const reason = await confirmDialog({ title: 'Cancel this booking?', body, yes: 'Cancel booking', danger: true, field: { label: 'Why are you cancelling?', required: true } });
   if (!reason) return;

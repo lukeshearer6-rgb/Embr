@@ -1,6 +1,6 @@
 # Embr booking agreement: text for solicitor review
 
-Version `pilot-2026-11-v2`, exported 2026-11-26, updated the same day for Luke's brand snag list (date ranges, every skill booked, day rate and usage fee named apart, any usage length from 1 to 120 months). Source: the `_agreement` SQL function in `supabase/migrations/20261126000002_brand_snags.sql`, function at line 92, agreement text at lines 100 to 153, values filled in at lines 154 to 176. This is the latest migration that defines `_agreement`. The test `npm run test:agreement` checks that the text below still matches that function word for word.
+Version `pilot-2026-11-v3`, exported 2026-11-26, updated the same day for Luke's brand snag list (date ranges, every skill booked, day rate and usage fee named apart, any usage length from 1 to 120 months) and brand snag list 2 (free cancellation until 48 hours before the shoot day begins, was 7 days). Source: the `_agreement` SQL function in `supabase/migrations/20261126000003_brand_snags_2.sql`, function at line 545, agreement text at lines 553 to 606, values filled in after that. This is the latest migration that defines `_agreement`. The test `npm run test:agreement` checks that the text below still matches that function word for word.
 
 **Status: DRAFT.** Waiting for the BPP Enterprise Clinic review (workflow-state D4). Not shown to real brands. Research behind this version: https://claude.ai/artifact/PNFUMcKEETLqD9a22oHoC8
 
@@ -23,7 +23,7 @@ The Talent line in section 1 names every skill the Talent is booked for, such as
 
 ## Where each filled-in part comes from
 
-"Booking" means the booking record. "Settings" means Embr's single settings record (current values are the defaults in `supabase/migrations/20261123000001_embr_pilot.sql`, lines 17 to 29, with `agreement_version` now `pilot-2026-11-v2`).
+"Booking" means the booking record. "Settings" means Embr's single settings record (current values are the defaults in `supabase/migrations/20261123000001_embr_pilot.sql`, lines 17 to 29, with `agreement_version` now `pilot-2026-11-v3`, `free_cancel_hours` 48 and `free_cancel_days` 3, set in `supabase/migrations/20261126000003_brand_snags_2.sql`).
 
 | Placeholder | What it is | Where it comes from |
 |---|---|---|
@@ -42,7 +42,7 @@ The Talent line in section 1 names every skill the Talent is booked for, such as
 | `{auto_signoff_hours}` | Hours to sign off or report a problem | Settings (72) |
 | `{usage_terms}` | Section 5 in full: one line per place the photos can be used (each named, never "all of it"), then how long, where, what's included, what happens when it ends, archive use, AI, and that anything else needs a new booking | `_usage_clause`, line 72. Bookings made before this version show the old free-text usage instead |
 | `{content_agreed}` | What the Talent agreed to do | Booking; if blank, "As described in the job above." |
-| `{free_cancel_days}`, `{late_cancel_share}`, `{late_cancel_amount}` | Cancellation | Settings (7 days, 50%) and the booking |
+| `{free_cancel_hours}`, `{free_cancel_last_day}`, `{late_cancel_share}`, `{late_cancel_amount}` | Cancellation: 48, the last free day ("Monday 7 December 2026" for a shoot on Thursday 10 December), 50%, and the amount | Settings (`free_cancel_hours`), `_free_cancel_last_day` and the booking |
 | `{signing}` | How each side signed: by offer and typed name, or by booking link | Whether the booking came from a booking link |
 
 The fixed usage options and their wording (section 5): "Posts on the Client's own social media, such as Instagram and TikTok. Not paid ads." · "Paid ads on social media and other websites." · "The Client's website and online shop." · "The Client's emails and newsletters." · "In the Client's shops and in print, such as posters, lookbooks and flyers." · "Billboards, bus stops and other outdoor posters and screens." · "Ads on TV, streaming services and in cinemas." · "On the Client's product packaging." Periods: any whole number of months from 1 to 120 (the app offers 3, 6, 12 and 24 as presets, plus a custom length). Areas: the UK, the UK and Europe, anywhere in the world.
@@ -90,8 +90,8 @@ d) At sign-off the Talent is paid the full talent fee.
 Nothing outside this may be asked of the Talent on the day. The Talent may bring a chaperone.
 
 7. If plans change
-a) Client cancels {free_cancel_days} or more days before the shoot: the deposit is refunded in full.
-b) Client cancels less than {free_cancel_days} days before the shoot: the Talent is paid {late_cancel_share} of the day rate ({late_cancel_amount}) from the deposit and the rest is refunded.
+a) Client cancels at least {free_cancel_hours} hours before the shoot day begins (by 11:59pm UK time on {free_cancel_last_day}): the deposit is refunded in full.
+b) Client cancels later than that: the Talent is paid {late_cancel_share} of the day rate ({late_cancel_amount}) from the deposit and the rest is refunded.
 c) Talent cancels: the Client's deposit is refunded in full.
 
 8. If something goes wrong
@@ -127,3 +127,4 @@ These are only points that can be seen in the text above. They are questions, no
 11. **Self-employed line.** Section 1 now has the Talent confirm they are self-employed and handle their own tax. Is that appropriate here, given Embr's agency position?
 12. **Governing law.** Section 11 picks England and Wales. Is that right for Talent or Clients in Scotland or Northern Ireland?
 13. **The draft line.** Should "Draft for the invite-only pilot, waiting for review by a solicitor. Not legal advice." stay during the pilot?
+14. **48-hour cancellation (brand snag list 2, 2026-11-26).** Free cancellation now ends 48 hours before 00:00 UK time on the first shoot day (was 7 days), because shoots are often put together a few days ahead. UK agency terms we read put a half fee within 48 hours and a full fee within 24 hours (Body London 3.1, The Hive 8.1, read 2026-11-26). Embr keeps one late tier: 50% of the day rate from the deposit. Is a single 50% tier fair to the Talent for a cancellation on the day itself, and is the deadline wording clear?

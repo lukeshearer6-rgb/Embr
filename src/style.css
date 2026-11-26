@@ -1144,3 +1144,32 @@ body.has-rbar main.shell{padding-bottom:180px}
 .skillpick legend{font-weight:700}.skillpick legend .hint{display:block;font-weight:400;margin-top:2px}
 .usagepick legend .hint{display:block;font-weight:400;margin-top:2px}
 .sd-line{border-bottom:1px solid var(--line)}.sd-line .sd-row{border-bottom:0}
+
+/* ---------------------------------------------------------------- brand snag list 2 */
+/* brief roles: one card per role, From/To day rate side by side (Vinted, eBay price filters) */
+.rolecard{border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:0 0 12px;min-width:0}
+.rolecard .rc-hd{display:flex;gap:12px;align-items:center;justify-content:space-between;width:100%;padding:0 4px}
+.rolecard .rc-hd .link{min-height:48px}
+.range2{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:center}
+.range2 .money-in{margin:0}
+/* options list on a job: number, face, status, actions */
+.optlist{border-top:1px solid var(--line)}
+.optrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.optrow .thumb{width:44px;height:44px;border-radius:50%;flex:none;background:var(--backdrop) center/cover}
+.opt-n{flex:none;min-width:36px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--graphite)}
+.opt-act{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.iconbtn{min-width:48px;min-height:48px;display:inline-grid;place-items:center;border-radius:50%;color:var(--graphite)}
+.iconbtn:hover{background:var(--backdrop2)}
+.fitacts{gap:6px}
+.fitacts .btn{flex:1}
+.jobacts{gap:8px}
+/* radio chips (time to answer an option offer) */
+label.chip{cursor:pointer;display:inline-flex;align-items:center}
+label.chip:has(input:checked){background:var(--ink);color:#fff;border-color:var(--ink)}
+label.chip:has(input:focus-visible){outline:2px solid var(--ink);outline-offset:2px}
+@media (max-width:640px){
+  .rolecard{padding:12px}
+  .optrow{flex-wrap:wrap}
+  .opt-act{width:100%;justify-content:flex-start;padding-left:48px}
+  .jrole .btn,.jobacts .btn,.nextopt .btn,.optrow .btn{min-height:48px}
+}

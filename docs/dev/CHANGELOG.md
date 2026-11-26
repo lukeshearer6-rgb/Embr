@@ -2,6 +2,20 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-26: Brand snag list 2: several roles per brief with day-rate ranges, editing briefs, options 1-2-3, optional gender, 48-hour cancellation, a Shoots section
+- Brands: a brief holds several roles, each with its own head count, days, day-rate range (From/To), usage fee, travel ("Local talent only" or "Travel paid for non-local talent") and optional casting gender. One switch: "Only show talent within each day-rate range". Left off, people outside the range still show, marked over or under it.
+- Brands: "Edit brief" on every open job. Roles can be changed, added or removed; offers already sent keep their own terms.
+- Brands: option up to 3 people per place in a role, in order (1st, 2nd, 3rd), reorder or release them, and send the offer to the 1st with a time to answer (12, 24 or 48 hours, default 24). If it isn't accepted in time, or the talent can't do it, Embr asks the brand (in the app, by email and on the job) whether to move to the next option. Moving on withdraws the unanswered offer and opens the offer for the next person. Booking someone releases everyone else still held. Closing a brief releases everyone held.
+- Creatives: an "Optioned" list on Bookings with the brand, role, dates and city. Never their number, the brief or the rate. "Can't do it" takes them off the hold and tells the brand. They're told when they're released.
+- Creatives: an optional gender on Profile (Woman, Man, Non-binary, or Prefer not to say). Only used when a brief casts a gender; people who leave it blank still show, after matches.
+- Brands: Shoots under More lists every Shoot Roster in progress and every sent shoot, so several can run at once. Each job has a "Shoot roster" button that opens that brief's roster.
+- Everyone: free cancellation now ends 48 hours before the shoot day begins (was 7 days). Draft agreement v3, question 14 added for BPP.
+- Brands: the Account page no longer mentions the booking-link rate. The 5% link rate now only applies when the brand hadn't already found that talent on Embr (viewed, saved, optioned or booked them); otherwise the usual rate. The link page shows the rate the signed-in brand would pay.
+- Database (migration 20261126000003): `brief_roles`, `brief_options`, `briefs.only_in_range`, `talents.gender`, `settings.free_cancel_hours` and `option_hours`; `create_brief` takes roles, new `update_brief`, `_rank_role`, `option_add/remove/up/offer/pass/unavailable`, `my_options`, `svc_option_nudge` (pg_cron every 15 minutes where pg_cron exists), a bookings trigger that moves options along; `fee_for` and `public_link` apply the link rule. Payments code unchanged; the cancellation setting changed, with a test.
+- Notes, research and screens: docs/dev/brand-snags-2.md.
+- Files: `supabase/migrations/20261126000003_brand_snags_2.sql` (new), `src/views/jobs.js` (new), `src/views/brand.js`, `src/views/roster.js`, `src/views/talent.js`, `src/views/booking.js`, `src/views/shoot.js`, `src/views/contract.js`, `src/views/public.js`, `src/ui.js`, `src/state.js`, `src/style.css`, `docs/dev/booking-agreement.md`, `tests/db.test.mjs`, `tests/e2e.test.mjs`, `tests/payments.test.mjs`.
+- Tests: db 125, e2e 64, payments 12, agreement 9, office 13.
+
 ## 2026-11-26: Brand snag list: several usages with any length, a separate usage fee, per-day booking, several skills, date ranges, phone after confirmation
 - Brands: briefs, offers and the Shoot Roster pick several uses at once and the length on its own: 3, 6, 12 or 24 months, or a custom number (1 to 120). The agreement names every use; "all of it" is gone.
 - Brands: briefs have a usage fee per person, separate from the day rate (the talent's time, the basic studio fee). Offers and rosters started from a brief carry it, each roster person has their own usage fee, and shoot offers no longer force it to £0.

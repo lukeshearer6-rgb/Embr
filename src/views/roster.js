@@ -16,7 +16,7 @@
 // Brand-only: talent never see it, and the database refuses offers from anyone but a brand.
 import { S, A, C, F, go } from '../state.js';
 import { rpc, photoUrl, uploadImage } from '../api.js';
-import { $, esc, gbp, pounds, dMed, dRange, andList, today, addDays, opts, USAGE, TERMS, toast, openLayer, closeLayer, refreshTop, topLayer, first, plural, rolesOf, emptyState } from '../ui.js';
+import { $, esc, gbp, pounds, dMed, dRange, andList, today, addDays, opts, USAGE, TERMS, toast, openLayer, closeLayer, refreshTop, topLayer, first, plural, rolesOf, emptyState, cancelWindow } from '../ui.js';
 import { usagePicker, readUsage, usageOk, skillPicker, readSkills } from './contract.js';
 import { ICON, RICON } from '../icons.js';
 import { pkgOf, pkgNote, hoursTxt } from './rates.js';
@@ -81,7 +81,7 @@ function addTo(shoot, t, briefRole, pkgKey) {
   const rs = rolesOf(t);
   const role = rs.includes(briefRole) ? briefRole : rs[0] || '';
   shoot.crew.push({ id: t.id, name: t.name, photo: t.photo || null, roles: rs, role, picked: [role].filter(Boolean), day_rate: pkg?.price || t.day_rate || 200,
-    usage_fee: ON_CAMERA.includes(role) ? +shoot.usage_fee || 0 : 0, dayset: null, pkg, city: t.city, verified: !!t.verified });
+    usage_fee: shoot.role_fees && role in shoot.role_fees ? +shoot.role_fees[role] || 0 : ON_CAMERA.includes(role) ? +shoot.usage_fee || 0 : 0, dayset: null, pkg, city: t.city, verified: !!t.verified });
   shoot.updated = Date.now();
   return true;
 }
@@ -99,7 +99,7 @@ A['add-shoot'] = async (el) => {
     cls: 'fsheet shootsheet',
     head: `<h2 class="t-24">Add ${esc(first(name))} to a shoot</h2>`,
     body: `${rosters ? `<h3 class="s g mb8">Your shoot rosters</h3>${rosters}` : ''}
-      ${briefs.length ? `<h3 class="s g mb8${rosters ? ' mt24' : ''}">Start from a brief</h3>${briefs.map((b) => row(`data-brief="${b.id}"`, esc(b.title), `${dMed(b.shoot_date)} · ${esc(b.category)} · ${pounds(b.day_rate)} a day`)).join('')}` : ''}
+      ${briefs.length ? `<h3 class="s g mb8${rosters ? ' mt24' : ''}">Start from a brief</h3>${briefs.map((b) => row(`data-brief="${b.id}"`, esc(b.title), `${dMed(b.shoot_date)} · ${esc((b.roles?.length ? b.roles.map((r) => r.category) : [b.category]).join(', '))}`)).join('')}` : ''}
       ${row('', 'A new shoot', 'Set the date and place in the roster')}
       <p class="xs g mt16">Group everyone for one shoot, then send their offers together. Each person accepts or declines their own offer.</p>`,
   });
@@ -112,10 +112,10 @@ A['shoot-pick'] = async (el) => {
   let briefRole = null;
   if (!s && bid) {
     const b = await rpc('brief_detail', { p_id: bid });
-    briefRole = b.category;
-    s = { id: newId(), brief_id: b.id, title: b.title, date: b.shoot_date, days: b.days || 1, location: '', call_time: '', usage_terms: b.usage_terms?.where ? b.usage_terms : null, usage_where: b.usage || USAGE[0], usage_fee: b.usage_fee || 0, content_agreed: '', notes: b.description || '', crew: [] };
+    s = fromBrief(b);
     r.shoots.unshift(s);
   }
+  if (s?.brief_id && s.role_cats?.length) briefRole = s.role_cats.find((c) => rolesOf(t).includes(c)) || null;
   if (!s) { s = { id: newId(), brief_id: null, title: '', date: addDays(14), days: 1, location: '', call_time: '', usage_where: USAGE[0], usage_term: '12 months', content_agreed: '', notes: '', crew: [] }; r.shoots.unshift(s); }
   const added = addTo(s, t, briefRole, pkg);
   r.current = s.id;
@@ -127,6 +127,30 @@ A['shoot-pick'] = async (el) => {
     : added ? `${first(t.name)} added to ${s.title || 'your new shoot'}${p ? ` for a ${p.label.toLowerCase()}` : ''}` : `${first(t.name)} is already in this shoot`);
   if (!s.title) openRoster(s.id);
 };
+
+// a roster started from a brief: its date, days, usage and brief, and each role's usage fee
+function fromBrief(b) {
+  const roles = b.roles?.length ? b.roles : [{ category: b.category, usage_fee: b.usage_fee || 0 }];
+  return { id: newId(), brief_id: b.id, title: b.title, date: b.shoot_date, days: b.days || 1, location: '', call_time: '', usage_terms: b.usage_terms?.where ? b.usage_terms : null,
+    usage_where: b.usage || USAGE[0], usage_fee: roles[0].usage_fee || 0, role_fees: Object.fromEntries(roles.map((x) => [x.category, x.usage_fee || 0])),
+    role_cats: roles.map((x) => x.category), content_agreed: '', notes: b.description || '', crew: [] };
+}
+// Rosters section (snag list 2): every roster draft, so several shoots can run at once
+export const rosterList = () => roster().shoots;
+export function newRoster() {
+  const r = roster();
+  const s = { id: newId(), brief_id: null, title: '', date: addDays(14), days: 1, location: '', call_time: '', usage_where: USAGE[0], usage_term: '12 months', content_agreed: '', notes: '', crew: [] };
+  r.shoots.unshift(s); r.current = s.id; save(r);
+  openRoster(s.id);
+}
+// "Shoot roster" on a job: open that brief's roster, or start one from it
+export function rosterForBrief(b) {
+  const r = roster();
+  let s = r.shoots.find((x) => x.brief_id === b.id);
+  if (!s) { s = fromBrief(b); r.shoots.unshift(s); }
+  r.current = s.id; save(r);
+  openRoster(s.id);
+}
 
 // ---------------------------------------------------------------- the bar on the board
 export function renderRosterBar() {
@@ -223,7 +247,7 @@ function rosterLayer(s) {
 
       <h3 class="rsec">Combined cost</h3>
       <div class="panel tint" id="rquote">${unsent.length ? '<div class="empty">Working it out…</div>' : '<p class="s g">Every offer in this shoot has been sent.</p>'}</div>
-      ${unsent.length ? `<label class="check mt24"><input type="checkbox" name="agree" required> <span>I accept the <button class="link" type="button" data-a="agreement-preview">Embr booking agreement</button> for each offer, including the 50% deposit when each person accepts and free cancellation until ${S.me.settings.free_cancel_days} days before the shoot.</span></label>` : ''}
+      ${unsent.length ? `<label class="check mt24"><input type="checkbox" name="agree" required> <span>I accept the <button class="link" type="button" data-a="agreement-preview">Embr booking agreement</button> for each offer, including the 50% deposit when each person accepts and free cancellation until ${cancelWindow(S.me.settings)}.</span></label>` : ''}
       <button type="button" class="link s mt24 rdel" data-a="roster-delete" data-shoot="${s.id}">Delete this roster</button>
     </form>`,
     foot: unsent.length ? `<div class="grow rfoot"><b class="money" id="rtotal">–</b><span class="xs g">Each person gets their own offer. You pay nothing until they accept.</span></div><button class="btn primary" type="submit" form="f-roster">Send ${unsent.length === 1 ? 'offer' : plural(unsent.length, 'offer')}</button>` : '',

@@ -5,7 +5,7 @@
 // until the tick and the typed name are there (Target, Forest, Coinbase); full text one tap away (Vivid).
 import { A, C, F, S } from '../state.js';
 import { rpc } from '../api.js';
-import { $, esc, gbp, pounds, dMed, dLong, tShort, openLayer, closeLayer, toast, first, dRangeLong, andList } from '../ui.js';
+import { $, esc, gbp, pounds, dMed, dLong, tShort, openLayer, closeLayer, toast, first, dRangeLong, andList, cancelWindow } from '../ui.js';
 
 // keep in step with _usage_label() and _usage_area() in the database
 export const USAGE_WHERE = [
@@ -138,7 +138,7 @@ export function reviewSheet(b) {
       ])}</section>
       <section class="cs-sec"><h4>What ${esc(b.brand.name)} can do with your photos</h4>
         ${lines.length ? `<ul class="plain-list">${lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>` : `<p class="s">${esc(b.usage || 'Nothing beyond their own internal use.')}</p><p class="xs g mt4">Anything else needs a new booking through Embr.</p>`}</section>
-      <section class="cs-sec"><h4>If plans change</h4><p class="s">If ${esc(b.brand.name)} cancels ${st.free_cancel_days} or more days before, nothing is owed. Closer to the day, you're paid ${gbp(b.late_cancel_p)} of the session fee. You can pull out before the deposit is paid.</p></section>
+      <section class="cs-sec"><h4>If plans change</h4><p class="s">If ${esc(b.brand.name)} cancels at least ${cancelWindow(st)} begins, nothing is owed. Closer to the day, you're paid ${gbp(b.late_cancel_p)} of the session fee. You can pull out before the deposit is paid.</p></section>
     </div>
     <details class="fullterms mt16"><summary class="btn sm">Read the full agreement</summary><div class="agreement mt12">${esc(b.agreement_text)}</div></details>
     <form id="f-sign" data-id="${b.id}" class="mt24" style="max-width:520px">

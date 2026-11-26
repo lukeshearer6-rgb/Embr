@@ -3,12 +3,13 @@
 import { VIEWS, A, F, C, S, go, refreshMe, rerender } from '../state.js';
 import { rpc, photoUrl, roleRules, modelOptions } from '../api.js';
 import { specsFields, readSpecs, specsTxt, DRESS, SUITS } from './model.js';
-import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CATS, CITIES, USAGE, TERMS, toast, openLayer, closeLayer, replaceLayer, topLayer, formData, loading, skelCards, emptyState, plural, first, whenTxt, rolesOf, rolesTxt, rolePlural, travelTxt, dRange, dRangeLong, andList } from '../ui.js';
+import { confirmDialog, $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CATS, CITIES, USAGE, TERMS, toast, openLayer, closeLayer, replaceLayer, topLayer, formData, loading, skelCards, emptyState, plural, first, whenTxt, rolesOf, rolesTxt, rolePlural, travelTxt, dRange, dRangeLong, andList, cancelWindow, genderTxt } from '../ui.js';
 import { usagePicker, readUsage, usageOk, skillPicker, readSkills } from './contract.js';
 import { ICON, RICON } from '../icons.js';
 import { creativeCard, videoHost } from './card.js';
 import { packagesOf, pkgOf, hoursTxt, pkgNote } from './rates.js';
-import { renderRosterBar } from './roster.js';
+import { renderRosterBar, rosterList, newRoster } from './roster.js';
+import './jobs.js';
 import { shootsSection } from './shoot.js';
 import { comp, thumb, bookingItem, groupBookings, calendar, gallery, stHTML, workByRole } from './common.js';
 
@@ -254,7 +255,7 @@ function detailLayer(t, rules, extra) {
         <p class="s g mt12">${trust.map(esc).join(' · ')}</p>
         ${t.verified ? '' : '<p class="xs g mt4">They\'ll need to pass it before they can accept.</p>'}</div>
       ${pkgRows(t, pk?.key)}
-      <section class="cd-sec"><h3>Details</h3><dl class="statline">${t.height ? `<div><dt>Height</dt><dd>${esc(t.height)}</dd></div>` : ''}<div><dt>Based in</dt><dd>${esc(t.city)}</dd></div><div><dt>Travel</dt><dd>${esc(travelTxt(t))}</dd></div></dl></section>
+      <section class="cd-sec"><h3>Details</h3><dl class="statline">${t.height ? `<div><dt>Height</dt><dd>${esc(t.height)}</dd></div>` : ''}${t.gender ? `<div><dt>Gender</dt><dd>${esc(genderTxt(t.gender))}</dd></div>` : ''}<div><dt>Based in</dt><dd>${esc(t.city)}</dd></div><div><dt>Travel</dt><dd>${esc(travelTxt(t))}</dd></div></dl></section>
       <section class="cd-sec"><h3 class="mb12">Next six weeks</h3>${calendar(t)}</section>
       <section class="cd-sec"><h3>About</h3><p class="measure mt8">${esc(t.bio) || '<span class="g">No bio yet.</span>'}</p>
         ${t.tags?.length ? `<div class="chips mt16">${t.tags.map((x) => `<span class="chip" style="cursor:default">${esc(x)}</span>`).join('')}</div>` : ''}
@@ -297,10 +298,16 @@ A.offer = async (el) => {
   const t = await rpc('talent_detail', { p_id: el.dataset.id });
   let brief = null;
   if (el.dataset.brief) brief = (await rpc('brief_detail', { p_id: el.dataset.brief }));
-  const d = brief ? { title: brief.title, date: brief.shoot_date, days: brief.days, rate: brief.day_rate, usage: brief.usage_terms?.where ? brief.usage_terms : brief.usage, usage_fee: brief.usage_fee || 0, notes: brief.description }
+  // from a brief role: its days, its usage fee, and the talent's own rate kept inside the role's range
+  const br = brief && ((brief.roles || []).find((r) => r.id === el.dataset.role) || (brief.roles || []).find((r) => rolesOf(t).includes(r.category)));
+  const inRange = (x) => (br ? Math.min(br.rate_max, Math.max(br.rate_min, x || br.rate_max)) : x);
+  const d = brief ? { title: brief.title, date: brief.shoot_date, days: br?.days || brief.days, rate: br ? inRange(t.day_rate) : brief.day_rate, usage: brief.usage_terms?.where ? brief.usage_terms : brief.usage, usage_fee: br ? br.usage_fee : brief.usage_fee || 0, notes: brief.description }
     : { title: '', date: addDays(14), days: 1, rate: t.day_rate || 200, usage: '', usage_fee: 0 };
   const rs = rolesOf(t);
-  const asRole = rs.includes(brief?.category) ? brief.category : rs[0];
+  const want = br?.category || brief?.category;
+  const asRole = rs.includes(want) ? want : rs[0];
+  const optionId = el.dataset.option || '';
+  const hrs = S.me.settings.option_hours || 24;
   // a package picked on their profile fills the day rate (and one day for a half day); brief rates win when starting from a brief
   const pks = packagesOf(t);
   const pk = !brief && el.dataset.pkg ? pkgOf(t, el.dataset.pkg) : null;
@@ -309,7 +316,7 @@ A.offer = async (el) => {
     kind: 'sheet', label: 'Book ' + t.name,
     head: `<div class="grow s g">You set the terms. ${esc(first(t.name))} accepts or declines.</div>`,
     body: `<h2 class="display t-48">Book ${esc(t.name)}</h2>
-    <form id="f-offer" data-who="brand" data-t="${t.id}" data-brief="${brief?.id || ''}" data-pks="${esc(JSON.stringify(pks))}" class="mt24" style="max-width:720px">
+    <form id="f-offer" data-who="brand" data-t="${t.id}" data-brief="${brief?.id || ''}" data-option="${esc(optionId)}" data-pks="${esc(JSON.stringify(pks))}" class="mt24" style="max-width:720px">
     ${pks.length > 1 ? `<fieldset class="pkgpick mb24"><legend class="s mb8">Package</legend><div class="chips">${pks.map((p) => `<button type="button" class="chip" data-a="offer-pkg" data-k="${p.key}" data-rate="${p.price}" data-days="${p.days || ''}" aria-pressed="${pk?.key === p.key}">${p.label} · ${pounds(p.price)}</button>`).join('')}</div>
       <input type="hidden" name="pkg" value="${pk?.key || ''}"><p class="xs g mt8" id="pkg-note">${pk ? esc(pkgNote(pk)) + ' This is added to the offer.' : 'Optional. Picking one fills the rate.'}</p></fieldset>` : ''}
     <div class="fgrid">
@@ -317,7 +324,7 @@ A.offer = async (el) => {
       ${rs.length > 1 ? `<div class="span">${skillPicker(rs, [asRole])}</div>` : `<input type="hidden" name="role" value="${esc(asRole || '')}">`}
       <label class="field">Shoot date<input class="in" type="date" name="shoot_date" required min="${today()}" value="${d.date}" data-change="quote"></label>
       <label class="field">Days<input class="in" type="number" name="days" min="1" max="14" value="${d.days}" data-input="quote"><span class="hint" id="offer-dates">${dRange(d.date, d.days)}</span></label>
-      <label class="field">Day rate, £<input class="in" type="number" name="day_rate" min="5" step="5" required value="${d.rate}" data-input="quote"><span class="hint">For their time (the basic studio fee).${t.day_rate ? ` ${esc(first(t.name))}'s usual rate is ${pounds(t.day_rate)}.` : ''}</span></label>
+      <label class="field">Day rate, £<input class="in" type="number" name="day_rate" min="5" step="5" required value="${d.rate}" data-input="quote"><span class="hint">For their time (the basic studio fee).${t.day_rate ? ` ${esc(first(t.name))}'s usual rate is ${pounds(t.day_rate)}.` : ''}${br ? ` Your range for this role: ${pounds(br.rate_min)}–${pounds(br.rate_max)}.` : ''}</span></label>
       <label class="field">Where<input class="in" name="location" placeholder="Studio or address"></label>
       <label class="field">Call time<input class="in" name="call_time" placeholder="9am"></label>
     </div>
@@ -327,8 +334,10 @@ A.offer = async (el) => {
     <label class="field mt16">Usage fee, £ <span class="hint">Separate from the day rate: what you pay ${esc(first(t.name))} to use the photos as above. Paid upfront with the booking. £0 if there's no usage fee.</span><input class="in" type="number" name="usage_fee" min="0" step="5" value="${esc(d.usage_fee)}" data-input="quote"></label>
     <label class="field mt16">What you'll ask them to do <span class="hint">For example: streetwear, no swimwear or lingerie. Nothing outside this can be asked on the day.</span><textarea class="in" name="content_agreed" rows="2"></textarea></label>
     <label class="field mt16">Anything else <span class="hint">Brief, what to bring, hair and make-up</span><textarea class="in" name="notes" rows="3">${esc(d.notes || '')}</textarea></label>
+    ${optionId ? `<fieldset class="mt24"><legend class="s">Time to answer</legend><div class="chips mt8">${[12, 24, 48].map((h) => `<label class="chip"><input type="radio" class="sr" name="respond_hours" value="${h}" ${h === hrs ? 'checked' : ''}>${h} hours</label>`).join('')}</div>
+      <p class="xs g mt8">If ${esc(first(t.name))} hasn't accepted by then, or you can't agree terms, Embr asks whether you want to move to your next option. ${esc(first(t.name))} isn't told they're an option number, only that they're optioned.</p></fieldset>` : ''}
     <div class="panel tint mt24" id="quote">${loading()}</div>
-    <label class="check mt24"><input type="checkbox" name="agree" required> <span>I accept the <button class="link" type="button" data-a="agreement-preview">Embr booking agreement</button>, including the 50% deposit when ${esc(first(t.name))} accepts and free cancellation until ${S.me.settings.free_cancel_days} days before the shoot.</span></label>
+    <label class="check mt24"><input type="checkbox" name="agree" required> <span>I accept the <button class="link" type="button" data-a="agreement-preview">Embr booking agreement</button>, including the 50% deposit when ${esc(first(t.name))} accepts and free cancellation until ${cancelWindow(S.me.settings)}.</span></label>
     </form>`,
     foot: `<span class="grow s g">${esc(first(t.name))} has to accept before you pay anything.</span><button class="btn primary" type="submit" form="f-offer">Send offer</button>`,
     after: () => quote(),
@@ -356,7 +365,7 @@ async function quote() {
 C.quote = () => quote();
 A['agreement-preview'] = () => openLayer({ kind: 'dialog', lg: true, head: '<h2 class="t-24">Embr booking agreement</h2>',
   body: `<p class="s g mb16">The full agreement, with your names, dates and amounts filled in, is attached to the offer and shown to both of you. It covers:</p>
-  <ul class="s" style="padding-left:18px;line-height:1.9"><li>Embr provides the booking software and takes payment through Stripe. Embr is not an agency.</li><li>The talent is 18+ and ID-checked, and receives the talent fee in full.</li><li>The brand pays the Embr fee, a 50% deposit when the talent accepts, and the balance at sign-off.</li><li>Sign-off happens automatically ${S.me.settings.auto_signoff_hours} hours after the talent marks the job wrapped, unless a problem is reported.</li><li>Cancellation: full refund up to ${S.me.settings.free_cancel_days} days before. After that, the talent is paid ${pct(S.me.settings.late_cancel_share)} of the session fee.</li><li>Usage is written out in plain English: where, how long from the day it first goes live, and which countries. Anything else needs a new booking.</li><li>Nothing outside the agreed content can be asked on the day.</li><li>The talent signs by typing their name. Either of you can save a copy from the booking.</li><li>For 12 months, the brand books this talent through Embr.</li></ul>
+  <ul class="s" style="padding-left:18px;line-height:1.9"><li>Embr provides the booking software and takes payment through Stripe. Embr is not an agency.</li><li>The talent is 18+ and ID-checked, and receives the talent fee in full.</li><li>The brand pays the Embr fee, a 50% deposit when the talent accepts, and the balance at sign-off.</li><li>Sign-off happens automatically ${S.me.settings.auto_signoff_hours} hours after the talent marks the job wrapped, unless a problem is reported.</li><li>Cancellation: full refund until ${cancelWindow(S.me.settings)} begins (by 11:59pm UK time). After that, the talent is paid ${pct(S.me.settings.late_cancel_share)} of the session fee.</li><li>Usage is written out in plain English: where, how long from the day it first goes live, and which countries. Anything else needs a new booking.</li><li>Nothing outside the agreed content can be asked on the day.</li><li>The talent signs by typing their name. Either of you can save a copy from the booking.</li><li>For 12 months, the brand books this talent through Embr.</li></ul>
   <p class="xs g mt16">Pilot draft, to be reviewed by a solicitor.</p>` });
 
 A['offer-pkg'] = (el) => {
@@ -379,86 +388,24 @@ F['f-offer'] = async (form) => {
   const usage_terms = readUsage(form);
   if (!usage_terms.where.length) throw new Error('Pick where you\'ll use the photos');
   if (!usageOk(usage_terms)) throw new Error('Type how many months the photos can be used for, from 1 to 120');
-  const id = await rpc('create_offer', { p: {
+  const p = {
     talent_id: form.dataset.t, brief_id: form.dataset.brief || null, title: d.title, shoot_date: d.shoot_date, days: +d.days, day_rate: +d.day_rate,
     usage_terms, day_hours: d.day_hours ? +d.day_hours : null, usage_fee: +d.usage_fee || 0, location: d.location, call_time: d.call_time, content_agreed: d.content_agreed, notes: d.notes, agree: !!d.agree,
     role: d.role || null, roles: form.querySelector('.skillpick') ? readSkills(form) : (d.role ? [d.role] : []),
-  } });
+  };
+  const id = form.dataset.option ? await rpc('option_offer', { p_option: form.dataset.option, p, p_hours: +d.respond_hours || null }) : await rpc('create_offer', { p });
   closeLayer();
   toast('Offer sent. You\'ll be told when they answer.');
   go('/booking/' + id);
 };
 
-// ---------------------------------------------------------------- jobs (briefs)
-V.jobs = async () => {
-  const list = await rpc('my_briefs');
-  return `<div class="row between top-al wrap mb24"><h1 class="display t-48">Jobs</h1><button class="btn primary" data-a="postjob">${ICON.plus}Post a brief</button></div>
-  <p class="g measure mb24">Post a brief and Embr ranks the talent who fit it best. You choose who gets an offer. Talent can't apply, so you only deal with people you pick.</p>
-  ${list.length ? `<div class="list" style="border:0">${list.map((j) => `<button class="job" data-a="job" data-id="${j.id}"><div class="ttl">${esc(j.title)}${j.status === 'closed' ? '<span class="tag-f" style="color:var(--mist)">Closed</span>' : ''}</div><div class="rate">${pounds(j.day_rate)}</div>
-    <div class="facts"><span><b>${esc(j.category)}</b>${j.spots > 1 ? ' × ' + j.spots : ''}</span><span>${dRange(j.shoot_date, j.days)}</span><span>${esc(j.city)}</span><span>${plural(j.offers, 'offer')} sent${j.booked ? ', ' + j.booked + ' booked' : ''}</span></div></button>`).join('')}</div>`
-    : '<div class="empty">No briefs yet. Posting one takes about two minutes.</div>'}`;
-};
-A.postjob = async () => { const mo = await modelOptions(); openLayer({
-  kind: 'sheet', label: 'Post a brief', head: '<div class="grow s g">Only you and Embr see your brief. Talent never see it.</div>',
-  body: `<h2 class="display t-48">Post a brief</h2><form id="f-job" class="mt24" style="max-width:720px"><div class="fgrid">
-    <label class="field span">Title<input class="in" name="title" required placeholder="Summer drop lookbook, one model"></label>
-    <label class="field">Looking for<select class="in" name="category" data-change="job-cat">${opts(CATS)}</select></label>
-    <label class="field">City<select class="in" name="city">${opts(CITIES, S.me.brand?.city)}</select></label>
-    <label class="field">Shoot date<input class="in" type="date" name="shoot_date" required min="${today()}" value="${addDays(14)}"></label>
-    <label class="field">Days<input class="in" type="number" name="days" min="1" max="14" value="1"></label>
-    <label class="field">Day rate, £<input class="in" type="number" name="day_rate" min="5" step="5" required value="250"></label>
-    <label class="field">How many people<input class="in" type="number" name="spots" min="1" max="20" value="1"></label>
-    <label class="field span">Travel<select class="in" name="travel"><option value="local">Local talent only</option><option value="covered">I'll pay travel for the right person</option></select></label>
-    <div class="span mt8">${usagePicker(null, { who: 'brand', noHours: true })}</div>
-    <label class="field span">Usage fee per person, £ <span class="hint">Separate from the day rate. The day rate pays for their time (the basic studio fee); the usage fee pays for using the photos as above. £0 if there's no usage fee.</span><input class="in" type="number" name="usage_fee" min="0" step="5" value="0"></label>
-    <label class="field span">Brief<textarea class="in" name="description" placeholder="What you're shooting, the look, what's provided"></textarea></label>
-    <div class="span" id="job-specs">${CATS[0] === 'Model' ? specsFields(mo) : ''}</div></div></form>`,
-  foot: '<span class="grow"></span><button class="btn primary" type="submit" form="f-job">Post and see who fits</button>',
-}); };
-C['job-cat'] = async (sel) => { $('#job-specs').innerHTML = sel.value === 'Model' ? specsFields(await modelOptions()) : ''; };
+// ---------------------------------------------------------------- jobs (briefs): see jobs.js
+// model details inside a brief role or the board filters: changing the sizing redraws that block only
 C['spec-sizing'] = async (sel) => {
-  const form = sel.closest('form');
-  const sp = { ...readSpecs(form), sizing: sel.value };
-  sel.closest('[data-specs]').outerHTML = specsFields(await modelOptions(), sp);
+  const box = sel.closest('[data-specs]');
+  const sp = { ...readSpecs(box.parentElement), sizing: sel.value };
+  box.outerHTML = specsFields(await modelOptions(), sp);
 };
-F['f-job'] = async (form) => {
-  const d = formData(form);
-  const usage_terms = readUsage(form);
-  if (!usage_terms.where.length) throw new Error('Pick where you\'ll use the photos');
-  if (!usageOk(usage_terms)) throw new Error('Type how many months the photos can be used for, from 1 to 120');
-  const id = await rpc('create_brief', { p: { title: d.title, category: d.category, city: d.city, shoot_date: d.shoot_date, days: d.days, day_rate: d.day_rate,
-    spots: d.spots, travel: d.travel, usage_terms, usage_fee: +d.usage_fee || 0, description: d.description, specs: d.category === 'Model' ? readSpecs(form) : {} } });
-  closeLayer();
-  rerender();
-  A.job({ dataset: { id } });
-};
-// why each person is in the best-fit list, checked against the brief (Pin, Wrangle, Braintrust, Upwork candidate lists)
-function fitLines(t, j) {
-  const diff = (t.day_rate || 0) - j.day_rate;
-  const rows = [
-    [true, `Free ${dRange(j.shoot_date, j.days)}`],
-    [true, t.away ? `Travels from ${t.city}` : `Based in ${j.city}`],
-    t.day_rate ? [diff <= 0, diff <= 0 ? `${pounds(t.day_rate)} a day, within your rate` : `${pounds(t.day_rate)} a day, ${pounds(diff)} over yours`] : [false, 'No day rate set'],
-    ...(specsTxt(j.specs) ? [[true, 'Matches your model details']] : []),
-  ];
-  return `<ul class="fit" aria-label="Why ${esc(t.name)} fits">${rows.map(([ok, l]) => `<li class="${ok ? 'ok' : 'no'}">${esc(l)}</li>`).join('')}</ul>`;
-}
-A.job = async (el) => {
-  const j = await rpc('brief_detail', { p_id: el.dataset.id });
-  openLayer({
-    kind: 'sheet', label: j.title, head: `<div class="grow s g">Posted ${dMed(j.created_at)}</div>`,
-    body: `<h2 class="display t-48">${esc(j.title)}</h2>
-    <dl class="statline"><div><dt>Rate</dt><dd>${pounds(j.day_rate)} a day</dd></div><div><dt>Date</dt><dd>${dRange(j.shoot_date, j.days)}</dd></div><div><dt>Where</dt><dd>${esc(j.city)}</dd></div><div><dt>Looking for</dt><dd>${esc(j.category)}${j.spots > 1 ? ', ' + j.spots : ''}</dd></div><div><dt>Travel</dt><dd>${j.travel === 'local' ? 'Local talent only' : 'Paid for the right person'}</dd></div></dl>
-    ${specsTxt(j.specs) ? `<p class="mt16"><b>Model details:</b> ${esc(specsTxt(j.specs))}</p>` : ''}
-    ${j.description ? `<p class="measure mt24">${esc(j.description)}</p>` : ''}${j.usage ? `<p class="s g mt8">Usage: ${esc(j.usage)}${j.usage_fee ? ` · usage fee ${pounds(j.usage_fee)} per person` : ''}</p>` : ''}
-    <h3 class="mt32 mb8">Best fit for this brief</h3><p class="s g mb16">${specsTxt(j.specs) ? 'Only models who match your details. ' : ''}Ranked by who's free on ${dMed(j.shoot_date)}, where they're based and how close their day rate is to yours. You choose who gets an offer.</p>
-    ${j.ranked.length ? `<div class="comps fitgrid">${j.ranked.map((t) => `<div>${comp(t, { save: false }).replace('data-a="talent"', `data-a="talent" data-brief="${j.id}"`)}${fitLines(t, j)}${t.offered ? '<p class="xs g mt4">Offer sent</p>' : `<button class="btn sm full mt8" data-a="offer" data-id="${t.id}" data-brief="${j.id}">Send offer</button>`}</div>`).join('')}</div>`
-      : '<div class="empty">No one free fits this brief yet. Try another date, or search the board.</div>'}
-    ${j.bookings.length ? `<h3 class="mt32 mb8">Offers</h3><div class="list">${j.bookings.map(bookingItem).join('')}</div>` : ''}`,
-    foot: j.status === 'open' ? `<button class="btn quiet" data-a="closejob" data-id="${j.id}">Close brief</button><span class="grow"></span><button class="btn" data-tab="board">Search the board instead</button>` : '<span class="s g">This brief is closed.</span>',
-  });
-};
-A.closejob = async (el) => { await rpc('close_brief', { p_id: el.dataset.id }); closeLayer(); toast('Brief closed'); rerender(); };
 
 // ---------------------------------------------------------------- bookings and messages
 export async function bookingsView() {
@@ -466,9 +413,26 @@ export async function bookingsView() {
   const g = groupBookings(list);
   const sec = (t, l, empty) => `<h2 class="sec mt32">${t}</h2>${l.length ? `<div class="list">${l.map(bookingItem).join('')}</div>` : `<div class="empty" style="padding:16px 0">${empty}</div>`}`;
   const shoots = S.me.role === 'brand' ? await shootsSection() : '';
-  return `<h1 class="display t-48 mb24">Bookings</h1>${shoots}${g.needs.length ? sec('Needs you', g.needs, '') : ''}${sec('Coming up', g.upcoming, S.me.role === 'talent' ? 'Nothing booked yet. Let work find you: brands book you straight from your profile.' : 'Nothing coming up. Find someone on the board.')}${g.past.length ? sec('Past', g.past, '') : ''}`;
+  const held = S.me.role === 'talent' ? await rpc('my_options').catch(() => []) : [];
+  return `<h1 class="display t-48 mb24">Bookings</h1>${shoots}${optionedSection(held)}${g.needs.length ? sec('Needs you', g.needs, '') : ''}${sec('Coming up', g.upcoming, S.me.role === 'talent' ? 'Nothing booked yet. Let work find you: brands book you straight from your profile.' : 'Nothing coming up. Find someone on the board.')}${g.past.length ? sec('Past', g.past, '') : ''}`;
 }
 V.bookings = bookingsView;
+// Talent: holds a brand has put on them (snag list 2). Only "Optioned", the brand, the role and the dates:
+// never their option number, other names, the brief or the rate. Nothing to apply for; they can only say
+// the dates no longer work.
+function optionedSection(list) {
+  if (!list.length) return '';
+  return `<h2 class="sec mt32">Optioned</h2><p class="s g mb12">A brand is holding you for these dates. They'll send you an offer or release you. Nothing to do yet.</p>
+  <div class="list">${list.map((o) => `<div class="item"><div class="grow"><div class="ttl">${esc(o.brand)}</div><div class="meta"><span>${esc(o.role)}</span><span>${dRange(o.shoot_date, o.days)}</span><span>${esc(o.city)}</span></div></div>
+    <span class="st off">Optioned</span><button class="btn sm quiet" data-a="option-unavailable" data-id="${o.id}">Can't do it</button></div>`).join('')}</div>`;
+}
+A['option-unavailable'] = async (el) => {
+  const ok = await confirmDialog({ title: 'Can\'t do these dates?', body: 'The brand is told you\'re no longer available and the hold comes off.', yes: 'I can\'t do it' });
+  if (!ok) return;
+  await rpc('option_unavailable', { p_option: el.dataset.id });
+  toast('Done. The brand has been told.');
+  rerender();
+};
 export async function inboxView() {
   const list = (await rpc('my_bookings')).filter((b) => b.last_message_at).sort((a, b) => b.last_message_at.localeCompare(a.last_message_at));
   const r = S.me.role;
@@ -476,6 +440,24 @@ export async function inboxView() {
   ${list.length ? `<div class="list">${list.map((b) => { const o = r === 'talent' ? b.brand : b.talent; return `<button class="item" data-a="booking" data-id="${b.id}" data-tabto="messages">${thumb(o, r === 'talent')}<div class="grow"><div class="row between"><span class="ttl">${esc(o.name)}</span><span class="xs g">${dMed(b.last_message_at)}</span></div><div class="s ${b.unread ? '' : 'g'}" style="${b.unread ? 'font-weight:600' : ''}">${esc(b.title)}${b.unread ? ' · New message' : ''}</div></div></button>`; }).join('')}</div>` : '<div class="empty">No messages yet.</div>'}`;
 }
 V.inbox = inboxView;
+
+// ---------------------------------------------------------------- shoots (snag list 2)
+// Every Shoot Roster in one place, so a brand running two or three shoots at once can reach each one
+// (the black bar on the board only shows the latest). Drafts first, then shoots whose offers have gone.
+// Same list pattern as Bookings: one row per shoot with faces, dates and head count.
+V.shoots = async () => {
+  const drafts = rosterList();
+  const sent = await shootsSection('Sent');
+  const facesOf = (s) => `<span class="pc-stack sh-faces" aria-hidden="true">${s.crew.slice(0, 3).map((c) => thumb({ name: c.name, photo: c.photo })).join('')}</span>`;
+  return `<div class="row between top-al wrap mb24"><h1 class="display t-48">Shoots</h1><button class="btn primary" data-a="roster-new">${ICON.plus}New shoot roster</button></div>
+  <p class="g measure mb24">Group everyone for a shoot, then send their offers together. Each job also has its own roster.</p>
+  <h2 class="sec">Rosters in progress</h2>
+  ${drafts.length ? `<div class="list">${drafts.map((s) => `<button class="item" data-a="roster" data-shoot="${s.id}">${s.crew.length ? facesOf(s) : ''}<div class="grow"><div class="ttl">${esc(s.title || 'Untitled shoot')}</div>
+      <div class="meta"><span>${s.date ? dRange(s.date, s.days) : 'No date yet'}</span><span>${s.crew.length === 1 ? '1 person' : s.crew.length + ' people'}</span>${s.brief_id ? '<span>From a brief</span>' : ''}</div></div><span aria-hidden="true">›</span></button>`).join('')}</div>`
+    : '<div class="empty" style="padding:16px 0">No rosters in progress. Start one here, from a job, or with "Add to shoot" on the board.</div>'}
+  ${sent || '<h2 class="sec mt32">Sent</h2><div class="empty" style="padding:16px 0">Shoots you\'ve sent offers for appear here.</div>'}`;
+};
+A['roster-new'] = () => newRoster();
 
 // ---------------------------------------------------------------- shortlist
 V.shortlist = async () => {
@@ -499,7 +481,7 @@ V.account = async () => {
     <label class="field">Website<input class="in" name="website" value="${esc(b.website)}" placeholder="https://"></label>
     <label class="field">Instagram<input class="in" name="instagram" value="${esc(b.instagram)}" placeholder="@brand"></label></div>
     <button class="btn ink mt24" type="submit">Save</button></form>
-    <aside class="stack"><div class="panel"><h3>What you pay</h3><p class="s g mt8">Posting briefs and searching is free. When you book, you pay the talent's fee plus an Embr fee: ${pct(st.fee_first)} the first time you book someone, ${pct(st.fee_repeat)} from the second booking with the same person, ${pct(st.fee_loyal)} from the fifth. Bookings that come through a talent's booking link are ${pct(st.fee_link)}.</p></div>
+    <aside class="stack"><div class="panel"><h3>What you pay</h3><p class="s g mt8">Posting briefs and searching is free. When you book, you pay the talent's fee plus an Embr fee: ${pct(st.fee_first)} the first time you book someone, ${pct(st.fee_repeat)} from the second booking with the same person, ${pct(st.fee_loyal)} from the fifth.</p></div>
     <div class="panel"><h3>Payments</h3><p class="s g mt8">You pay a 50% deposit by card when the talent accepts. Stripe saves the card so the balance can be charged at sign-off. ${b.has_card ? 'You have a card saved with Stripe.' : ''}</p></div>
     <div class="panel"><h3>Signed in as</h3><p class="s g mt8">${esc(S.me.email)}</p></div></aside></div>`;
 };

@@ -21,7 +21,7 @@
 // existing pay_deposit step, run one after another from the shoot checkout.
 import { S, A, F, go } from '../state.js';
 import { rpc, action, photoUrl } from '../api.js';
-import { $, esc, gbp, pounds, pct, dMed, dLong, ago, today, toast, openLayer, closeLayer, refreshTop, topLayer, confirmDialog, formData, first, plural, busy, dRange, dRangeLong, andList } from '../ui.js';
+import { $, esc, gbp, pounds, pct, dMed, dLong, ago, today, toast, openLayer, closeLayer, refreshTop, topLayer, confirmDialog, formData, first, plural, busy, dRange, dRangeLong, andList, cancelWindow } from '../ui.js';
 import { ICON } from '../icons.js';
 import { thumb, status } from './common.js';
 import { openBooking } from './booking.js';
@@ -227,7 +227,7 @@ function checkoutLayer(s, round = 0) {
 
       <h3 class="rsec">If plans change</h3>
       <ol class="cxl" aria-label="Cancellation timeline">
-        <li class="ok"><b>Until ${freeUntil ? dMed(freeUntil) : `${s.free_cancel_days} days before`}</b><span class="s g">Cancel anyone for a full refund of their deposit.</span></li>
+        <li class="ok"><b>Until ${freeUntil ? `11:59pm, ${dMed(freeUntil)}` : cancelWindow(S.me.settings)}</b><span class="xs g">${freeUntil ? esc(cancelWindow(S.me.settings)) : ''}</span><span class="s g">Cancel anyone for a full refund of their deposit.</span></li>
         <li class="mid"><b>From then until the shoot</b><span class="s g">The creative is paid ${Math.round(s.late_cancel_share * 100)}% of their session fee from the deposit and the rest is refunded${d.length ? `: ${d.map((p) => `${esc(first(p.talent.name))} ${gbp(p.late_cancel_p)}`).join(', ')}` : ''}.</span></li>
         <li class="end"><b>${dMed(s.shoot_date)}</b><span class="s g">Shoot day.</span></li></ol>
       <p class="s g mt8">If a creative cancels, your deposit for them is refunded in full.</p>
@@ -274,10 +274,10 @@ export async function continueShootPay(bookingId) {
 }
 
 // ---------------------------------------------------------------- brand Bookings: shoots first
-export async function shootsSection() {
+export async function shootsSection(title = 'Shoots') {
   const list = await rpc('my_shoots').catch(() => []);
   if (!list.length) return '';
-  return `<h2 class="sec mt32">Shoots</h2><div class="list">${list.map((s) => {
+  return `<h2 class="sec mt32">${title}</h2><div class="list">${list.map((s) => {
     const live = s.people.filter(LIVE);
     const tag = s.to_pay ? `<span class="st act">Pay ${plural(s.to_pay, 'deposit')}</span>` : s.changes ? `<span class="st act">${plural(s.changes, 'change')} asked</span>` : s.unread ? '<span class="st act">New message</span>' : `<span class="st wait">${live.filter((p) => p.status !== 'offer').length} of ${live.length} accepted</span>`;
     return `<button class="item" data-a="${hasDay(s) ? 'shootday' : 'shoot'}" data-id="${s.id}"><span class="pc-stack sh-faces" aria-hidden="true">${s.people.slice(0, 3).map((p) => thumb(p)).join('')}</span>

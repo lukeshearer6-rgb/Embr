@@ -172,6 +172,14 @@ async function main() {
   delete stripe.identityReader; stripe._state.refuseSensitive = false;
   assert.ok(vs1.url && vs2.url); ok('with the restricted Identity key, the date of birth is read and the talent verified 18+');
 
+    // 48-hour cancellation (brand snag list 2): free until the end of the day 3 days before the shoot
+  const st = (await q('select free_cancel_days, free_cancel_hours, late_cancel_share from settings'))[0];
+  assert.equal(st.free_cancel_hours, 48);
+  const base = { deposit_p: 13200, session_p: 24000, free_cancel_days: st.free_cancel_days, late_cancel_share: st.late_cancel_share };
+  assert.deepEqual(P.cancelSplit({ ...base, days_to_shoot: 3 }, 'brand'), { refund: 13200, talent: 0 });
+  assert.deepEqual(P.cancelSplit({ ...base, days_to_shoot: 2 }, 'brand'), { refund: 1200, talent: 12000 });
+  assert.deepEqual(P.cancelSplit({ ...base, days_to_shoot: 1 }, 'talent'), { refund: 13200, talent: 0 });
+  ok('a brand cancelling 48 hours or more before the shoot day gets the deposit back; later, the talent gets 50% of the day rate');
   console.log(`\n${passed} checks passed`);
 }
 main().then(() => db.end()).catch((e) => { console.error('\n✗ FAILED:', e.message); console.error(e.stack); db.end(); process.exit(1); });

@@ -59,6 +59,13 @@ export const TRAVEL_COSTS = [['paid', 'Brand covers travel'], ['nearby_included'
 // keep in step with _region() in the database
 export const REGIONS = { north: ['Manchester', 'Liverpool', 'Leeds'], midlands: ['Birmingham'], south: ['London', 'Bristol'], scotland: ['Glasgow'] };
 export const nearby = (city) => (Object.values(REGIONS).find((r) => r.includes(city)) || []).filter((c) => c !== city);
+// optional gender (brand snag list 2). Talent: what they are; briefs: who a role casts ('any' by default)
+export const GENDERS = [['', 'Prefer not to say'], ['woman', 'Woman'], ['man', 'Man'], ['non_binary', 'Non-binary']];
+export const CASTS = [['any', 'Anyone'], ['woman', 'Women'], ['man', 'Men'], ['non_binary', 'Non-binary people']];
+export const genderTxt = (g) => (GENDERS.find(([k]) => k === g) || [])[1] || '';
+// free cancellation window (brand snag list 2: 48 hours before the shoot day begins, DRAFT for solicitor review)
+export const cancelHours = (st) => st?.free_cancel_hours || ((st?.free_cancel_days || 3) - 1) * 24;
+export const cancelWindow = (st) => `${cancelHours(st)} hours before the shoot day`;
 export const travelTxt = (t) => {
   const r = (TRAVEL_RANGE.find(([k]) => k === (t.travel_range || (t.travels ? 'uk' : 'local'))) || TRAVEL_RANGE[0])[1];
   if ((t.travel_range || 'local') === 'local' && !t.travels) return r;
