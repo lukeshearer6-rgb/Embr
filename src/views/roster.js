@@ -17,6 +17,7 @@
 import { S, A, C, F, go } from '../state.js';
 import { rpc, photoUrl, uploadImage } from '../api.js';
 import { $, esc, gbp, pounds, dMed, today, addDays, opts, USAGE, TERMS, toast, openLayer, closeLayer, refreshTop, topLayer, first, plural, rolesOf, emptyState } from '../ui.js';
+import { usagePicker, readUsage } from './contract.js';
 import { ICON, RICON } from '../icons.js';
 import { pkgOf, pkgNote, hoursTxt } from './rates.js';
 
@@ -182,9 +183,9 @@ function rosterLayer(s) {
       ${miss.length && s.crew.length ? `<div class="rmiss" aria-label="Roles not in this shoot yet">${miss.map((m) => `<button type="button" class="rneed" data-a="roster-find" data-role="${esc(m)}" data-shoot="${s.id}">${RICON[m] || ICON.plus}<span class="grow"><b>Need ${aRole(m)}?</b><span class="s g">See who's free ${s.date ? 'on ' + dMed(s.date) : ''}</span></span><span aria-hidden="true">›</span></button>`).join('')}</div>` : ''}
       ${s.crew.length ? `<button type="button" class="btn sm mt12" data-a="roster-find" data-role="" data-shoot="${s.id}">${ICON.plus}Add someone else</button>` : ''}
 
-      <h3 class="rsec">Where you'll use the images</h3>
-      <div class="fgrid2"><label class="field">Where<select class="in" name="usage_where" data-change="roster-field">${opts(USAGE, s.usage_where)}</select></label>
-        <label class="field">For how long<select class="in" name="usage_term" data-change="roster-field">${opts(TERMS, s.usage_term)}</select></label></div>
+      <h3 class="rsec">Where you'll use the photos</h3>
+      <p class="s g mb8">Everyone in the shoot gets the same usage, written out in plain English before they sign.</p>
+      ${usagePicker(s.usage_terms || s.usage_where, { who: 'brand', hours: s.day_hours || '' })}
       <label class="field mt16">What you'll ask them to do <span class="hint">Nothing outside this can be asked on the day.</span><textarea class="in" name="content_agreed" rows="2" data-input="roster-field">${esc(s.content_agreed)}</textarea></label>
       <h3 class="rsec">Shoot brief</h3>
       <p class="s g mb8">Everyone gets the same brief with their offer, pinned at the top of the shoot thread.</p>
@@ -228,6 +229,16 @@ async function quoteAll(sid) {
 // ---------------------------------------------------------------- editing
 let qT;
 const requote = (sid) => { clearTimeout(qT); qT = setTimeout(() => quoteAll(sid), 250); };
+// the usage chips and hours are saved with the draft, like every other roster field
+document.addEventListener('usagechange', (e) => {
+  const form = e.target.closest('#f-roster');
+  const s = form && shootOf(form.dataset.shoot);
+  if (!s) return;
+  s.usage_terms = readUsage(form);
+  s.day_hours = form.day_hours?.value || '';
+  s.updated = Date.now();
+  save(roster());
+});
 C['roster-field'] = (el) => {
   const s = shootOf(el.form.dataset.shoot);
   if (!s) return;
@@ -305,13 +316,14 @@ export async function sendRoster(form) {
   const d = Object.fromEntries(new FormData(form).entries());
   const crew = s.crew.filter((c) => !c.sent);
   if (!crew.length) return;
-  const usage = d.usage_where ? `${d.usage_where}, ${d.usage_term}` : '';
+  const usage_terms = readUsage(form);
+  if (!usage_terms.where.length) throw new Error('Pick where you\'ll use the photos');
   if (!d.agree) throw new Error('Tick the box to accept the booking agreement');
   // the shared brief becomes a shoot (kept on the draft, so a resend after a failure reuses it),
   // then one offer per person through shoot_offer, which takes the shared details from the shoot
   if (!s.shoot_id) {
     s.shoot_id = await rpc('create_shoot', { p: { title: s.title, shoot_date: s.date, days: s.days, location: s.location, call_time: s.call_time,
-      usage, content_agreed: s.content_agreed, brief: s.notes, moodboard: s.mood || [], board_link: s.board_link || '', brief_id: s.brief_id || null } });
+      usage_terms, day_hours: d.day_hours ? +d.day_hours : null, content_agreed: s.content_agreed, brief: s.notes, moodboard: s.mood || [], board_link: s.board_link || '', brief_id: s.brief_id || null } });
     save(roster());
   }
   for (const c of crew) {

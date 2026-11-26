@@ -7,6 +7,7 @@ import { ICON } from '../icons.js';
 import { thumb, status, stHTML } from './common.js';
 import { talentShootSec, talentChangeSec, continueShootPay } from './shoot.js';
 import { dirBtn } from './shootday.js';
+import { reviewSheet, agreementDialog, signedRecord, usageLines } from './contract.js';
 
 function money(b, r) {
   const rows = [
@@ -94,7 +95,7 @@ function sheet(b, sh = null) {
     <div class="cs-grid"><div>
       ${sh?.shoot && r === 'brand' ? `<div class="cs-sec"><button class="btn sm" data-a="shoot" data-id="${sh.shoot.id}" data-who="${b.id}">Open the shoot thread</button></div>` : ''}
       ${r === 'talent' ? talentShootSec(b, sh) : ''}
-      <div class="cs-sec"><h4>The day</h4><dl class="kv"><dt>Where</dt><dd>${esc(b.location) || '<span class="g">To confirm in messages</span>'}</dd><dt>Call time</dt><dd>${esc(b.call_time) || '<span class="g">To confirm in messages</span>'}</dd>${b.usage ? `<dt>Usage</dt><dd>${esc(b.usage)}${b.usage_fee ? ' (' + pounds(b.usage_fee) + ')' : ''}</dd>` : ''}${b.content_agreed ? `<dt>Content agreed</dt><dd>${esc(b.content_agreed)}</dd>` : ''}${b.notes ? `<dt>Notes</dt><dd style="white-space:pre-wrap">${esc(b.notes)}</dd>` : ''}</dl>${['accepted', 'confirmed', 'wrapped'].includes(b.status) ? `<div class="mt12">${dirBtn(b.location, 'sm')}</div>` : ''}</div>
+      <div class="cs-sec"><h4>The day</h4><dl class="kv"><dt>Where</dt><dd>${esc(b.location) || '<span class="g">To confirm in messages</span>'}</dd><dt>Call time</dt><dd>${esc(b.call_time) || '<span class="g">To confirm in messages</span>'}</dd>${b.day_hours ? `<dt>Hours</dt><dd>Up to ${b.day_hours} a day, including breaks</dd>` : ''}${usageLines(b.usage_terms).length ? `<dt>Photo use</dt><dd><ul class="plain-list">${usageLines(b.usage_terms).slice(0, 3).map((l) => `<li>${esc(l)}</li>`).join('')}</ul>${b.usage_fee ? `<span class="s g">Usage fee ${pounds(b.usage_fee)}. </span>` : ''}<button class="link s" data-a="agreement" data-id="${b.id}">All the terms</button></dd>` : b.usage ? `<dt>Usage</dt><dd>${esc(b.usage)}${b.usage_fee ? ' (' + pounds(b.usage_fee) + ')' : ''}</dd>` : ''}${b.content_agreed ? `<dt>Content agreed</dt><dd>${esc(b.content_agreed)}</dd>` : ''}${b.notes ? `<dt>Notes</dt><dd style="white-space:pre-wrap">${esc(b.notes)}</dd>` : ''}</dl>${['accepted', 'confirmed', 'wrapped'].includes(b.status) ? `<div class="mt12">${dirBtn(b.location, 'sm')}</div>` : ''}</div>
       <div class="cs-sec"><h4>People</h4><div class="people">
         <div class="person"><div class="thumb" style="${ph ? `background-image:url('${ph}')` : ''}">${ph ? '' : esc(t.name[0] || '')}</div><div><div style="font-weight:700">${esc(t.name)}${t.verified ? ICON.tick : ''}</div><div class="s g">${b.role ? "Booked as " + esc(b.role) : esc(t.category)}, ${esc(t.city)}</div></div></div>
         <div class="person">${thumb(br, true)}<div><div style="font-weight:700">${esc(br.name)}</div><div class="s g">${esc(br.contact_name || '')}${br.instagram ? ' · ' + esc(br.instagram) : ''}</div></div></div></div></div>
@@ -105,7 +106,7 @@ function sheet(b, sh = null) {
     </div><aside>
       <div class="cs-sec"><h4>${r === 'talent' ? 'Your pay' : 'Money'}</h4>${money(b, r)}</div>
       <div class="cs-sec"><h4>Progress</h4>${steps(b)}</div>
-      <div class="cs-sec"><h4>Agreement</h4><p class="s g">${b.brand_agreed_at ? 'Brand agreed ' + dMed(b.brand_agreed_at) + '. ' : ''}${b.talent_agreed_at ? 'Talent agreed ' + dMed(b.talent_agreed_at) + '.' : 'Talent agrees when they accept.'}</p><button class="btn sm mt8" data-a="agreement" data-id="${b.id}">Read the agreement</button></div>
+      <div class="cs-sec"><h4>Agreement</h4>${signedRecord(b)}<button class="btn sm mt8" data-a="agreement" data-id="${b.id}">Read or save a copy</button></div>
       ${r !== 'talent' && b.status === 'confirmed' ? `<div class="cs-sec"><h4>Cancelling</h4><p class="s g">${b.free_cancel_until >= today() ? `Free cancellation until ${dMed(b.free_cancel_until)}. After that, ${esc(first(t.name))} is paid ${gbp(b.late_cancel_p)} from the deposit.` : `Less than ${S.me.settings.free_cancel_days} days to go: if you cancel, ${esc(first(t.name))} is paid ${gbp(b.late_cancel_p)} from the deposit and the rest is refunded.`}</p></div>` : ''}
       ${r === 'ops' ? `<div class="cs-sec"><h4>History</h4><div class="log">${b.events.map((e) => `<div><span>${dMed(e.at)} ${tShort(e.at)}</span><span>${esc(e.text)}</span></div>`).join('')}</div></div>` : ''}
     </aside></div>`,
@@ -152,7 +153,7 @@ F['f-msg'] = async (form) => {
 
 A.agreement = async (el) => {
   const b = await rpc('booking_detail', { p_id: el.dataset.id });
-  openLayer({ kind: 'dialog', lg: true, head: `<h2 class="t-24">Booking agreement</h2>`, body: `<div class="agreement">${esc(b.agreement_text)}</div>` });
+  agreementDialog(b);
 };
 
 // ---------------------------------------------------------------- brand actions
@@ -207,17 +208,10 @@ A.accept = async (el) => {
   const b = await rpc('booking_detail', { p_id: el.dataset.id });
   if (!S.me.talent?.verified) return A.verify();
   if (!S.me.talent?.payouts_enabled) return A.payouts();
-  openLayer({ kind: 'dialog', lg: true, head: `<h2 class="t-24">Accept “${esc(b.title)}”?</h2>`,
-    body: `<p class="s g mb16">You'll be paid ${gbp(b.talent_fee_p)} in full at sign-off. ${esc(b.brand.name)} pays a deposit now to confirm.</p><div class="agreement" style="max-height:40vh">${esc(b.agreement_text)}</div>
-    <form id="f-accept" data-id="${b.id}"><label class="check mt16"><input type="checkbox" name="agree" required> <span>I've read and accept the booking agreement, and I'm 18 or over.</span></label></form>`,
-    foot: `<button class="btn quiet" data-a="close">Back</button><button class="btn primary" type="submit" form="f-accept">Accept offer</button>` });
+  openLayer(reviewSheet(b));
 };
-F['f-accept'] = async (form) => {
-  await rpc('respond_offer', { p_id: form.dataset.id, p_accept: true, p_agree: true });
-  closeLayer();
-  toast('Accepted. You\'ll be told when the deposit is paid.');
-  await reopen(form.dataset.id);
-};
+// after "Sign and accept" in the review sheet (contract.js)
+document.addEventListener('embr:signed', (e) => { reopen(e.detail).catch(() => {}); });
 A.decline = async (el) => {
   const reason = await confirmDialog({ title: 'Decline this offer?', body: 'The brand will be told you can\'t do it. A reason is optional.', yes: 'Decline', danger: true, field: { label: 'Reason (optional)' } });
   if (reason === null) return;

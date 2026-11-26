@@ -52,3 +52,7 @@ Locked decisions from Luke. Change one only when Luke says so, and record the da
 ## Payout account losses (2026-11-25)
 
 - Talent payout accounts are Stripe Accounts v2 recipients. Stripe only accepts Embr (the platform) as losses collector for this kind of account (Stripe API error, 2026-11-25), so Embr carries negative balances on talent accounts, as it already carries chargebacks on its own charges under separate charges and transfers. Needs Embr's Connect platform profile finished in Stripe.
+
+## Usage fee when talent are cut from the edit (2026-11-26)
+
+- No "no usage fee if the talent doesn't make the final cut" rule for now. It only applies to commercials where talent miss the final cut, and Embr isn't for productions that size at first. The usage fee stays charged with the booking. Decision (Luke, 2026-11-26).

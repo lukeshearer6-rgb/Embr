@@ -6,6 +6,7 @@ import { rpc, action, uploadPhoto, deletePhoto, photoUrl, roleRules, modelOption
 import { agencyBox } from './auth.js';
 import { statsForm } from './model.js';
 import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CITIES, rolesOf, rolesTxt, rolePlural, roleChips, pickedRoles, USAGE, TERMS, TRAVEL_RANGE, TRAVEL_COSTS, nearby, toast, openLayer, closeLayer, formData, plural, first, busy, confirmDialog, emptyState } from '../ui.js';
+import { usagePicker, readUsage, DRAFT_NOTE } from './contract.js';
 import { ICON, RICON } from '../icons.js';
 import { thumb, calendar, groupBookings, bookingItem, linkCards } from './common.js';
 import { rateCard, refreshDates } from './rates.js';
@@ -386,21 +387,30 @@ V.invite = async () => {
 };
 A.linknew = () => openLayer({
   kind: 'sheet', label: 'Create booking link', head: '<div class="grow s g">You set the terms. The brand accepts and pays the deposit.</div>',
-  body: `<h2 class="display t-48">Create a booking link</h2><form id="f-link" class="mt24" style="max-width:640px"><div class="fgrid">
+  body: `<h2 class="display t-48">Create a booking link</h2><form id="f-link" data-who="talent" class="mt24" style="max-width:640px"><div class="fgrid">
     <label class="field ${rolesOf(T()).length > 1 ? '' : 'span'}">What's the job?<input class="in" name="title" required placeholder="Café menu shoot"></label>
     ${rolesOf(T()).length > 1 ? `<label class="field">Booked as<select class="in" name="role">${opts(rolesOf(T()))}</select></label>` : `<input type="hidden" name="role" value="${esc(rolesOf(T())[0] || '')}">`}
     <label class="field">Date<input class="in" type="date" name="shoot_date" required min="${today()}" value="${addDays(14)}"></label>
     <label class="field">Days<input class="in" type="number" name="days" min="1" max="14" value="1"></label>
     <label class="field">Day rate, £<input class="in" type="number" name="day_rate" min="5" step="5" required value="${T().day_rate || 200}"></label>
     <label class="field">Usage fee, £<input class="in" type="number" name="usage_fee" min="0" step="5" value="0"></label>
-    <label class="field">Where they'll use the images<select class="in" name="usage_where">${opts(USAGE)}</select></label>
-    <label class="field">For how long<select class="in" name="usage_term">${opts(TERMS, '12 months')}</select></label>
-    <label class="field span">Note to the brand <span class="hint">Optional</span><textarea class="in" name="note" rows="2" placeholder="Lovely to hear from you! Here's the booking."></textarea></label></div></form>`,
-  foot: '<span class="grow s g">The link works once and expires after 30 days.</span><button class="btn primary" type="submit" form="f-link">Create link</button>',
+    <label class="field span">Note to the brand <span class="hint">Optional</span><textarea class="in" name="note" rows="2" placeholder="Lovely to hear from you! Here's the booking."></textarea></label></div>
+    <h3 class="mt32">What the brand can do with your photos</h3>
+    <p class="s g mt4">This goes into the booking agreement in plain English.</p>
+    <div class="mt12">${usagePicker(null, { who: 'talent' })}</div>
+    <h3 class="mt32">Sign the terms</h3>
+    <p class="s g mt4">You're signing the booking agreement now. It becomes binding when a brand books through the link.</p>
+    <label class="field mt12">Type your full name to sign<input class="in sign-in" name="sign_name" required autocomplete="name" maxlength="120" placeholder="${esc(T().name || 'Your full name')}"></label>
+    <label class="check mt16"><input type="checkbox" name="agree" required> <span>I'm 18 or over. Typing my name here is my signature, the same as signing on paper.</span></label>
+    <p class="xs g mt8">${DRAFT_NOTE}</p></form>`,
+  foot: '<span class="grow s g">The link works once and expires after 30 days.</span><button class="btn primary" type="submit" form="f-link">Sign and create link</button>',
 });
 F['f-link'] = async (form) => {
   const d = formData(form);
-  const l = await rpc('create_link', { p: { ...d, usage: `${d.usage_where}, ${d.usage_term}`, days: +d.days, day_rate: +d.day_rate, usage_fee: +d.usage_fee || 0 } });
+  const usage_terms = readUsage(form);
+  if (!usage_terms.where.length) throw new Error('Pick where the brand can use the photos');
+  const l = await rpc('create_link', { p: { title: d.title, role: d.role, shoot_date: d.shoot_date, note: d.note, days: +d.days, day_rate: +d.day_rate,
+    usage_fee: +d.usage_fee || 0, usage_terms, day_hours: d.day_hours ? +d.day_hours : null, sign_name: d.sign_name } });
   closeLayer();
   rerender();
   A.linkshare({ dataset: { code: l.code, title: l.title } });

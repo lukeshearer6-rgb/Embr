@@ -2,6 +2,15 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-26: Plain-English usage and in-app signing for every booking (held for the final round; draft wording for BPP review)
+- Brands: the offer form, the Shoot Roster and the brief-to-offer flow pick usage from chips (where, how long from first use, which countries) plus hours a day, with a live sentence showing what the talent will read.
+- Creatives: "Accept offer" opens Review and sign: pay, the day, what the brand can do with the photos and cancellation in plain words, the full agreement one tap away, then type your full name and tick. Booking links are signed the same way when created.
+- Both: the booking shows who signed and when; "Read or save a copy" downloads the agreement with the signature record (name, time, version, SHA-256 fingerprint).
+- Database (migration 20261126000001): agreement version pilot-2026-11-v2 with plain-English headings, hours, structured usage (section 5) and a signing clause (section 11); `usage_terms`, `day_hours`, `talent_signed_name`, `agreement_sha` on bookings, links and shoots; `respond_offer` refuses an accept without a typed name. The old `usage` text is still filled in as a summary. Payments unchanged.
+- Research: https://claude.ai/artifact/PNFUMcKEETLqD9a22oHoC8. Solicitor export: docs/dev/booking-agreement.md.
+- Files: `supabase/migrations/20261126000001_booking_contract.sql` (new), `src/views/contract.js` (new), `src/views/booking.js`, `src/views/brand.js`, `src/views/roster.js`, `src/views/talent.js`, `src/views/public.js`, `src/style.css`, `docs/dev/booking-agreement.md`, `tests/db.test.mjs`, `tests/e2e.test.mjs`.
+- Tests: db 101, e2e 49, agreement 9, payments 11, office 13.
+
 ## 2026-11-26: Profile sits in the phone tab bar (Luke's snag list)
 - Creatives: the phone bar is now Bookings, Wallet, Messages, Profile, More. Today and Links are under More, and sign-in lands on Bookings. Luke will review what Today is for.
 - Brands: the phone bar is now Board, Bookings, Messages, Account, More, with Jobs and Shortlist under More (DESIGN_RULES 1.2 and 1.7: Account last).

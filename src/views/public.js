@@ -4,6 +4,7 @@
 import { VIEWS, A, F, S, go, refreshMe } from '../state.js';
 import { rpc, action, photoUrl, roleRules } from '../api.js';
 import { $, esc, gbp, pounds, pct, dLong, dMed, toast, formData, first, openLayer, rolesOf, rolesTxt, travelTxt } from '../ui.js';
+import { usageLines } from './contract.js';
 import { ICON, LOGO } from '../icons.js';
 import { calendar, workByRole } from './common.js';
 import { setVia, via } from './auth.js';
@@ -60,7 +61,8 @@ VIEWS.public.link = async (app, code) => {
     <div class="row top-al" style="gap:20px"><div style="width:120px;flex-shrink:0;aspect-ratio:4/5;background:var(--backdrop) center/cover;${ph ? `background-image:url('${ph}')` : ''}"></div>
       <div><p class="s g">${esc(first(t.name))} has invited you to book through Embr</p><h1 class="pname mt8" style="font-size:40px">${esc(t.name)}${t.verified ? ICON.tick : ''}</h1><p class="s g mt8">${esc(rolesTxt(t))}, based in ${esc(t.city)}</p></div></div>
     ${l.note ? `<div class="callout mt24">“${esc(l.note)}”<div class="xs g mt4">${esc(first(t.name))}</div></div>` : ''}
-    <h3 class="mt32 mb8">The booking</h3><dl class="kv"><dt>Job</dt><dd>${esc(l.title)}</dd>${l.role ? `<dt>Booked as</dt><dd>${esc(l.role)}</dd>` : ''}<dt>Date</dt><dd>${dLong(l.shoot_date)}${l.days > 1 ? ' for ' + l.days + ' days' : ''}</dd><dt>Day rate</dt><dd>${pounds(l.day_rate)}</dd>${l.usage ? `<dt>Usage</dt><dd>${esc(l.usage)}${l.usage_fee ? ' (' + pounds(l.usage_fee) + ')' : ' (included)'}</dd>` : ''}</dl>
+    <h3 class="mt32 mb8">The booking</h3><dl class="kv"><dt>Job</dt><dd>${esc(l.title)}</dd>${l.role ? `<dt>Booked as</dt><dd>${esc(l.role)}</dd>` : ''}<dt>Date</dt><dd>${dLong(l.shoot_date)}${l.days > 1 ? ' for ' + l.days + ' days' : ''}</dd><dt>Day rate</dt><dd>${pounds(l.day_rate)}</dd>${l.day_hours ? `<dt>Hours</dt><dd>Up to ${l.day_hours} a day, including breaks</dd>` : ''}${usageLines(l.usage_terms).length ? `<dt>Photo use</dt><dd><ul class="plain-list">${usageLines(l.usage_terms).map((x) => `<li>${esc(x)}</li>`).join('')}</ul><span class="s g">Usage fee: ${l.usage_fee ? pounds(l.usage_fee) : 'included'}.</span></dd>` : l.usage ? `<dt>Usage</dt><dd>${esc(l.usage)}${l.usage_fee ? ' (' + pounds(l.usage_fee) + ')' : ' (included)'}</dd>` : ''}</dl>
+    ${l.signed ? `<p class="s g mt8">${esc(first(l.talent.name))} has already signed these terms. Booking through the link completes the agreement.</p>` : ''}
     <h3 class="mt32 mb8">Why ${esc(first(t.name))} books through Embr</h3><ul class="s" style="padding-left:18px;line-height:1.9"><li><b>Everything is agreed in writing</b>: the job, usage and cancellation terms.</li><li><b>Your deposit is held by Stripe</b>, Embr's payment provider, until you sign off after the shoot.</li><li><b>${esc(first(t.name))} keeps 100%</b> of the fee. You pay a ${pct(l.fee_rate)} Embr fee.</li></ul>
   </div><aside><div class="panel"><div class="ledger"><div class="r"><span>Talent fee</span><span>${gbp(l.talent_fee_p)}</span></div><div class="r"><span>Embr fee, ${pct(l.fee_rate)}</span><span>${gbp(l.embr_fee_p)}</span></div><div class="r t"><span>Total</span><span>${gbp(l.total_p)}</span></div><div class="r sub"><span>Deposit now</span><span>${gbp(l.deposit_p)}</span></div><div class="r sub"><span>Balance at sign-off</span><span>${gbp(l.balance_p)}</span></div></div>
     <div class="mt24">${act}</div></div></aside></div>`);
