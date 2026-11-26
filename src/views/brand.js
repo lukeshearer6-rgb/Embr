@@ -4,16 +4,22 @@ import { VIEWS, A, F, C, S, go, refreshMe, rerender } from '../state.js';
 import { rpc, photoUrl, roleRules, modelOptions } from '../api.js';
 import { specsFields, readSpecs, specsTxt, DRESS, SUITS } from './model.js';
 import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CATS, CITIES, USAGE, TERMS, toast, openLayer, closeLayer, replaceLayer, formData, loading, plural, first, whenTxt, rolesOf, rolesTxt, rolePlural, travelTxt } from '../ui.js';
-import { ICON } from '../icons.js';
+import { ICON, RICON } from '../icons.js';
 import { comp, thumb, bookingItem, groupBookings, calendar, gallery, stHTML, workByRole } from './common.js';
 
 const V = VIEWS.brand;
-const f = { category: '', city: '', date: '', max_rate: '', q: '', specs: {} };
+// city starts as null so the brand's own city is only filled in once; '' means anywhere
+const f = { category: '', city: null, date: '', max_rate: '', q: '', specs: {} };
+const people = (n) => (n === 1 ? '1 person' : `${n} people`);
+const query = (x) => ({ ...x, city: x.city || '' });
 
 // ---------------------------------------------------------------- board
+// Phone-first discovery: role pills switch the top-level category (Airbnb, Thumbtack),
+// a row of filter pills shows what is applied (Peerspace) and opens one filter sheet
+// with a live count on its button (Airbnb, Fiverr, Klook). Brand-only: talent never see it.
 V.board = async () => {
-  if (!f.city) f.city = S.me.brand?.city || 'Manchester';
-  const [bookings, talent] = await Promise.all([rpc('my_bookings'), rpc('search_talent', { f })]);
+  if (f.city === null) f.city = S.me.brand?.city || 'Manchester';
+  const [bookings, talent] = await Promise.all([rpc('my_bookings'), rpc('search_talent', { f: query(f) })]);
   const todo = [];
   bookings.filter((b) => b.status === 'accepted').forEach((b) => todo.push([b, `${first(b.talent.name)} accepted. Pay the ${gbp(b.deposit_p)} deposit to confirm`, 'Pay deposit', 'pay', true]));
   bookings.filter((b) => b.status === 'wrapped' && b.balance_checkout_url).forEach((b) => todo.push([b, `Your bank needs you to confirm the ${gbp(b.balance_p)} balance`, 'Confirm payment', 'booking', true]));
@@ -22,54 +28,141 @@ V.board = async () => {
   return `${!name ? '<div class="callout act mb24">Add your brand name in <button class="link" data-tab="account">Account</button> before you book anyone.</div>' : ''}
   ${todo.length ? `<section class="todo" aria-label="Needs you">${todo.slice(0, 6).map(([b, txt, btn, a, primary]) => `<div class="item">${thumb(b.talent)}<div class="grow"><div class="ttl">${esc(b.title)}</div><div class="meta"><span>${esc(txt)}</span></div></div><button class="btn ${primary ? 'primary' : ''} sm" data-a="${a}" data-id="${b.id}">${btn}</button></div>`).join('')}</section>` : ''}
   <section class="band"><h1 class="display t-72">Find talent</h1>
-  <form class="sentence mt24" id="f-search" aria-label="Search talent">Show me
-    <select name="category" data-change="search" aria-label="Category"><option value="">everyone</option>${CATS.map((c) => `<option value="${c}" ${f.category === c ? 'selected' : ''}>${rolePlural(c)}</option>`).join('')}</select>
-    in <select name="city" data-change="search" aria-label="City"><option value="">anywhere</option>${CITIES.map((c) => `<option ${f.city === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
-    free on <input type="date" name="date" value="${f.date}" min="${today()}" data-change="search" aria-label="Date">
-    up to £<input type="number" name="max_rate" value="${f.max_rate}" placeholder="any" min="0" step="10" data-change="search" aria-label="Maximum day rate" style="width:4em"> a day.
-    <span id="mfilter">${modelFilter()}</span>
-  </form></section>
-  <div class="toolbar"><label class="search">${ICON.search}<input type="search" name="q" form="f-search" value="${esc(f.q)}" placeholder="Search names, looks, skills" data-input="searchq" aria-label="Search"></label><span class="s g" id="count">${plural(talent.length, 'person')}</span></div>
+    <label class="bsearch mt24">${ICON.search}<input type="search" name="q" value="${esc(f.q)}" placeholder="Search names, looks, skills" data-input="searchq" aria-label="Search talent" enterkeyhint="search"></label></section>
+  <nav class="cats" aria-label="Talent roles">${['', ...CATS].map((c) => `<button type="button" class="cat" data-a="board-cat" data-cat="${esc(c)}" aria-pressed="${f.category === c}">${RICON[c] || ''}<span>${c ? esc(c) : 'All'}</span></button>`).join('')}</nav>
+  <div class="frow" id="frow">${filterRow()}</div>
+  <p class="s g fcount" id="count" aria-live="polite">${people(talent.length)}</p>
   <div id="results">${results(talent)}</div>`;
 };
-// extra sentence for models: sizes, height range and dress/suit size
-function modelFilter() {
-  if (f.category !== 'Model') return '';
-  const sp = f.specs || {};
-  const size = sp.sizing === 'womenswear' ? ` in dress size <select name="m_size" data-change="search" aria-label="Dress size"><option value="">any</option>${DRESS.map((d) => `<option ${String(sp.dress?.[0]) === String(d) ? 'selected' : ''}>${d}</option>`).join('')}</select>`
-    : sp.sizing === 'menswear' ? ` in suit size <select name="m_size" data-change="search" aria-label="Suit size"><option value="">any</option>${SUITS.map((d) => `<option ${sp.suit?.[0] === d ? 'selected' : ''}>${d}</option>`).join('')}</select>` : '';
-  return `<br>Wearing <select name="m_sizing" data-change="search" aria-label="Sizes"><option value="">any sizes</option><option value="womenswear" ${sp.sizing === 'womenswear' ? 'selected' : ''}>womenswear</option><option value="menswear" ${sp.sizing === 'menswear' ? 'selected' : ''}>menswear</option></select>${size},
-    <input type="number" name="m_hmin" value="${sp.height_min ?? ''}" placeholder="any" min="120" max="220" data-change="search" aria-label="Height from, cm" style="width:3.6em"> to
-    <input type="number" name="m_hmax" value="${sp.height_max ?? ''}" placeholder="any" min="120" max="220" data-change="search" aria-label="Height to, cm" style="width:3.6em"> cm tall.`;
+
+// what's applied, as pills; each opens the filter sheet at its own section
+const isToday = (d) => d === today();
+const isTomorrow = (d) => d === addDays(1);
+const dateTxt = (d) => (!d ? 'Any date' : isToday(d) ? 'Today' : isTomorrow(d) ? 'Tomorrow' : dMed(d));
+const rateTxt = (r) => (r ? `Up to ${pounds(+r)}` : 'Any day rate');
+function activeCount(x) {
+  const sp = x.category === 'Model' ? x.specs || {} : {};
+  return [x.date, x.city, x.max_rate, sp.sizing, sp.height_min, sp.height_max, sp.dress?.length, sp.suit?.length].filter(Boolean).length;
+}
+function filterRow() {
+  const n = activeCount(f);
+  const pill = (sec, label, on) => `<button type="button" class="fpill" data-a="board-filters" data-sec="${sec}" aria-pressed="${!!on}">${esc(label)}${RICON.down}</button>`;
+  return `<button type="button" class="fpill fbtn" data-a="board-filters" aria-label="Filters${n ? `, ${n} on` : ''}">${RICON.filter}<span>Filters</span>${n ? `<b class="fbadge">${n}</b>` : ''}</button>
+    ${pill('when', dateTxt(f.date), f.date)}${pill('where', f.city || 'Anywhere', f.city)}${pill('rate', rateTxt(f.max_rate), f.max_rate)}`;
+}
+
+// the filter sheet: changes stay in a draft, the button shows how many people match, Show applies
+let draft = null, cT = 0;
+function sheetBody(d) {
+  const chip = (field, v, label) => `<button type="button" class="chip" data-a="fset" data-k="${field}" data-v="${esc(v)}" aria-pressed="${(d[field] || '') === v}">${esc(label)}</button>`;
+  const picked = d.date && !isToday(d.date) && !isTomorrow(d.date);
+  const sp = d.specs || {};
+  const model = d.category !== 'Model' ? '' : `<section class="fsec" data-sec="model"><h3>Model details</h3>
+    <div class="fgrid2"><label class="field">Sizes<select class="in" name="m_sizing" data-change="fdraft"><option value="">Any sizes</option><option value="womenswear" ${sp.sizing === 'womenswear' ? 'selected' : ''}>Womenswear</option><option value="menswear" ${sp.sizing === 'menswear' ? 'selected' : ''}>Menswear</option></select></label>
+    ${sp.sizing === 'womenswear' ? `<label class="field">Dress size<select class="in" name="m_size" data-change="fdraft"><option value="">Any</option>${DRESS.map((x) => `<option ${String(sp.dress?.[0]) === String(x) ? 'selected' : ''}>${x}</option>`).join('')}</select></label>`
+      : sp.sizing === 'menswear' ? `<label class="field">Suit size<select class="in" name="m_size" data-change="fdraft"><option value="">Any</option>${SUITS.map((x) => `<option ${sp.suit?.[0] === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>` : '<span></span>'}
+    <label class="field">Height from (cm)<input class="in" type="number" inputmode="numeric" name="m_hmin" value="${sp.height_min ?? ''}" placeholder="Any" min="120" max="220" data-change="fdraft"></label>
+    <label class="field">Height to (cm)<input class="in" type="number" inputmode="numeric" name="m_hmax" value="${sp.height_max ?? ''}" placeholder="Any" min="120" max="220" data-change="fdraft"></label></div></section>`;
+  return `<form id="f-filters">
+    <section class="fsec" data-sec="when"><h3>Availability</h3><p class="s g">Only people free on the day of your shoot.</p>
+      <div class="chips mt12">${chip('date', '', 'Any date')}${chip('date', today(), 'Today')}${chip('date', addDays(1), 'Tomorrow')}<button type="button" class="chip" data-a="fpick" aria-pressed="${!!picked}">${picked ? esc(dMed(d.date)) : 'Pick a date'}</button></div>
+      <input class="in mt12" type="date" name="date" value="${picked ? d.date : ''}" min="${today()}" data-change="fdraft" aria-label="Shoot date" ${picked ? '' : 'hidden'}></section>
+    <section class="fsec" data-sec="where"><h3>Location</h3><p class="s g">Based there, or happy to travel there.</p>
+      <div class="chips mt12">${chip('city', '', 'Anywhere')}${CITIES.map((c) => chip('city', c, c)).join('')}</div></section>
+    <section class="fsec" data-sec="rate"><h3>Day rate</h3><p class="s g">The most you want to pay for a full day.</p>
+      <label class="money-in mt12"><span>£</span><input class="in" type="number" inputmode="numeric" name="max_rate" value="${esc(d.max_rate)}" placeholder="Any" min="0" step="10" data-input="fdraft" aria-label="Maximum day rate in pounds"></label></section>
+    ${model}</form>`;
+}
+async function recount() {
+  const btn = $('[data-a=fapply]');
+  if (!btn) return;
+  const n = (await rpc('search_talent', { f: query(draft) })).length;
+  if (document.contains(btn)) btn.textContent = n ? `Show ${people(n)}` : 'No one matches';
+}
+const recountSoon = () => { clearTimeout(cT); cT = setTimeout(recount, 200); };
+function redrawSheet() {
+  const bd = $('#f-filters');
+  if (!bd) return;
+  const y = bd.closest('.dialog')?.scrollTop;
+  bd.outerHTML = sheetBody(draft);
+  const dlg = $('.dialog.fsheet');
+  if (dlg && y != null) dlg.scrollTop = y;
+  recountSoon();
+}
+A['board-filters'] = (el) => {
+  draft = structuredClone(f);
+  openLayer({
+    kind: 'dialog',
+    cls: 'fsheet',
+    head: '<h2 class="t-24">Filters</h2>',
+    body: sheetBody(draft),
+    foot: '<button type="button" class="btn quiet" data-a="fclear">Clear all</button><span class="grow"></span><button type="button" class="btn ink" data-a="fapply">Show results</button>',
+    after: (root) => {
+      const sec = el.dataset.sec && root.querySelector(`.fsec[data-sec="${el.dataset.sec}"]`);
+      if (sec) sec.scrollIntoView({ block: 'start' });
+      recount();
+    },
+  });
+};
+A.fset = (el) => { draft[el.dataset.k] = el.dataset.v; redrawSheet(); };
+A.fpick = () => { const i = $('#f-filters [name=date]'); i.hidden = false; i.focus(); try { i.showPicker?.(); } catch { /* not supported */ } };
+C.fdraft = (el) => {
+  const d = formData($('#f-filters'));
+  if (el.name === 'date' && d.date) draft.date = d.date;
+  draft.max_rate = d.max_rate || '';
+  if (draft.category === 'Model') {
+    const sizing = d.m_sizing || '';
+    const sizeV = sizing === (draft.specs?.sizing || '') ? d.m_size || '' : '';
+    draft.specs = { sizing, height_min: d.m_hmin ? +d.m_hmin : '', height_max: d.m_hmax ? +d.m_hmax : '',
+      dress: sizing === 'womenswear' && sizeV ? [+sizeV] : [], suit: sizing === 'menswear' && sizeV ? [sizeV] : [] };
+  }
+  // a new date or size type changes the chips and fields, so draw the sheet again
+  if (el.name === 'date' || el.name === 'm_sizing') return redrawSheet();
+  recountSoon();
+};
+A.fclear = () => { draft = { ...draft, date: '', city: '', max_rate: '', specs: {} }; redrawSheet(); };
+A.fapply = async () => { Object.assign(f, draft, { q: f.q }); closeLayer(); await runSearch(); };
+
+A['board-cat'] = async (el) => {
+  if (f.category === el.dataset.cat) return;
+  f.category = el.dataset.cat;
+  f.specs = {};
+  document.querySelectorAll('[data-a=board-cat]').forEach((b) => b.setAttribute('aria-pressed', b === el));
+  el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  await runSearch();
+};
+
+// talent cards for the board: photo first with the day rate on a small black pill,
+// then name, roles and where they're based in plain text below (Peerspace, Airbnb)
+function feedCard(t) {
+  const ph = photoUrl(t.photo);
+  const rs = rolesOf(t);
+  return `<div class="fcard"><button class="comp" data-a="talent" data-id="${t.id}" aria-label="${esc(t.name)}, ${esc(rolesTxt(t))}, ${esc(t.city)}${t.day_rate ? ', ' + pounds(t.day_rate) + ' a day' : ''}">
+    <div class="shot" style="${ph ? `background-image:url('${ph}')` : ''}">${ph ? '' : `<span class="tname">${esc(t.name).replace(' ', '<br>')}</span>`}${t.day_rate ? `<span class="rate">${pounds(t.day_rate)} a day</span>` : ''}</div>
+    <div class="nm">${esc(t.name)}${t.verified ? ICON.tick : ''}</div>
+    <div class="fmeta">${esc(rolesTxt(t))}</div>
+    <div class="fmeta">${[esc(t.city), rs.includes('Model') && t.height ? esc(t.height) : ''].filter(Boolean).join(' · ')}</div>
+    ${t.rebooked_by ? `<div class="fmeta rebook">Rebooked by ${plural(t.rebooked_by, 'brand')}</div>` : ''}</button>
+    <button class="save" data-a="save" data-id="${t.id}" aria-pressed="${!!t.saved}" aria-label="${t.saved ? 'Remove from shortlist' : 'Save to shortlist'}">${ICON.heart}</button></div>`;
 }
 function results(list) {
-  if (!list.length) return '<div class="empty">No one matches yet. Try another date, city or rate. Embr is invite-only during the pilot, so the board is still filling up.</div>';
+  if (!list.length) return `<div class="empty">No one matches yet. Try another date, city or rate. Embr is invite-only during the pilot, so the board is still filling up.${activeCount(f) ? '<div class="mt16"><button class="btn" data-a="board-reset">Clear filters</button></div>' : ''}</div>`;
   const here = list.filter((t) => !t.away), away = list.filter((t) => t.away);
-  // photos lead on the board: edge-to-edge, name and rate on the photo (Meetup, Blackbird)
-  return (here.length ? `<div class="comps photo">${here.map((t) => comp(t, { photo: true })).join('')}</div>` : '') +
-    (away.length ? `<h2 class="sec mt48">Will travel to ${esc(f.city)}</h2><p class="s g mb24">Based elsewhere. Check each profile for how travel costs work.</p><div class="comps photo">${away.map((t) => comp(t, { photo: true })).join('')}</div>` : '');
+  return (here.length ? `<div class="feed">${here.map(feedCard).join('')}</div>` : '') +
+    (away.length ? `<h2 class="sec mt48">Will travel to ${esc(f.city)}</h2><p class="s g mb24">Based elsewhere. Check each profile for how travel costs work.</p><div class="feed">${away.map(feedCard).join('')}</div>` : '');
 }
+A['board-reset'] = async () => { Object.assign(f, { date: '', city: '', max_rate: '', specs: {} }); await runSearch(); };
 async function runSearch() {
-  const form = $('#f-search');
-  if (!form) return;
-  const d = formData(form);
-  const catChanged = d.category !== f.category;
-  Object.assign(f, { category: d.category, city: d.city, date: d.date, max_rate: d.max_rate });
-  const sizing = catChanged ? '' : d.m_sizing || '';
-  const sizeV = !catChanged && sizing === (f.specs?.sizing || '') ? d.m_size || '' : '';
-  f.specs = f.category === 'Model' && !catChanged ? { sizing, height_min: d.m_hmin ? +d.m_hmin : '', height_max: d.m_hmax ? +d.m_hmax : '',
-    dress: sizing === 'womenswear' && sizeV ? [+sizeV] : [], suit: sizing === 'menswear' && sizeV ? [sizeV] : [] } : {};
-  const mf = $('#mfilter');
-  if (mf) mf.innerHTML = modelFilter();
-  f.q = $('[name=q]')?.value || '';
-  const list = await rpc('search_talent', { f });
+  if (!$('#results')) return;
+  f.q = $('.band [name=q]')?.value || '';
+  const list = await rpc('search_talent', { f: query(f) });
   $('#results').innerHTML = results(list);
-  $('#count').textContent = plural(list.length, 'person');
+  $('#count').textContent = people(list.length);
+  $('#frow').innerHTML = filterRow();
 }
 C.search = runSearch;
 let qT;
 C.searchq = () => { clearTimeout(qT); qT = setTimeout(runSearch, 250); };
-F['f-search'] = runSearch;
 
 A.save = async (el) => {
   const on = await rpc('toggle_shortlist', { p_talent: el.dataset.id });
