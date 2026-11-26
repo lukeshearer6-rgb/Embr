@@ -52,3 +52,7 @@ Locked decisions from Luke. Change one only when Luke says so, and record the da
 ## Payout account losses (2026-11-25)
 
 - Talent payout accounts are Stripe Accounts v2 recipients. Stripe only accepts Embr (the platform) as losses collector for this kind of account (Stripe API error, 2026-11-25), so Embr carries negative balances on talent accounts, as it already carries chargebacks on its own charges under separate charges and transfers. Needs Embr's Connect platform profile finished in Stripe.
+
+## Pilot money and copy (2026-11-26)
+- Incorporation and domain: Luke pays when he is ready. Until then Embr keeps running as a pilot; don't ask about this spend again. Decision (Luke, 2026-11-26).
+- The welcome screen carries no fee claim ("Embr takes 0% of your fee" removed, not reworded). Decision (Luke, 2026-11-26).
