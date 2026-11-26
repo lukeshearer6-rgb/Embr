@@ -28,6 +28,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | D7 | Approve the brand-facing line "Talent can see how many brands viewed or saved their profile, never which brand" (talent Today screen, docs/dev/talent-engagement.md) before real brands join; it also belongs in the privacy notice | Public copy and a UK GDPR privacy-notice item |
 | D6 | Add the talent agency-status declaration to the BPP review (docs/dev/agency-declaration.md, draft wording live in the test app only) | Legal wording needs the solicitor before real talent sign up |
 | D8 | Shoot Thread (PR held for the final UI round): decide whether creatives may send their own priced "Custom Offers" (built as "Ask for a change" instead), whether to build a true single shoot payment, and approve the draft cancellation and protection wording on the shoot checkout (docs/dev/shoot-thread.md) | Agency position, live-money design and legal wording are Luke's calls |
+| D16 | Add booking agreement v2 (plain-English usage, typed-name signing; docs/dev/booking-agreement.md, 14 questions) to the BPP review, and call the next final round when ready (PR held) | Legal wording and shipping are Luke's calls |
 | D4 | Send the enquiry to BPP's free online business clinic (draft: docs/dev/bpp-enquiry-draft.md; form linked in docs/research/r3-agreement-review-shortlist.md) | Contacting BPP is Luke's to do |
 
 ## Backlog
@@ -60,6 +61,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | D11 | Rates and availability editor (full/half-day packages, blocked date ranges) and brand-facing creative detail screen with sticky "Add to shoot" bar, built on D10 | developer | needs-approval | db 82 and e2e 43 passed 2026-11-25; docs/dev/rates-and-detail.md has Mobbin refs and before/after | Held for Luke's final UI round: merge after D10, then `supabase db push` for 20261125000007_rate_packages.sql. Optional later: bookings.package column so half days are labelled on the booking screen |
 | D13 | Shoot Day Hub: confirmed roster, call times, map directions, group chat, post-shoot tracker over the existing wrap and sign-off, built on the Shoot Thread PR | developer | needs-approval | e2e 45 and db 94 passed 2026-11-25; docs/dev/shoot-day-hub.md has Mobbin refs and before/after | Held for Luke's final UI round: merge after the Shoot Thread PR. No migration. Deliverables and reviews need new tables (listed in the doc) |
 | D14 | Phone polish: one type scale, card padding, safe areas and 48px targets across PRs 27-33; skeleton loaders for the board and creative profile; empty states for no results, an empty Shoot Roster and a new creator profile | developer | needs-approval | e2e 46, db 94, payments 11 passed 2026-11-25; docs/dev/mobile-polish.md has Mobbin refs and before/after | Held for Luke's final UI round: merge after the Shoot Day Hub PR. No migration. Tab bar restructure and the phone dialog grabber left for Luke's call |
+| D16 | Booking contract v2: plain-English usage chips (brand offer, roster, booking links), hours a day, talent Review and sign with typed name, signed record and saved copy | developer | needs-approval | db 101, e2e 49, agreement 9/9 passed 2026-11-26 | Luke adds it to the BPP review; ships with the next final round |
 
 ### App build
 
@@ -86,6 +88,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 ## Session log
 
+- 2026-11-26 developer: D16 booking contract v2 (plain-English usage, typed-name signing, saved copy) on a PR stacked on PR 34; research page published; db 101, e2e 49; not merged or deployed.
 - 2026-11-25 developer: D14 phone polish (type, padding, safe areas, skeletons, empty states) on a PR stacked on the Shoot Day Hub PR (not merged); e2e 46.
 - 2026-11-25 developer: D13 Shoot Day Hub on a PR stacked on the Shoot Thread PR (not merged); e2e 45, db 94; no database changes.
 - 2026-11-25 developer: Shoot Thread built on a branch stacked on PR 31 (shoot brief, offer and change cards, message everyone, one shoot checkout over the existing per-booking deposits); db 94 and e2e 44 pass; three questions added to Waiting on Luke (D8); not merged or deployed.

@@ -553,6 +553,13 @@ try {
   await rivet.fill('#f-offer [name=location]', 'Ancoats studio');
   await rivet.fill('#f-offer [name=call_time]', '9am');
   await rivet.fill('#f-offer [name=content_agreed]', 'Streetwear, no swimwear');
+  // usage in plain English: chips for where, how long and which countries, with the sentence the talent will read
+  assert.equal(await rivet.getAttribute('#f-offer [data-grp=where][data-k=social]', 'aria-pressed'), 'true');
+  await rivet.click('#f-offer [data-grp=where][data-k=paid_social]');
+  await rivet.click('#f-offer [data-grp=months][data-k="6"]');
+  await rivet.fill('#f-offer [name=day_hours]', '10');
+  await rivet.waitForSelector('#f-offer .usage-say >> text=/Own social posts and paid social ads, for 6 months from the day it first goes live, in the UK/');
+  ok('brands pick usage from plain-English chips and see the sentence the talent will read');
   await rivet.waitForFunction(() => /£330/.test(document.getElementById('quote')?.textContent || ''));
   await shot(rivet, '06-offer-form');
   ok('offer form shows the live quote: £300 to talent + 10% = £330');
@@ -572,10 +579,31 @@ try {
   await amara.locator('.sheet .ft button[data-a=accept]').waitFor();
   await shot(amara, '07-talent-offer-phone');
   await amara.click('.sheet button[data-a=accept]');
-  await amara.check('#f-accept [name=agree]');
-  await amara.click('button[form=f-accept]');
+  await amara.waitForSelector('.sheet >> text=Review and sign');
+  await amara.waitForSelector('.sheet >> text=Posts on their own Instagram, TikTok and similar. Not paid ads.');
+  await amara.waitForSelector('.sheet >> text=Up to 10 a day, including breaks');
+  assert.equal(await amara.isDisabled('#sign-btn'), true);
+  await amara.check('#f-sign [name=agree]');
+  assert.equal(await amara.isDisabled('#sign-btn'), true);
+  await amara.fill('#f-sign [name=sign_name]', 'Amara Okafor');
+  assert.equal(await amara.isDisabled('#sign-btn'), false);
+  await shot(amara, '07b-review-and-sign-phone');
+  ok('talent read a plain-English summary first; Sign and accept stays off until the box is ticked and the name typed');
+  await amara.click('#sign-btn');
   await amara.waitForSelector('.sheet .st:has-text("Accepted, awaiting deposit")');
-  ok('talent reviews the offer and accepts the agreement');
+  const [sig] = await sql("select talent_signed_name, agreement_sha, usage_terms, day_hours from bookings where title = 'Drop 4 lookbook'");
+  assert.equal(sig.talent_signed_name, 'Amara Okafor'); assert.ok(sig.agreement_sha);
+  assert.deepEqual(sig.usage_terms, { where: ['paid_social', 'social'], months: 6, area: 'uk' }); assert.equal(sig.day_hours, 10);
+  await amara.waitForSelector('.sheet >> text=/signed as “Amara Okafor”/');
+  ok('talent signs by typing their name; the booking shows who signed and when');
+  await amara.click('.sheet .cs-sec button[data-a=agreement]');
+  await amara.waitForSelector('.dialog >> text=Fingerprint of the signed text');
+  const [dl] = await Promise.all([amara.waitForEvent('download'), amara.click('.dialog button[data-a=agreement-copy]')]);
+  assert.match(dl.suggestedFilename(), /^Embr-EMB-[A-Z0-9]+-agreement\.txt$/);
+  const copy = await (await import('node:fs')).promises.readFile(await dl.path(), 'utf8');
+  assert.match(copy, /11\. Signing/); assert.match(copy, /Talent: signed as "Amara Okafor"/); assert.match(copy, /SHA-256/);
+  await amara.keyboard.press('Escape');
+  ok('either side can save a copy of the signed agreement, with the signature record');
 
   // ---------------------------------------------------------------- deposit
   await rivet.goto(`${BASE}/board`);
@@ -623,6 +651,11 @@ try {
   await amara.fill('#f-link [name=shoot_date]', iso(12));
   await amara.fill('#f-link [name=day_rate]', '220');
   await amara.click('button[form=f-link]');
+  await amara.waitForTimeout(200);
+  assert.equal(await amara.isVisible('text=Send your booking link'), false);
+  await amara.fill('#f-link [name=sign_name]', 'Amara Okafor');
+  await amara.check('#f-link [name=agree]');
+  await amara.click('button[form=f-link]');
   await amara.waitForSelector('text=Send your booking link');
   const linkUrl = await amara.inputValue('.dialog input[readonly]');
   ok('talent creates a booking link with a ready-written reply');
@@ -630,6 +663,7 @@ try {
   await cafe.goto(linkUrl);
   await cafe.waitForSelector('text=has invited you to book through Embr');
   await cafe.waitForSelector('text=£231');
+  await cafe.waitForSelector('text=has already signed these terms');
   await shot(cafe, '10-link-landing-phone');
   await cafe.click('button[data-a=pub-join]');
   await signIn(cafe, 'owner@cafe.test', '123456', true); // "I already have a code": no new email sent
@@ -837,9 +871,10 @@ try {
     // she accepts the updated offer; Jade accepts hers
     await amara.goto(`${BASE}/booking/${amaraB}`);
     await amara.click('.sheet button[data-a=accept]');
-    await amara.waitForSelector('#f-accept >> xpath=.. >> text=/£280/');
-    await amara.check('#f-accept [name=agree]');
-    await amara.click('button[form=f-accept]');
+    await amara.waitForSelector('.sheet:has(#f-sign) >> text=/£280/');
+    await amara.check('#f-sign [name=agree]');
+    await amara.fill('#f-sign [name=sign_name]', 'Amara Okafor');
+    await amara.click('#sign-btn');
     await amara.waitForSelector('.sheet .st:has-text("Accepted, awaiting deposit")');
     await sql(`update talents set stripe_account = 'acct_jade_test' where name = 'Jade Park'`);
     await sql(`update bookings set status = 'accepted', talent_agreed_at = now() where id = $1`, [jadeB]);

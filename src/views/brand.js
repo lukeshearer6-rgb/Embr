@@ -4,6 +4,7 @@ import { VIEWS, A, F, C, S, go, refreshMe, rerender } from '../state.js';
 import { rpc, photoUrl, roleRules, modelOptions } from '../api.js';
 import { specsFields, readSpecs, specsTxt, DRESS, SUITS } from './model.js';
 import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CATS, CITIES, USAGE, TERMS, toast, openLayer, closeLayer, replaceLayer, topLayer, formData, loading, skelCards, emptyState, plural, first, whenTxt, rolesOf, rolesTxt, rolePlural, travelTxt } from '../ui.js';
+import { usagePicker, readUsage } from './contract.js';
 import { ICON, RICON } from '../icons.js';
 import { creativeCard, videoHost } from './card.js';
 import { packagesOf, pkgOf, hoursTxt, pkgNote } from './rates.js';
@@ -308,7 +309,7 @@ A.offer = async (el) => {
     kind: 'sheet', label: 'Book ' + t.name,
     head: `<div class="grow s g">You set the terms. ${esc(first(t.name))} accepts or declines.</div>`,
     body: `<h2 class="display t-48">Book ${esc(t.name)}</h2>
-    <form id="f-offer" data-t="${t.id}" data-brief="${brief?.id || ''}" data-pks="${esc(JSON.stringify(pks))}" class="mt24" style="max-width:720px">
+    <form id="f-offer" data-who="brand" data-t="${t.id}" data-brief="${brief?.id || ''}" data-pks="${esc(JSON.stringify(pks))}" class="mt24" style="max-width:720px">
     ${pks.length > 1 ? `<fieldset class="pkgpick mb24"><legend class="s mb8">Package</legend><div class="chips">${pks.map((p) => `<button type="button" class="chip" data-a="offer-pkg" data-k="${p.key}" data-rate="${p.price}" data-days="${p.days || ''}" aria-pressed="${pk?.key === p.key}">${p.label} · ${pounds(p.price)}</button>`).join('')}</div>
       <input type="hidden" name="pkg" value="${pk?.key || ''}"><p class="xs g mt8" id="pkg-note">${pk ? esc(pkgNote(pk)) + ' This is added to the offer.' : 'Optional. Picking one fills the rate.'}</p></fieldset>` : ''}
     <div class="fgrid">
@@ -320,10 +321,10 @@ A.offer = async (el) => {
       <label class="field">Where<input class="in" name="location" placeholder="Studio or address"></label>
       <label class="field">Call time<input class="in" name="call_time" placeholder="9am"></label>
     </div>
-    <h3 class="mt32">Where you'll use the images</h3>
-    <div class="fgrid mt12"><label class="field">Where<select class="in" name="usage_where">${opts(USAGE, (d.usage || '').split(',')[0] || 'Instagram and TikTok')}</select></label>
-      <label class="field">For how long<select class="in" name="usage_term">${opts(TERMS, '12 months')}</select></label>
-      <label class="field">Usage fee, £ <span class="hint">£0 if it's included in the day rate</span><input class="in" type="number" name="usage_fee" min="0" step="5" value="0" data-input="quote"></label></div>
+    <h3 class="mt32">Where you'll use the photos</h3>
+    <p class="s g mt4">${esc(first(t.name))} sees this in plain English before they sign.</p>
+    <div class="mt12">${usagePicker(d.usage, { who: 'brand' })}</div>
+    <label class="field mt16">Usage fee, £ <span class="hint">£0 if it's included in the day rate</span><input class="in" type="number" name="usage_fee" min="0" step="5" value="0" data-input="quote"></label>
     <label class="field mt16">What you'll ask them to do <span class="hint">For example: streetwear, no swimwear or lingerie. Nothing outside this can be asked on the day.</span><textarea class="in" name="content_agreed" rows="2"></textarea></label>
     <label class="field mt16">Anything else <span class="hint">Brief, what to bring, hair and make-up</span><textarea class="in" name="notes" rows="3">${esc(d.notes || '')}</textarea></label>
     <div class="panel tint mt24" id="quote">${loading()}</div>
@@ -354,7 +355,7 @@ async function quote() {
 C.quote = () => quote();
 A['agreement-preview'] = () => openLayer({ kind: 'dialog', lg: true, head: '<h2 class="t-24">Embr booking agreement</h2>',
   body: `<p class="s g mb16">The full agreement, with your names, dates and amounts filled in, is attached to the offer and shown to both of you. It covers:</p>
-  <ul class="s" style="padding-left:18px;line-height:1.9"><li>Embr provides the booking software and takes payment through Stripe. Embr is not an agency.</li><li>The talent is 18+ and ID-checked, and receives the talent fee in full.</li><li>The brand pays the Embr fee, a 50% deposit when the talent accepts, and the balance at sign-off.</li><li>Sign-off happens automatically ${S.me.settings.auto_signoff_hours} hours after the talent marks the job wrapped, unless a problem is reported.</li><li>Cancellation: full refund up to ${S.me.settings.free_cancel_days} days before. After that, the talent is paid ${pct(S.me.settings.late_cancel_share)} of the session fee.</li><li>Usage is limited to what's written in the booking. Nothing outside the agreed content can be asked on the day.</li><li>For 12 months, the brand books this talent through Embr.</li></ul>
+  <ul class="s" style="padding-left:18px;line-height:1.9"><li>Embr provides the booking software and takes payment through Stripe. Embr is not an agency.</li><li>The talent is 18+ and ID-checked, and receives the talent fee in full.</li><li>The brand pays the Embr fee, a 50% deposit when the talent accepts, and the balance at sign-off.</li><li>Sign-off happens automatically ${S.me.settings.auto_signoff_hours} hours after the talent marks the job wrapped, unless a problem is reported.</li><li>Cancellation: full refund up to ${S.me.settings.free_cancel_days} days before. After that, the talent is paid ${pct(S.me.settings.late_cancel_share)} of the session fee.</li><li>Usage is written out in plain English: where, how long from the day it first goes live, and which countries. Anything else needs a new booking.</li><li>Nothing outside the agreed content can be asked on the day.</li><li>The talent signs by typing their name. Either of you can save a copy from the booking.</li><li>For 12 months, the brand books this talent through Embr.</li></ul>
   <p class="xs g mt16">Pilot draft, to be reviewed by a solicitor.</p>` });
 
 A['offer-pkg'] = (el) => {
@@ -374,10 +375,11 @@ F['f-offer'] = async (form) => {
     // only when the rate still matches the package, so a brand who changed the rate isn't told otherwise
     if (p && +d.day_rate === p.price) d.notes = [pkgNote(p), d.notes].filter(Boolean).join('\n');
   }
-  const usage = d.usage_where ? `${d.usage_where}, ${d.usage_term}` : '';
+  const usage_terms = readUsage(form);
+  if (!usage_terms.where.length) throw new Error('Pick where you\'ll use the photos');
   const id = await rpc('create_offer', { p: {
     talent_id: form.dataset.t, brief_id: form.dataset.brief || null, title: d.title, shoot_date: d.shoot_date, days: +d.days, day_rate: +d.day_rate,
-    usage, usage_fee: +d.usage_fee || 0, location: d.location, call_time: d.call_time, content_agreed: d.content_agreed, notes: d.notes, agree: !!d.agree, role: d.role || null,
+    usage_terms, day_hours: d.day_hours ? +d.day_hours : null, usage_fee: +d.usage_fee || 0, location: d.location, call_time: d.call_time, content_agreed: d.content_agreed, notes: d.notes, agree: !!d.agree, role: d.role || null,
   } });
   closeLayer();
   toast('Offer sent. You\'ll be told when they answer.');
