@@ -243,7 +243,10 @@ try {
   await amara.waitForURL(/\/wallet/);
   await amara.waitForSelector('.panel >> text=Set up');
   ok('payouts set up with Stripe Connect');
-  await amara.click('.botnav >> text=Today');
+  // phone tab bar: Profile sits in the bar, Today moves into More (snag list 2026-11-26)
+  assert.deepEqual(await amara.locator('.botnav button span:not(.flag)').allTextContents(), ['Bookings', 'Wallet', 'Messages', 'Profile', 'More']);
+  await amara.click('.botnav button[data-a=more]');
+  await amara.click('button.item[data-tab=today]');
   await amara.waitForSelector('text=Let work find you');
   assert.equal(await amara.locator('text=Get ready to be booked').count(), 0);
   await amara.waitForSelector('.tiles .tile >> text=Seen by brands');
@@ -439,6 +442,8 @@ try {
     await phone.goto(`${BASE}/signin`);
     await signIn(phone, 'sam@rivet.test', '12345678');
     await phone.waitForSelector('.feed .cc');
+    // brand phone tab bar: Account sits in the bar; Jobs and Shortlist are under More
+    assert.deepEqual(await phone.locator('.botnav button span:not(.flag)').allTextContents(), ['Board', 'Bookings', 'Messages', 'Account', 'More']);
     // swiping the photos moves the dots
     await phone.locator('.feed .cc >> nth=0 >> .cc-media').evaluate((m) => { m.scrollLeft = m.clientWidth * 3; });
     await phone.waitForFunction(() => document.querySelectorAll('.feed .cc .cc-dots i')[3]?.classList.contains('on'));
@@ -736,7 +741,7 @@ try {
   assert.ok(!(await amara.textContent('main')).includes('Drop 4 lookbook brief'));
   assert.equal(await amara.locator('nav >> text=Jobs').count(), 0);
   ok('talent have no Jobs tab and nothing to apply for');
-  await amara.goto(`${BASE}/`);
+  await amara.goto(`${BASE}/today`);
   await amara.waitForSelector('.mile.done >> text=First brand view');
   await amara.waitForSelector('.mile.done >> text=First offer');
   const todayText = (await amara.textContent('main')).toLowerCase();

@@ -13,8 +13,9 @@ export const F = {};       // form submits:   <form id="name">
 export const C = {};       // change/input:   data-change="name" / data-input="name"
 export const VIEWS = { brand: {}, talent: {}, ops: {}, auth: {}, public: {} };
 export const NAV = {
-  brand: [['board', 'Board'], ['jobs', 'Jobs'], ['bookings', 'Bookings'], ['inbox', 'Messages'], ['shortlist', 'Shortlist'], ['account', 'Account']],
-  talent: [['today', 'Today'], ['bookings', 'Bookings'], ['wallet', 'Wallet'], ['inbox', 'Messages'], ['profile', 'Profile'], ['invite', 'Links']],
+  // The phone tab bar shows the first four plus More (snag list, Luke 2026-11-26: Profile/Account sits in the bar, Today moves to More).
+  brand: [['board', 'Board'], ['bookings', 'Bookings'], ['inbox', 'Messages'], ['account', 'Account'], ['jobs', 'Jobs'], ['shortlist', 'Shortlist']],
+  talent: [['bookings', 'Bookings'], ['wallet', 'Wallet'], ['inbox', 'Messages'], ['profile', 'Profile'], ['today', 'Today'], ['invite', 'Links']],
   ops: [['overview', 'Overview'], ['bookings', 'Bookings'], ['people', 'People'], ['briefs', 'Briefs'], ['invites', 'Invites']],
 };
 
