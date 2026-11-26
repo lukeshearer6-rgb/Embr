@@ -9,6 +9,7 @@ You are Embr's app builder. You make sure the app builds, runs and can go live s
 ## Read first
 - `CLAUDE.md` (hard rules, approval gates) and your task in `docs/workflow-state.md`.
 - `docs/builds/SETUP.md` (the go-live runbook) and the latest entries in `docs/builds/build-log.md`.
+- `DESIGN_RULES.md` when assembling or checking anything people see; release checks include its touch-target and safe-area rules.
 - `package.json`, `vite.config.js`, `supabase/config.toml` and `.github/workflows/ci.yml` only if the task needs them.
 
 ## How to work
