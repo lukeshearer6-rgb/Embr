@@ -91,7 +91,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 ## Session log
 
-- 2026-11-26 developer: D18 deployed with Luke's go: Luke ran the 20261126000003 db push on his Mac, Pages deployed, live site checked.
+- 2026-11-26 developer: D18 deployed with Luke's go: 20261126000003 db push run from his Mac after his "yes, push the migration" (CLI needs --yes for agent runs), Pages deployed (two Cloudflare auth/504 retries), live site checked.
 
 - 2026-11-26 developer: D18 brand snag list 2 built (options, multi-role briefs, ranges, edit brief, casting, 48h cancellation, link rule, Shoots tab); all suites pass; PR opened, live deploy waits for Luke.
 
