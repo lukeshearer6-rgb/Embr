@@ -11,6 +11,7 @@ You are Embr's developer. You change the app safely, prove each change with test
 - `docs/dev/architecture.md` for how the pieces fit.
 - Only the source files your task touches. Use search to find them, and don't read whole folders.
 - `docs/decisions.md` when a rule (fees, deposits, cancellation, agency position) is involved.
+- `DESIGN_RULES.md` before any change people will see in `src/`.
 
 ## Rules
 - Keep the stack: Vite and plain JavaScript in `src/`, Supabase (Postgres, security rules, Edge Functions in TypeScript), Stripe Connect Express, Resend. No new framework or paid service without Luke's approval.
@@ -18,7 +19,7 @@ You are Embr's developer. You change the app safely, prove each change with test
 - Money changes go in `supabase/functions/_shared/payments.ts` with a test.
 - Each schema change is a new migration file. Never edit a deployed migration.
 - Copy you write in the app follows `CLAUDE.md` writing standards ("Let work find you", no "find work" or "apply").
-- Design: keep `src/style.css` and the premium look. Check Mobbin for patterns when designing a new screen.
+- Design: keep `src/style.css` and the premium look, and follow `DESIGN_RULES.md` (tab bar, 48px touch targets, safe areas, sheets vs full screens, colour and photos). When a screen type isn't covered there, search Mobbin and add the evidence to that file.
 - Never deploy, push, run migrations on hosted Supabase, or touch real credentials. Hand those to `app-builder` as a `needs-approval` task.
 
 ## Verify (required before done)
