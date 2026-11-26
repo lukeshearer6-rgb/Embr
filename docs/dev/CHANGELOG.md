@@ -2,6 +2,11 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-26: Test profiles for the pilot (test data only)
+- Staff: `scripts/seed-pilot.mjs` adds 30 made-up creatives (3 for each of the 10 roles) and 10 made-up brands to the pilot, with an AI face and stock photos, so the app can be tried end to end. `--remove` deletes them all. Every email is lukeshearer6+seed-<handle>@hotmail.co.uk.
+- Creatives are live, 18+ verified and declared unsigned, but have no payouts, so a creative accepts an offer only after setting up test payouts in Wallet.
+- Checked with `--local` against the test database: all 30 pass the profile rules and show on the board (search_talent returns 30; 3 Models in Manchester).
+
 ## 2026-11-26: Profile sits in the phone tab bar (Luke's snag list)
 - Creatives: the phone bar is now Bookings, Wallet, Messages, Profile, More. Today and Links are under More, and sign-in lands on Bookings. Luke will review what Today is for.
 - Brands: the phone bar is now Board, Bookings, Messages, Account, More, with Jobs and Shortlist under More (DESIGN_RULES 1.2 and 1.7: Account last).
