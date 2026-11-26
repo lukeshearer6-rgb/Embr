@@ -87,6 +87,7 @@ Newest first. One line per session: date, agent, what happened.
 - 2026-11-25 developer: D10 Shoot Roster on a PR stacked on D9 (not merged); e2e 41, db 77.
 - 2026-11-25 developer: D9 CreativeCard on a PR stacked on D8 (not merged); e2e 40, db 77.
 - 2026-11-25 developer: D8 brand board rebuilt as a native phone screen on a PR (not merged; Luke wants all UI fixes in one final round); e2e 39, db 77.
+- 2026-11-25 orchestrator: wrote DESIGN_RULES.md from Mobbin (Airbnb, Fiverr, Peerspace, Behance, Spotify; iOS) plus Apple and Android touch-target guidance; linked from CLAUDE.md and the developer, app-builder and marketer agents. Gaps in the current app listed in the file, app code unchanged.
 - 2026-11-25 orchestrator: interface round 2 (black header and money blocks, photo-led board, orange needs-you block, motion) after Luke chose a mix of three Mobbin-backed directions; e2e 38 and db 77 passed.
 - 2026-11-25 orchestrator: interface round 1 from Mobbin references (brief fit reasons, talent offer pay beside Accept, Today next step first); docs/dev/interface-redesign.md; e2e 38 and db 77 passed.
 - 2026-11-25 daily run: R2 incorporation and domain brief and R6 CAP Code checklist done, every figure and rule re-read on the live pages; spend approval added to Waiting on Luke.
