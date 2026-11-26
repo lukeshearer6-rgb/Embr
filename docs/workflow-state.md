@@ -61,7 +61,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | D13 | Shoot Day Hub: confirmed roster, call times, map directions, group chat, post-shoot tracker over the existing wrap and sign-off, built on the Shoot Thread PR | developer | needs-approval | e2e 45 and db 94 passed 2026-11-25; docs/dev/shoot-day-hub.md has Mobbin refs and before/after | Held for Luke's final UI round: merge after the Shoot Thread PR. No migration. Deliverables and reviews need new tables (listed in the doc) |
 | D14 | Phone polish: one type scale, card padding, safe areas and 48px targets across PRs 27-33; skeleton loaders for the board and creative profile; empty states for no results, an empty Shoot Roster and a new creator profile | developer | needs-approval | e2e 46, db 94, payments 11 passed 2026-11-25; docs/dev/mobile-polish.md has Mobbin refs and before/after | Held for Luke's final UI round: merge after the Shoot Day Hub PR. No migration. Tab bar restructure and the phone dialog grabber left for Luke's call |
 | D16 | Booking contract v2: plain-English usage chips (brand offer, roster, booking links), hours a day, talent Review and sign with typed name, signed record and saved copy | developer | needs-approval | db 101, e2e 49, agreement 9/9 passed 2026-11-26 | Luke adds it to the BPP review; ships with the next final round |
-| D17 | Brand snag list: several usages with custom months, separate usage fee on briefs and shoots, per-day booking on multi-day shoots, several skills per booking, date ranges, talent phone shown to brands after confirmation (built on D16) | developer | needs-approval | db 108, e2e 56, agreement 9, payments 11 passed 2026-11-26; docs/dev/brand-snags.md | PR open, stacked on D16. Merge and `supabase db push` (000001 then 000002) after the test ID checks finish, then deploy with Luke's go |
+| D17 | Brand snag list: several usages with custom months, separate usage fee on briefs and shoots, per-day booking on multi-day shoots, several skills per booking, date ranges, talent phone shown to brands after confirmation (built on D16) | developer | done | db 108, e2e 57, agreement 9, payments 11 passed 2026-11-26; merged in PR 41; migrations 000001 and 000002 pushed and embr-pilot.pages.dev serving the new build (200) 2026-11-26 12:40 UK, Luke's go; docs/dev/brand-snags.md | Run the test ID checks on the live build when that thread finishes |
 
 ### App build
 
@@ -88,6 +88,8 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | M5 | Zero-cash growth experiments with one metric each | marketer | todo | No predicted results | Draft in marketing/experiments/ |
 
 ## Session log
+
+- 2026-11-26 developer: D17 deployed with Luke's go (without waiting for ID checks): migrations 000001 and 000002 pushed to Supabase test, Pages deployed, live site checked.
 
 - 2026-11-26 developer: D17 brand snag list (usage, usage fee, per-day booking, skills, date ranges, phone) on a branch built on D16; db 108, e2e 56; not merged, migrations not pushed.
 - 2026-11-26 orchestrator: removed the welcome-screen fee line on Luke's word (e2e 47 passed); incorporation and domain spend deferred until Luke is ready.
