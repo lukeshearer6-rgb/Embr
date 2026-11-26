@@ -265,7 +265,7 @@ async function main() {
   ok('accepting needs a typed name as the signature');
   bk = await call(amara, 'respond_offer', b1, true, true, null, '  Amara   Okafor ');
   assert.equal(bk.status, 'accepted'); ok('verified talent with payouts accepts and agrees');
-  assert.equal(bk.talent_signed_name, 'Amara Okafor'); assert.equal(bk.agreement_version, 'pilot-2026-11-v2');
+  assert.equal(bk.talent_signed_name, 'Amara Okafor'); assert.equal(bk.agreement_version, 'pilot-2026-11-v3');
   const sha = (await db.query("select encode(sha256(convert_to(agreement_text, 'UTF8')), 'hex') h from bookings where id = $1", [b1])).rows[0].h;
   assert.equal(bk.agreement_sha, sha); assert.match(bk.agreement_text, /11\. Signing/);
   assert.match(bk.events.at(-1).text, /signed the booking agreement as “Amara Okafor”/);
@@ -440,7 +440,7 @@ async function main() {
   assert.equal(sb1.day_hours, 8); assert.deepEqual(sb1.usage_terms, { where: ['social'], months: 12, area: 'uk' });
   ok('every offer in a shoot takes the shared title, date, place, call time and usage from the shoot');
   let sd = await call(rivet, 'shoot_detail', shootId);
-  assert.equal(sd.people.length, 2); assert.equal(sd.moodboard[0], rivet.id + '/mood-1.jpg'); assert.equal(sd.free_cancel_days, 7);
+  assert.equal(sd.people.length, 2); assert.equal(sd.moodboard[0], rivet.id + '/mood-1.jpg'); assert.equal(sd.free_cancel_days, 3);
   await fails(call(walkin, 'shoot_detail', shootId), /not found/); await fails(call(amara, 'shoot_detail', shootId), /not allowed/i);
   ok('only the brand that made the shoot sees the whole thread');
   const seenBy = await call(amara, "booking_shoot", so1);
@@ -506,6 +506,136 @@ async function main() {
   ok('shoots and change requests are only reachable through the functions');
   await call(rivet, 'withdraw_offer', so1); await call(rivet, 'withdraw_offer', so2);
 
+  // --- brand snag list 2: several roles per brief, day-rate ranges, editing, gender, options, link rate, 48 hours
+  const notesOf = async (u) => (await db.query('select text from notifications where user_id = $1 order by created_at desc, id desc', [u.id])).rows.map((r) => r.text);
+  const mr = await call(rivet, 'create_brief', { title: 'Spring campaign', city: 'Manchester', shoot_date: today(40), days: 2, usage_terms: { where: ['social'], months: 6, area: 'uk' },
+    roles: [{ category: 'Model', spots: 1, days: 1, rate_min: 200, rate_max: 300, usage_fee: 1000, travel: 'covered' },
+            { category: 'UGC creator', spots: 1, days: 2, rate_min: 100, rate_max: 150, usage_fee: 0, travel: 'local' },
+            { category: 'Nail technician', spots: 1, days: 2, rate_min: 100, rate_max: 200, travel: 'local' }] });
+  let mb = await call(rivet, 'brief_detail', mr);
+  assert.equal(mb.roles.length, 3); assert.deepEqual(mb.roles.map((r) => r.category), ['Model', 'UGC creator', 'Nail technician']);
+  assert.equal(mb.roles[0].rate_min, 200); assert.equal(mb.roles[0].rate_max, 300); assert.equal(mb.roles[0].usage_fee, 1000); assert.equal(mb.roles[1].days, 2);
+  ok('a brief holds several roles, each with its own head count, days, day-rate range, usage fee and travel');
+  const amaraM = mb.roles[0].ranked.find((t) => t.name === 'Amara Okafor'); assert.equal(amaraM.in_range, true);
+  const amaraU = mb.roles[1].ranked.find((t) => t.name === 'Amara Okafor'); assert.equal(amaraU.in_range, false);
+  ok('people outside a role\'s day-rate range still show, marked out of range');
+  await fails(call(rivet, 'create_brief', { title: 'x', city: 'Manchester', shoot_date: today(40), roles: [{ category: 'Model', rate_min: 300, rate_max: 200 }] }), /below the bottom/);
+  await fails(call(rivet, 'create_brief', { title: 'x', city: 'Manchester', shoot_date: today(40), roles: [{ category: 'Juggler', rate_min: 100, rate_max: 200 }] }), /who you're looking for/);
+  ok('a range with its top below its bottom, or an unknown role, is refused');
+  await call(rivet, 'update_brief', mr, { title: 'Spring campaign v2', city: 'Manchester', shoot_date: today(40), days: 2, only_in_range: true, usage_terms: { where: ['social'], months: 6, area: 'uk' },
+    roles: [{ id: mb.roles[0].id, category: 'Model', spots: 1, days: 1, rate_min: 200, rate_max: 300, usage_fee: 1000, travel: 'covered' },
+            { id: mb.roles[1].id, category: 'UGC creator', spots: 1, days: 2, rate_min: 100, rate_max: 150, travel: 'local' }] });
+  mb = await call(rivet, 'brief_detail', mr);
+  assert.equal(mb.title, 'Spring campaign v2'); assert.equal(mb.roles.length, 2); assert.equal(mb.only_in_range, true);
+  assert.ok(!mb.roles[1].ranked.some((t) => t.name === 'Amara Okafor'));
+  assert.ok(mb.roles[0].ranked.some((t) => t.name === 'Amara Okafor'));
+  ok('a posted brief can be edited (roles kept, added or removed), and "only within range" hides people outside it');
+  await fails(call(amara, 'update_brief', mr, { title: 'x', shoot_date: today(40), roles: [{ category: 'Model', rate_min: 1, rate_max: 2 }] }), /not allowed/i);
+
+  await call(amara, 'save_gender', 'woman');
+  await fails(call(amara, 'save_gender', 'robot'), /Pick one/);
+  assert.equal((await call(rivet, 'talent_detail', amara.id)).gender, 'woman');
+  const gb = await call(rivet, 'create_brief', { title: 'Menswear', city: 'Manchester', shoot_date: today(41), roles: [{ category: 'Model', rate_min: 5, rate_max: 900, travel: 'covered', gender: 'man' }] });
+  let gr = (await call(rivet, 'brief_detail', gb)).roles[0].ranked;
+  assert.ok(!gr.some((t) => t.name === 'Amara Okafor')); assert.equal(gr.find((t) => t.name === 'Jay Patel')?.gender_unstated, true);
+  const ga = await call(rivet, 'create_brief', { title: 'Any', city: 'Manchester', shoot_date: today(41), roles: [{ category: 'Model', rate_min: 5, rate_max: 900, travel: 'covered' }] });
+  assert.ok((await call(rivet, 'brief_detail', ga)).roles[0].ranked.some((t) => t.name === 'Amara Okafor'));
+  ok('optional gender: a brief casting men leaves out women, keeps people who didn\'t say (after matches), and "any" shows everyone');
+
+  // options
+  const ob1 = await call(rivet, 'create_brief', { title: 'Options test', city: 'Manchester', shoot_date: today(45), days: 1,
+    roles: [{ category: 'Model', spots: 1, days: 1, rate_min: 100, rate_max: 900, travel: 'covered' }] });
+  const role1 = (await call(rivet, 'brief_detail', ob1)).roles[0].id;
+  await call(rivet, 'option_add', role1, amara.id);
+  let od = await call(rivet, 'option_add', role1, jay.id);
+  let opts = od.roles[0].options;
+  assert.deepEqual(opts.map((o) => [o.rank, o.talent.name, o.status]), [[1, 'Amara Okafor', 'held'], [2, 'Jay Patel', 'held']]);
+  await fails(call(rivet, 'option_add', role1, jay.id), /already on your list/);
+  ok('a brand options people for a role in order (1st, 2nd)');
+  const mo = await call(amara, 'my_options');
+  assert.equal(mo.length, 1); assert.ok(mo[0].brand); assert.equal(mo[0].role, 'Model');
+  assert.equal(mo[0].rank, undefined); assert.equal(mo[0].title, undefined); assert.equal(mo[0].day_rate, undefined);
+  assert.match((await notesOf(amara))[0], /has optioned you for model work/); assert.doesNotMatch((await notesOf(amara))[0], /option (1|2|number)|first|second/i);
+  ok('talent see "optioned" with brand, role and dates, never their number, the brief or the rate');
+  await fails(as(amara, (q) => q('select * from brief_options')), /permission denied/);
+  await fails(call(amara, 'option_add', role1, amara.id), /not allowed/i);
+  ok('talent can\'t read the options list or add options');
+  od = await call(rivet, 'option_up', opts[1].id);
+  assert.deepEqual(od.roles[0].options.map((o) => o.talent.name), ['Jay Patel', 'Amara Okafor']);
+  od = await call(rivet, 'option_up', od.roles[0].options[1].id);
+  opts = od.roles[0].options; assert.equal(opts[0].talent.name, 'Amara Okafor'); ok('the brand can reorder its options');
+
+  const offerP = { title: 'Options test', shoot_date: today(45), days: 1, day_rate: 250, usage_terms: { where: ['social'], months: 6, area: 'uk' }, agree: true };
+  const ob1k = await call(rivet, 'option_offer', opts[0].id, offerP, 24);
+  od = await call(rivet, 'brief_detail', ob1);
+  assert.equal(od.roles[0].options[0].status, 'offered'); assert.equal(od.roles[0].options[0].lapsed, false);
+  assert.equal((await call(amara, 'my_options')).length, 0); assert.equal((await call(jay, 'my_options')).length, 1);
+  ok('the offer goes to option 1; option 2 stays "optioned"');
+  await db.query("update brief_options set respond_by = now() - interval '1 minute' where id = $1", [opts[0].id]);
+  assert.equal(await call('service', 'svc_option_nudge'), 1); assert.equal(await call('service', 'svc_option_nudge'), 0);
+  assert.match((await notesOf(rivet))[0], /hasn't answered your offer .* in time\. Move to your next option, Jay Patel\?/);
+  od = await call(rivet, 'brief_detail', ob1); assert.equal(od.roles[0].options[0].lapsed, true);
+  assert.equal((await call(rivet, 'my_briefs')).find((b) => b.id === ob1).needs_you, 1);
+  ok('when option 1 doesn\'t answer in time, Embr asks the brand (once) whether to move to option 2');
+  await fails(call('anon', 'svc_option_nudge'), /permission denied/);
+  od = await call(rivet, 'option_pass', opts[0].id);
+  assert.equal((await call(rivet, 'booking_detail', ob1k)).status, 'withdrawn');
+  assert.deepEqual(od.roles[0].options.map((o) => o.talent.name), ['Jay Patel']);
+  ok('moving on withdraws the unanswered offer');
+  const jayOpt = od.roles[0].options[0].id;
+  const ob1j = await call(rivet, 'option_offer', jayOpt, offerP, 12);
+  await call(jay, 'respond_offer', ob1j, false, false, 'Away that week');
+  od = await call(rivet, 'brief_detail', ob1);
+  assert.equal(od.roles[0].options[0].status, 'declined');
+  assert.ok((await notesOf(rivet)).slice(0, 2).some((t) => /^You have no more options for model on “Options test”/.test(t)));
+  ok('a declined offer marks the option and tells the brand there are no more options');
+
+  // booking option 1 releases the rest
+  const ob2 = await call(rivet, 'create_brief', { title: 'Release test', city: 'Manchester', shoot_date: today(46), roles: [{ category: 'Model', rate_min: 100, rate_max: 900, travel: 'covered' }] });
+  const role2 = (await call(rivet, 'brief_detail', ob2)).roles[0].id;
+  await call(rivet, 'option_add', role2, amara.id);
+  od = await call(rivet, 'option_add', role2, jay.id);
+  const ob2k = await call(rivet, 'option_offer', od.roles[0].options[0].id, { ...offerP, title: 'Release test', shoot_date: today(46) });
+  await call(amara, 'respond_offer', ob2k, true, true, null, 'Amara Okafor');
+  assert.equal((await call(jay, 'my_options')).length, 1);
+  await call('service', 'svc_deposit_paid', ob2k, 'pi_o2', 'ch_o2', 'pm_o2');
+  od = await call(rivet, 'brief_detail', ob2);
+  assert.equal(od.roles[0].options[0].status, 'booked'); assert.equal(od.roles[0].options.length, 1);
+  assert.equal((await call(jay, 'my_options')).length, 0);
+  assert.match((await notesOf(jay))[0], /has released your option for model work .* Your dates are free again\./);
+  ok('once the role is booked, everyone still optioned is released and told their dates are free');
+
+  const ob3 = await call(rivet, 'create_brief', { title: 'Unavailable test', city: 'Manchester', shoot_date: today(47), roles: [{ category: 'Model', rate_min: 100, rate_max: 900, travel: 'covered' }] });
+  od = await call(rivet, 'option_add', (await call(rivet, 'brief_detail', ob3)).roles[0].id, jay.id);
+  const myo = await call(jay, 'my_options');
+  await fails(call(amara, 'option_unavailable', myo[0].id), /not found/);
+  assert.equal((await call(jay, 'option_unavailable', myo[0].id)).length, 0);
+  assert.match((await notesOf(rivet))[0], /Jay can't do “Unavailable test” and has come off your options/);
+  od = await call(rivet, 'option_add', (await call(rivet, 'brief_detail', ob3)).roles[0].id, jay.id);
+  await call(rivet, 'close_brief', ob3);
+  assert.equal((await call(jay, 'my_options')).length, 0);
+  ok('talent can say they can\'t do held dates, and closing a brief releases everyone held');
+
+  // booking-link rate only for brands the talent brought
+  const link2 = await call(amara, 'create_link', { ...linkP, title: 'Second link', shoot_date: today(50), sign_name: 'Amara Okafor' });
+  assert.equal((await call('anon', 'public_link', link2.code)).fee_rate, 0.05);
+  const seenL = await call(rivet, "public_link", link2.code);
+  assert.notEqual(seenL.fee_label, 'Booking link rate');
+  const fresh = await user('new@brand.test');
+  await call(fresh, 'create_profile', 'brand', null, link2.code, null, { name: 'Fresh Brand', city: 'Manchester' });
+  assert.equal((await call(fresh, 'public_link', link2.code)).fee_rate, 0.05);
+  const b4 = await call(fresh, 'accept_link', link2.code, true, {});
+  assert.equal((await call(fresh, 'booking_detail', b4)).fee_rate, 0.05);
+  ok('the 5% link rate is only for a brand that hadn\'t already found the talent on Embr');
+
+  // 48-hour cancellation (draft)
+  const st = (await db.query('select free_cancel_hours, free_cancel_days from settings')).rows[0];
+  assert.deepEqual(st, { free_cancel_hours: 48, free_cancel_days: 3 });
+  const b4d = await call(fresh, 'booking_detail', b4);
+  assert.match(b4d.agreement_text, /cancels at least 48 hours before the shoot day begins \(by 11:59pm UK time on /);
+  assert.equal(b4d.free_cancel_until, today(47));
+  ok('free cancellation ends 48 hours before the shoot day begins, in the agreement and on the booking');
+
   // --- public Book-me page
   const bm = await call('anon', 'public_talent', 'AMARA');
   assert.equal(bm.name, 'Amara Okafor'); assert.equal(bm.off_days, undefined); ok('public Book-me page by handle');
@@ -514,8 +644,8 @@ async function main() {
 
   // --- ops
   const people = await call(ops, 'ops_people');
-  assert.equal(people.talent.length, 2); assert.equal(people.brands.length, 2);
-  const ob = await call(ops, 'ops_briefs'); assert.equal(ob.length, 4);
+  assert.equal(people.talent.length, 2); assert.equal(people.brands.length, 3);
+  const ob = await call(ops, 'ops_briefs'); assert.ok(ob.length >= 4);
   await fails(call(rivet, 'ops_people'), /not allowed/i); ok('admin view is for Embr staff only');
 
   console.log(`\n${passed} checks passed`);

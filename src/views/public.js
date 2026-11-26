@@ -3,7 +3,7 @@
 //  /l/CODE    a booking link a talent sent to a brand
 import { VIEWS, A, F, S, go, refreshMe } from '../state.js';
 import { rpc, action, photoUrl, roleRules } from '../api.js';
-import { $, esc, gbp, pounds, pct, dLong, dMed, toast, formData, first, openLayer, rolesOf, rolesTxt, travelTxt } from '../ui.js';
+import { $, esc, gbp, pounds, pct, dLong, dMed, toast, formData, first, openLayer, rolesOf, rolesTxt, travelTxt, cancelWindow } from '../ui.js';
 import { usageLines } from './contract.js';
 import { ICON, LOGO } from '../icons.js';
 import { calendar, workByRole } from './common.js';
@@ -53,7 +53,7 @@ VIEWS.public.link = async (app, code) => {
   if (!l.open) act = `<div class="callout">${l.status === 'used' ? 'This link has already been booked.' : 'This link has expired.'} Message ${esc(first(t.name))} for a new one.</div>`;
   else if (role === 'brand') act = `<form id="f-acceptlink" data-code="${esc(l.code)}"><label class="field">Where's the shoot? <span class="hint">Optional, you can add it later</span><input class="in" name="location"></label>
       <label class="field mt12">Call time <span class="hint">Optional</span><input class="in" name="call_time" placeholder="9am"></label>
-      <label class="check mt16"><input type="checkbox" name="agree" required> <span>I accept the Embr booking agreement for these terms, including the ${gbp(l.deposit_p)} deposit now and free cancellation until ${S.me.settings.free_cancel_days} days before.</span></label>
+      <label class="check mt16"><input type="checkbox" name="agree" required> <span>I accept the Embr booking agreement for these terms, including the ${gbp(l.deposit_p)} deposit now and free cancellation until ${cancelWindow(S.me.settings)}.</span></label>
       <button class="btn primary full mt16" type="submit">Accept and pay ${gbp(l.deposit_p)} deposit</button></form><p class="xs g mt8">Booking as ${esc(S.me.brand?.name || S.me.email)}.</p>`;
   else if (role) act = '<p class="s g">Sign in with a brand account to book this.</p>';
   else act = `<button class="btn primary full" data-a="pub-join" data-link="${esc(l.code)}">Book ${esc(first(t.name))}</button><p class="xs g mt8">Sign in with your email and set up a free brand account. No invite needed.</p>`;
@@ -64,7 +64,7 @@ VIEWS.public.link = async (app, code) => {
     <h3 class="mt32 mb8">The booking</h3><dl class="kv"><dt>Job</dt><dd>${esc(l.title)}</dd>${l.role ? `<dt>Booked as</dt><dd>${esc(l.role)}</dd>` : ''}<dt>Date</dt><dd>${dLong(l.shoot_date)}${l.days > 1 ? ' for ' + l.days + ' days' : ''}</dd><dt>Day rate</dt><dd>${pounds(l.day_rate)}</dd>${l.day_hours ? `<dt>Hours</dt><dd>Up to ${l.day_hours} a day, including breaks</dd>` : ''}${usageLines(l.usage_terms).length ? `<dt>Photo use</dt><dd><ul class="plain-list">${usageLines(l.usage_terms).map((x) => `<li>${esc(x)}</li>`).join('')}</ul><span class="s g">Usage fee: ${l.usage_fee ? pounds(l.usage_fee) : 'included'}.</span></dd>` : l.usage ? `<dt>Usage</dt><dd>${esc(l.usage)}${l.usage_fee ? ' (' + pounds(l.usage_fee) + ')' : ' (included)'}</dd>` : ''}</dl>
     ${l.signed ? `<p class="s g mt8">${esc(first(l.talent.name))} has already signed these terms. Booking through the link completes the agreement.</p>` : ''}
     <h3 class="mt32 mb8">Why ${esc(first(t.name))} books through Embr</h3><ul class="s" style="padding-left:18px;line-height:1.9"><li><b>Everything is agreed in writing</b>: the job, usage and cancellation terms.</li><li><b>Your deposit is held by Stripe</b>, Embr's payment provider, until you sign off after the shoot.</li><li><b>${esc(first(t.name))} keeps 100%</b> of the fee. You pay a ${pct(l.fee_rate)} Embr fee.</li></ul>
-  </div><aside><div class="panel"><div class="ledger"><div class="r"><span>Talent fee</span><span>${gbp(l.talent_fee_p)}</span></div><div class="r"><span>Embr fee, ${pct(l.fee_rate)}</span><span>${gbp(l.embr_fee_p)}</span></div><div class="r t"><span>Total</span><span>${gbp(l.total_p)}</span></div><div class="r sub"><span>Deposit now</span><span>${gbp(l.deposit_p)}</span></div><div class="r sub"><span>Balance at sign-off</span><span>${gbp(l.balance_p)}</span></div></div>
+  </div><aside><div class="panel"><div class="ledger"><div class="r"><span>Talent fee</span><span>${gbp(l.talent_fee_p)}</span></div><div class="r"><span>Embr fee, ${pct(l.fee_rate)}${l.fee_label ? `<span class="when">${esc(l.fee_label)}</span>` : ''}</span><span>${gbp(l.embr_fee_p)}</span></div><div class="r t"><span>Total</span><span>${gbp(l.total_p)}</span></div><div class="r sub"><span>Deposit now</span><span>${gbp(l.deposit_p)}</span></div><div class="r sub"><span>Balance at sign-off</span><span>${gbp(l.balance_p)}</span></div></div>
     <div class="mt24">${act}</div></div></aside></div>`);
 };
 

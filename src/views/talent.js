@@ -5,7 +5,7 @@ import { VIEWS, A, F, C, S, go, refreshMe, rerender } from '../state.js';
 import { rpc, action, uploadPhoto, deletePhoto, photoUrl, roleRules, modelOptions, agencyText } from '../api.js';
 import { agencyBox } from './auth.js';
 import { statsForm } from './model.js';
-import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CITIES, rolesOf, rolesTxt, rolePlural, roleChips, pickedRoles, USAGE, TERMS, TRAVEL_RANGE, TRAVEL_COSTS, nearby, toast, openLayer, closeLayer, formData, plural, first, busy, confirmDialog, emptyState, dRange } from '../ui.js';
+import { GENDERS, cancelWindow, $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CITIES, rolesOf, rolesTxt, rolePlural, roleChips, pickedRoles, USAGE, TERMS, TRAVEL_RANGE, TRAVEL_COSTS, nearby, toast, openLayer, closeLayer, formData, plural, first, busy, confirmDialog, emptyState, dRange } from '../ui.js';
 import { usagePicker, readUsage, DRAFT_NOTE, usageOk } from './contract.js';
 import { ICON, RICON } from '../icons.js';
 import { thumb, calendar, groupBookings, bookingItem, linkCards } from './common.js';
@@ -182,7 +182,7 @@ V.wallet = async () => {
     <div class="panel"><h3>Payouts</h3>${t.payouts_enabled
       ? `<p class="s g mt8"><span class="st ok">Set up</span> Embr pays you through Stripe, straight to your bank.</p><button class="btn sm mt12" data-a="stripe-dash">Open Stripe payouts</button>`
       : `<p class="s g mt8">${t.stripe_account ? 'Stripe needs a few more details before it can pay you.' : 'Embr pays you through Stripe. Add your bank details once and every booking is paid there.'}</p><button class="btn primary sm mt12" data-a="payouts">${t.stripe_account ? 'Finish payout setup' : 'Set up payouts'}</button>`}</div>
-    <div class="panel"><h3>How you're paid</h3><p class="s g mt8">Brands pay a 50% deposit when you accept, which confirms the booking. After the shoot, mark it wrapped. The brand then has ${S.me.settings.auto_signoff_hours} hours to sign off or report a problem; if they do neither it signs off automatically. At sign-off you get the full fee. If a brand cancels less than ${S.me.settings.free_cancel_days} days before, you get ${pct(S.me.settings.late_cancel_share)} of the session fee.</p></div>
+    <div class="panel"><h3>How you're paid</h3><p class="s g mt8">Brands pay a 50% deposit when you accept, which confirms the booking. After the shoot, mark it wrapped. The brand then has ${S.me.settings.auto_signoff_hours} hours to sign off or report a problem; if they do neither it signs off automatically. At sign-off you get the full fee. If a brand cancels later than ${cancelWindow(S.me.settings)}, you get ${pct(S.me.settings.late_cancel_share)} of the session fee.</p></div>
     <div class="panel"><h3>Membership</h3><p class="s g mt8">Free for founding talent during the pilot.</p></div>
   </aside></div>`;
 };
@@ -238,6 +238,7 @@ V.profile = async () => {
     <label class="field">How far you'll travel<select class="in" name="travel_range">${TRAVEL_RANGE.map(([k, l]) => `<option value="${k}" ${(t.travel_range || 'local') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     <label class="field">Travel costs<select class="in" name="travel_costs">${TRAVEL_COSTS.map(([k, l]) => `<option value="${k}" ${(t.travel_costs || 'discuss') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     <p class="hint span" style="margin-top:-8px">Your usual preference. You still decide on every offer, so you can say yes to a trip one week and no the next. ${nearby(t.city).length ? `"Around my region" from ${esc(t.city)} means ${esc(nearby(t.city).join(' and '))}.` : 'Brands in other cities see you if you travel beyond your city.'}</p>
+    <label class="field">Gender <span class="hint">Optional</span><select class="in" name="gender">${GENDERS.map(([k, l]) => `<option value="${k}" ${(t.gender || '') === k ? 'selected' : ''}>${l}</option>`).join('')}</select><span class="hint">Brands see it on your profile. It's only used when a brief casts a particular gender, which the law allows when the look of the role needs it. Leave it blank and you still show for every brief.</span></label>
     <label class="field">Book-me name<input class="in" name="handle" required pattern="[A-Za-z0-9_.]{2,30}" value="${esc(t.handle)}" placeholder="yourname"><span class="hint">Your page: ${esc(appOrigin().replace(/^https?:\/\//, ''))}/@${esc(t.handle || 'yourname')}</span></label>
     <label class="field">Instagram or TikTok<input class="in" name="instagram" value="${esc(t.instagram)}" placeholder="@handle"></label>
     <label class="field span">Bio<textarea class="in" name="bio" maxlength="1200" placeholder="Who you are, your experience, and what you love working on">${esc(t.bio)}</textarea></label>
@@ -360,10 +361,12 @@ F['f-profile'] = async (form) => {
   const d = formData(form);
   const travel = { travel_range: d.travel_range, travel_costs: d.travel_costs };
   delete d.travel_range; delete d.travel_costs;
+  const gender = d.gender || ''; delete d.gender;
   d.tags = (d.tags || '').split(',').map((x) => x.trim()).filter(Boolean);
   d.roles = pickedRoles(form);
   S.me = await rpc('save_talent', { p: d });
   S.me = await rpc('save_travel', { p: travel });
+  if (gender !== (S.me.talent.gender || '')) { await rpc('save_gender', { p_gender: gender }); S.me = await refreshMe(); }
   toast(S.me.talent.published ? 'Saved. Brands can see your profile.' : 'Saved. Fill in your work sections to go live.');
   await refreshWork(); // keeps model details typed below but not yet saved
 };
@@ -398,7 +401,7 @@ V.invite = async () => {
   const links = await rpc('my_links');
   const t = T();
   const ready = t.verified && t.payouts_enabled;
-  return `<div class="row between top-al wrap"><div><h1 class="display t-48">Booking links</h1><p class="g measure mt8">Got an enquiry on Instagram, WhatsApp or email? Send the brand a link and the whole booking moves onto Embr: deposit paid up front, terms in writing, and payment at sign-off. Brands pay a ${pct(S.me.settings.fee_link)} fee on link bookings. You still keep 100%.</p></div>
+  return `<div class="row between top-al wrap"><div><h1 class="display t-48">Booking links</h1><p class="g measure mt8">Got an enquiry on Instagram, WhatsApp or email? Send the brand a link and the whole booking moves onto Embr: deposit paid up front, terms in writing, and payment at sign-off. A brand who comes to Embr through your link pays a ${pct(S.me.settings.fee_link)} Embr fee on that first booking with you, instead of the usual rate. If they'd already found you on Embr, the usual rate applies. You keep 100% either way.</p></div>
     <button class="btn primary" data-a="linknew" ${ready ? '' : 'disabled'}>${ICON.plus}Create booking link</button></div>
   ${ready ? '' : `<div class="callout act mt24">Before you can send booking links, ${!t.verified ? '<button class="link" data-a="verify">verify your ID</button>' : ''}${!t.verified && !t.payouts_enabled ? ' and ' : ''}${!t.payouts_enabled ? '<button class="link" data-a="payouts">set up payouts</button>' : ''}.</div>`}
   ${links.length ? `<div class="list mt24">${links.map((l) => `<div class="item"><div class="grow"><div class="ttl">${esc(l.title)}</div><div class="meta"><span>${dMed(l.shoot_date)}</span><span>${pounds(l.day_rate)} a day</span><span>${esc(location.host)}/l/${esc(l.code)}</span></div></div>

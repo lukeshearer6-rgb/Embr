@@ -14,7 +14,8 @@ export const C = {};       // change/input:   data-change="name" / data-input="n
 export const VIEWS = { brand: {}, talent: {}, ops: {}, auth: {}, public: {} };
 export const NAV = {
   // The phone tab bar shows the first four plus More (snag list, Luke 2026-11-26: Profile/Account sits in the bar, Today moves to More).
-  brand: [['board', 'Board'], ['bookings', 'Bookings'], ['inbox', 'Messages'], ['account', 'Account'], ['jobs', 'Jobs'], ['shortlist', 'Shortlist']],
+  // Snag list 2: Shoots (every Shoot Roster, so several can run at once) sits under More next to Jobs.
+  brand: [['board', 'Board'], ['bookings', 'Bookings'], ['inbox', 'Messages'], ['account', 'Account'], ['jobs', 'Jobs'], ['shoots', 'Shoots'], ['shortlist', 'Shortlist']],
   talent: [['bookings', 'Bookings'], ['wallet', 'Wallet'], ['inbox', 'Messages'], ['profile', 'Profile'], ['today', 'Today'], ['invite', 'Links']],
   ops: [['overview', 'Overview'], ['bookings', 'Bookings'], ['people', 'People'], ['briefs', 'Briefs'], ['invites', 'Invites']],
 };

@@ -21,7 +21,7 @@ Locked decisions from Luke. Change one only when Luke says so, and record the da
 - Brands pay a 50% deposit, held through Stripe, and the balance on completion. There is no reduced deposit for repeat brands.
 - **Book now, pay later** is one of the biggest brand features. Brands book on their traditional invoicing cycles, and creatives are paid instantly on completion. It would be delivered through a plugged-in B2B "Klarna-style" pay-later partner, not by Embr lending its own money. (Luke, 2026-11-17, confirmed 2026-11-23.) It is not built in the pilot yet (R7, D5).
 - Pilot brand fee: 10% on the first booking with a person, 7% from the 2nd, 5% from the 5th, 5% on booking links. Talent get 100% of the fee. (Pilot app, 2026-11-23; the tiers still need Luke's final confirmation for launch.)
-- Automatic sign-off 72 hours after wrap. Free cancellation until 7 days before the shoot. After that, talent get 50% of the session fee.
+- Automatic sign-off 72 hours after wrap. Free cancellation until 48 hours before the shoot day begins (was 7 days; Luke asked for 48 or 72 hours, 2026-11-26). After that, talent get 50% of the session fee. Draft: in BPP question list (booking agreement v3, question 14).
 - Usage applies only if the talent makes the final cut.
 - Booking link and Book-me page (`/@name`) move Instagram enquiries onto Embr.
 - Multi-role profiles: talent pick every role they do, each role has a portfolio section, and the profile goes live only when every section is filled. (2026-11-23)
@@ -60,3 +60,13 @@ Locked decisions from Luke. Change one only when Luke says so, and record the da
 ## Pilot money and copy (2026-11-26)
 - Incorporation and domain: Luke pays when he is ready. Until then Embr keeps running as a pilot; don't ask about this spend again. Decision (Luke, 2026-11-26).
 - The welcome screen carries no fee claim ("Embr takes 0% of your fee" removed, not reworded). Decision (Luke, 2026-11-26).
+
+## Brand snag list 2 (2026-11-26)
+Luke asked for these on 2026-11-26; Claude made the detailed calls with evidence in docs/dev/brand-snags-2.md.
+- Options: brands option up to 3 talent per spot on each role, ranked. If option 1 declines or doesn't answer in time, Embr asks the brand whether to offer option 2. Nothing advances on its own. Talent see "Optioned", never their number, until an offer is made or they are released. Decision (Luke, 2026-11-26). Answer window 24 hours by default (12 or 48 selectable), following published UK agency terms.
+- A brief can hold several roles, each with its own head count, days, day-rate range, usage fee, travel and casting. Decision (Luke, 2026-11-26).
+- Day rate on briefs is a range, with an optional "only show talent within this price range" box. Decision (Luke, 2026-11-26).
+- Travel wording: "Local talent only" or "Travel paid for non-local talent". Decision (Luke, 2026-11-26).
+- Booking-link 5% applies only when the brand had not already found that talent on Embr (no view, shortlist, option or booking). Not shown on the brand Account page. Claude's call at Luke's request (2026-11-26), following Fresha and StyleSeat new-client rules.
+- Gender: optional on talent profiles; briefs set "Casting" per role, default Any (Equality Act 2010 Sch 9 para 1). Talent who don't state it are never filtered out.
+
