@@ -5,6 +5,7 @@ import { rpc, action, photoUrl } from '../api.js';
 import { $, esc, gbp, pounds, pct, dMed, dLong, dShort, dWeekday, tShort, ago, today, toast, openLayer, closeLayer, refreshTop, topLayer, confirmDialog, formData, first, busy, whenTxt } from '../ui.js';
 import { ICON } from '../icons.js';
 import { thumb, status, stHTML } from './common.js';
+import { talentShootSec, talentChangeSec, continueShootPay } from './shoot.js';
 
 function money(b, r) {
   const rows = [
@@ -68,7 +69,7 @@ function footFor(b, r, me) {
   return out.join('');
 }
 
-function sheet(b) {
+function sheet(b, sh = null) {
   const r = S.me.role;
   const t = b.talent, br = b.brand;
   const other = r === 'talent' ? br : t;
@@ -90,11 +91,14 @@ function sheet(b) {
     <div class="cs-head"><div><p class="s g">${r === 'talent' ? esc(br.name) : r === 'ops' ? esc(br.name) + ' booking ' + esc(t.name) : 'Booking ' + esc(t.name)}</p><h2 class="display t-48 mt8">${esc(b.title)}</h2></div>
       <div class="cs-date"><div class="d">${dShort(b.shoot_date)}</div><div class="s g">${dWeekday(b.shoot_date)}${b.days > 1 ? ', ' + b.days + ' days' : ''}</div></div></div>
     <div class="cs-grid"><div>
+      ${sh?.shoot && r === 'brand' ? `<div class="cs-sec"><button class="btn sm" data-a="shoot" data-id="${sh.shoot.id}" data-who="${b.id}">Open the shoot thread</button></div>` : ''}
+      ${r === 'talent' ? talentShootSec(b, sh) : ''}
       <div class="cs-sec"><h4>The day</h4><dl class="kv"><dt>Where</dt><dd>${esc(b.location) || '<span class="g">To confirm in messages</span>'}</dd><dt>Call time</dt><dd>${esc(b.call_time) || '<span class="g">To confirm in messages</span>'}</dd>${b.usage ? `<dt>Usage</dt><dd>${esc(b.usage)}${b.usage_fee ? ' (' + pounds(b.usage_fee) + ')' : ''}</dd>` : ''}${b.content_agreed ? `<dt>Content agreed</dt><dd>${esc(b.content_agreed)}</dd>` : ''}${b.notes ? `<dt>Notes</dt><dd style="white-space:pre-wrap">${esc(b.notes)}</dd>` : ''}</dl></div>
       <div class="cs-sec"><h4>People</h4><div class="people">
         <div class="person"><div class="thumb" style="${ph ? `background-image:url('${ph}')` : ''}">${ph ? '' : esc(t.name[0] || '')}</div><div><div style="font-weight:700">${esc(t.name)}${t.verified ? ICON.tick : ''}</div><div class="s g">${b.role ? "Booked as " + esc(b.role) : esc(t.category)}, ${esc(t.city)}</div></div></div>
         <div class="person">${thumb(br, true)}<div><div style="font-weight:700">${esc(br.name)}</div><div class="s g">${esc(br.contact_name || '')}${br.instagram ? ' · ' + esc(br.instagram) : ''}</div></div></div></div></div>
       <div class="cs-sec" id="msgs"><h4>Messages</h4>
+        ${r === 'talent' ? talentChangeSec(b, sh) : ''}
         <div class="thread" id="thread">${b.messages.length ? b.messages.map((m) => `<div class="bubble ${m.mine ? 'me' : 'them'}">${m.from === 'embr' && !m.mine ? '<b>Embr</b><br>' : ''}${esc(m.body)}<div class="w">${m.mine ? 'You' : m.from === 'brand' ? esc(br.name) : m.from === 'talent' ? esc(first(t.name)) : 'Embr'} · ${ago(m.at)}</div></div>`).join('') : `<p class="s g">Messages about this booking go here: call sheet details, what to bring, running late. ${['completed', 'cancelled', 'declined', 'withdrawn'].includes(b.status) ? '' : 'Keep bookings and payments on Embr so the agreement covers them.'}</p>`}</div>
         ${['declined', 'withdrawn'].includes(b.status) ? '' : `<form id="f-msg" data-id="${b.id}" class="row mt8"><input class="in" name="body" required maxlength="4000" placeholder="Write a message" aria-label="Message" autocomplete="off"><button class="btn ink" type="submit">Send</button></form>`}</div>
     </div><aside>
@@ -110,9 +114,9 @@ function sheet(b) {
 }
 
 export async function openBooking(id, { replace = false } = {}) {
-  const b = await rpc('booking_detail', { p_id: id });
+  const [b, sh] = await Promise.all([rpc('booking_detail', { p_id: id }), rpc('booking_shoot', { p_booking: id }).catch(() => null)]);
   const top = topLayer();
-  if (replace && top?.bookingId === id) refreshTop(sheet(b)); else openLayer(sheet(b));
+  if (replace && top?.bookingId === id) refreshTop(sheet(b, sh)); else openLayer(sheet(b, sh));
   return b;
 }
 const reopen = async (id) => { await openBooking(id, { replace: true }); refreshMe().catch(() => {}); rerender(); };
@@ -131,10 +135,10 @@ A.booking = async (el) => {
       for (let i = 0; i < 10; i++) {
         await new Promise((ok) => setTimeout(ok, 1500));
         const nb = await rpc('booking_detail', { p_id: id });
-        if (nb.status === want || nb.status === 'wrapped' && want === 'completed' && !nb.balance_checkout_url) { await reopen(id); toast(want === 'confirmed' ? 'Deposit paid. The booking is confirmed.' : 'Paid. Thanks for booking through Embr.'); return; }
+        if (nb.status === want || nb.status === 'wrapped' && want === 'completed' && !nb.balance_checkout_url) { if (want === 'confirmed' && await continueShootPay(id)) return; await reopen(id); toast(want === 'confirmed' ? 'Deposit paid. The booking is confirmed.' : 'Paid. Thanks for booking through Embr.'); return; }
       }
       toast('Stripe is still confirming the payment. It will show here shortly.');
-    }
+    } else if (want === 'confirmed') await continueShootPay(id);
   }
 };
 

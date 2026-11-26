@@ -15,7 +15,7 @@
 // A roster is a draft kept on this device until it is sent (localStorage, per brand account).
 // Brand-only: talent never see it, and the database refuses offers from anyone but a brand.
 import { S, A, C, F, go } from '../state.js';
-import { rpc, photoUrl } from '../api.js';
+import { rpc, photoUrl, uploadImage } from '../api.js';
 import { $, esc, gbp, pounds, dMed, today, addDays, opts, USAGE, TERMS, toast, openLayer, closeLayer, refreshTop, topLayer, first, plural, rolesOf } from '../ui.js';
 import { ICON, RICON } from '../icons.js';
 import { pkgOf, pkgNote, hoursTxt } from './rates.js';
@@ -177,7 +177,11 @@ function rosterLayer(s) {
       <div class="fgrid2"><label class="field">Where<select class="in" name="usage_where" data-change="roster-field">${opts(USAGE, s.usage_where)}</select></label>
         <label class="field">For how long<select class="in" name="usage_term" data-change="roster-field">${opts(TERMS, s.usage_term)}</select></label></div>
       <label class="field mt16">What you'll ask them to do <span class="hint">Nothing outside this can be asked on the day.</span><textarea class="in" name="content_agreed" rows="2" data-input="roster-field">${esc(s.content_agreed)}</textarea></label>
-      <label class="field mt16">Anything else <span class="hint">Brief, what to bring</span><textarea class="in" name="notes" rows="2" data-input="roster-field">${esc(s.notes)}</textarea></label>
+      <h3 class="rsec">Shoot brief</h3>
+      <p class="s g mb8">Everyone gets the same brief with their offer, pinned at the top of the shoot thread.</p>
+      ${moodEditor(s.mood || [], 'roster-mood', s.id)}
+      <label class="field mt16">Moodboard link <span class="hint">Pinterest, Drive or similar, optional</span><input class="in" name="board_link" type="url" placeholder="https://" value="${esc(s.board_link || '')}" data-input="roster-field"></label>
+      <label class="field mt16">Notes for everyone <span class="hint">The look, what to bring</span><textarea class="in" name="notes" rows="2" data-input="roster-field">${esc(s.notes)}</textarea></label>
 
       <h3 class="rsec">Combined cost</h3>
       <div class="panel tint" id="rquote">${unsent.length ? '<div class="empty">Working it out…</div>' : '<p class="s g">Every offer in this shoot has been sent.</p>'}</div>
@@ -255,6 +259,33 @@ A['roster-find'] = (el) => {
   A['board-find']?.({ role: el.dataset.role, date: s?.date || '' });
 };
 
+// ---------------------------------------------------------------- moodboard (roster and shoot thread)
+// Up to 12 images, uploaded to the brand's own folder in the photos bucket. The database only accepts
+// paths inside that folder. A grid of tiles with a remove button each (shown in the shoot thread brief).
+export function moodEditor(paths, kind, sid = '') {
+  return `<div class="moodedit" data-kind="${kind}" data-shoot="${esc(sid)}"><div class="me-grid">${paths.map((m) => `<div class="me-i" data-mood="${esc(m)}"><img src="${esc(photoUrl(m))}" alt=""><button type="button" class="me-x" data-a="mood-remove" aria-label="Remove image">${ICON.x}</button></div>`).join('')}
+    ${paths.length < 12 ? `<label class="me-add">${ICON.plus}<span class="xs">Add images</span><input type="file" accept="image/*" multiple class="sr" data-change="mood-add"></label>` : ''}</div></div>`;
+}
+function moodPaths(box) { return [...box.querySelectorAll('[data-mood]')].map((x) => x.dataset.mood); }
+function moodSave(box) {
+  if (box.dataset.kind !== 'roster-mood') return;
+  const sh = shootOf(box.dataset.shoot);
+  if (sh) { sh.mood = moodPaths(box); save(roster()); }
+}
+C['mood-add'] = async (el) => {
+  const box = el.closest('.moodedit');
+  const files = [...el.files].slice(0, 12 - moodPaths(box).length);
+  el.closest('.me-add').classList.add('busy');
+  try {
+    for (const f of files) {
+      const path = await uploadImage(S.me.id, f);
+      el.closest('.me-add').insertAdjacentHTML('beforebegin', `<div class="me-i" data-mood="${esc(path)}"><img src="${esc(photoUrl(path))}" alt=""><button type="button" class="me-x" data-a="mood-remove" aria-label="Remove image">${ICON.x}</button></div>`);
+    }
+  } finally { el.closest('.me-add')?.classList.remove('busy'); el.value = ''; }
+  moodSave(box);
+};
+A['mood-remove'] = (el) => { const box = el.closest('.moodedit'); el.closest('.me-i').remove(); moodSave(box); };
+
 // ---------------------------------------------------------------- sending
 // One offer per person through the same create_offer the single offer form uses, so the database checks
 // (brand only, profile published, date free, agreement ticked) and the payment flow are unchanged.
@@ -266,13 +297,21 @@ export async function sendRoster(form) {
   const crew = s.crew.filter((c) => !c.sent);
   if (!crew.length) return;
   const usage = d.usage_where ? `${d.usage_where}, ${d.usage_term}` : '';
+  if (!d.agree) throw new Error('Tick the box to accept the booking agreement');
+  // the shared brief becomes a shoot (kept on the draft, so a resend after a failure reuses it),
+  // then one offer per person through shoot_offer, which takes the shared details from the shoot
+  if (!s.shoot_id) {
+    s.shoot_id = await rpc('create_shoot', { p: { title: s.title, shoot_date: s.date, days: s.days, location: s.location, call_time: s.call_time,
+      usage, content_agreed: s.content_agreed, brief: s.notes, moodboard: s.mood || [], board_link: s.board_link || '', brief_id: s.brief_id || null } });
+    save(roster());
+  }
   for (const c of crew) {
     try {
-      c.sent = await rpc('create_offer', { p: {
-        talent_id: c.id, brief_id: s.brief_id || null, title: s.title, shoot_date: s.date, days: crewDays(c, s), day_rate: +c.day_rate,
-        usage, usage_fee: 0, location: s.location, call_time: s.call_time, content_agreed: s.content_agreed,
+      c.sent = await rpc('shoot_offer', { p_shoot: s.shoot_id, p: {
+        talent_id: c.id, days: crewDays(c, s), day_rate: +c.day_rate,
         // the package goes in their offer's notes, as long as the brand hasn't changed the rate from it
-        notes: [c.pkg && +c.day_rate === c.pkg.price ? pkgNote(c.pkg) : '', s.notes].filter(Boolean).join('\n'), agree: !!d.agree, role: c.role || null,
+        // (the shared notes travel as the shoot brief, so they aren't repeated here)
+        notes: c.pkg && +c.day_rate === c.pkg.price ? pkgNote(c.pkg) : '', agree: !!d.agree, role: c.role || null,
       } });
       c.err = null;
     } catch (e) { c.err = e.message; }
@@ -285,7 +324,9 @@ export async function sendRoster(form) {
   if (!failed.length) {
     closeLayer();
     toast(`${sent.length === 1 ? 'Offer' : plural(sent.length, 'offer')} sent for ${s.title}. You'll be told as each person answers.`, 5000);
-    return go('/bookings');
+    go('/bookings');
+    const { openShoot } = await import('./shoot.js');
+    return openShoot(s.shoot_id);
   }
   openRoster(s.id);
   toast(`${plural(sent.length, 'offer')} sent. ${plural(failed.length, 'offer')} couldn't be sent: see the reason under each name.`, 6000);

@@ -27,6 +27,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | B2 | Create Supabase, Stripe (test mode), Resend and Cloudflare accounts (docs/builds/SETUP.md). Supabase signed up 2026-11-24; Stripe CLI installed on Luke's Mac (~/Documents/EMBR/tools/stripe-cli), login pending | Only Luke can sign up and hold the passwords |
 | D7 | Approve the brand-facing line "Talent can see how many brands viewed or saved their profile, never which brand" (talent Today screen, docs/dev/talent-engagement.md) before real brands join; it also belongs in the privacy notice | Public copy and a UK GDPR privacy-notice item |
 | D6 | Add the talent agency-status declaration to the BPP review (docs/dev/agency-declaration.md, draft wording live in the test app only) | Legal wording needs the solicitor before real talent sign up |
+| D8 | Shoot Thread (PR held for the final UI round): decide whether creatives may send their own priced "Custom Offers" (built as "Ask for a change" instead), whether to build a true single shoot payment, and approve the draft cancellation and protection wording on the shoot checkout (docs/dev/shoot-thread.md) | Agency position, live-money design and legal wording are Luke's calls |
 | D4 | Send the enquiry to BPP's free online business clinic (draft: docs/dev/bpp-enquiry-draft.md; form linked in docs/research/r3-agreement-review-shortlist.md) | Contacting BPP is Luke's to do |
 
 ## Backlog
@@ -82,6 +83,8 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | M5 | Zero-cash growth experiments with one metric each | marketer | todo | No predicted results | Draft in marketing/experiments/ |
 
 ## Session log
+
+- 2026-11-25 developer: Shoot Thread built on a branch stacked on PR 31 (shoot brief, offer and change cards, message everyone, one shoot checkout over the existing per-booking deposits); db 94 and e2e 44 pass; three questions added to Waiting on Luke (D8); not merged or deployed.
 
 Newest first. One line per session: date, agent, what happened.
 

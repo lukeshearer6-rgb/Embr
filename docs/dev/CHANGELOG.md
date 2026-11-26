@@ -2,6 +2,15 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-25: Shoot Thread: one shoot brief, offer cards in the chat, change requests and one shoot checkout (held for the final UI round)
+- Brands: the roster gets a shoot brief (moodboard images, link, notes). Sending saves the shoot and sends one offer per person with the shoot's shared details, then opens the Shoot Thread: brief pinned on top, people chips, each person's offer as a card in their chat, "message everyone", and an orange "Pay N deposits" bar opening one checkout with deposits, balances, a cancellation timeline and protections (draft wording from the booking agreement, marked for solicitor review).
+- Creatives: their offer shows the shoot brief and "Ask [brand] for a change" (day rate and a note) before they answer. Only the brand can change the offer; accepting re-prices it with the same fee rules and rewrites its agreement.
+- Payments unchanged: each deposit is still its own Stripe Checkout, run one after another from the shoot checkout. `payments.ts` and Stripe untouched.
+- Database (final round): `20261125000008_shoot_thread.sql` adds `shoots`, `bookings.shoot_id`, `offer_changes` and the shoot functions.
+- Notes, open questions for Luke, Mobbin references and before/after: docs/dev/shoot-thread.md.
+- Files: `src/views/shoot.js` (new), `src/views/roster.js`, `src/views/booking.js`, `src/views/brand.js`, `src/api.js`, `src/ui.js`, `src/style.css`, `supabase/migrations/20261125000008_shoot_thread.sql`, `tests/db.test.mjs`, `tests/e2e.test.mjs`.
+- Tests: db 94, e2e 44.
+
 ## 2026-11-25: Rates and availability editor, and a brand-facing creative detail screen with a sticky "Add to shoot" bar (held for the final UI round)
 - Talent: Profile shows a Rates and availability card. Its full-screen editor sets a Full day and an optional Half day package (price, hours, what's included), previews how brands see them, and blocks a range of dates in one go (single days still tap on the grid).
 - Brands: a creative's profile opens as a full screen with photos edge to edge, a photo counter and heart, the packages as tappable rows, and a sticky bar with the picked package's price and "Add to shoot" (the Shoot Roster from PR 29). A half day goes into the roster and the offer form as one day at the half-day price.

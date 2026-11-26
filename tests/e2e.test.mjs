@@ -699,16 +699,110 @@ try {
     assert.equal(await phone.textContent('#rtotal'), total);
     assert.match(await phone.textContent('.sheet .ft .btn.primary'), /Send 2 offers/);
     await shot(phone, '16-shoot-roster-two-phone');
+    // the shared brief: a moodboard image, a link and notes for everyone
+    await phone.setInputFiles('#f-roster .moodedit input[type=file]', PHOTOS[1]);
+    await phone.waitForSelector('#f-roster .me-i img');
+    await phone.fill('#f-roster [name=board_link]', 'https://example.com/autumn-board');
+    await phone.fill('#f-roster [name=notes]', 'Warm tones, chunky knitwear. Bring neutral underwear.');
     await phone.check('#f-roster [name=agree]');
     await phone.click('.sheet .ft .btn.primary');
     await toastHas(phone, /2 offers sent for Autumn campaign/);
     await phone.waitForSelector('h1:has-text("Bookings")');
     assert.equal(await phone.locator('#rosterbar').count(), 0);
+    // Shoot Thread: the brand lands on the shoot, with the brief pinned and one offer card per person
+    await phone.waitForSelector('.sheet.shootthread .sbrief >> text=Sent to 2 people');
+    assert.equal(await phone.locator('.shootthread .sbrief .mood-i img').count(), 1);
+    assert.equal(await phone.locator('.shootthread .sall .ocard').count(), 2);
+    assert.equal(await phone.locator('.shootthread .pchip').count(), 3);
+    for (const sel of ['.shootthread .pchip', '.shootthread .sbrief summary', '.shootthread .scompose .in', '.shootthread .oc-open']) assert.ok((await phone.locator(sel).first().boundingBox()).height >= 48, sel + ' is at least 48px tall');
+    await shot(phone, '17-shoot-thread-phone');
+    // one message to everyone lands in each person's own booking chat
+    await phone.fill('#f-shootmsg [name=body]', 'Call sheet: parking is round the back.');
+    await phone.click('#f-shootmsg button[type=submit]');
+    await toastHas(phone, /Sent to 2 people/);
+    const [{ id: amaraB }] = await sql(`select b.id from bookings b join talents t on t.id = b.talent_id where b.title = 'Autumn campaign' and t.name = 'Amara Okafor'`);
+    const [{ id: jadeB }] = await sql(`select b.id from bookings b join talents t on t.id = b.talent_id where b.title = 'Autumn campaign' and t.name = 'Jade Park'`);
+    // the creative sees the brief on her offer and can ask the brand for a change, never make an offer
+    await amara.goto(`${BASE}/booking/${amaraB}`);
+    await amara.waitForSelector('.sheet .cs-sec h4:has-text("The shoot brief")');
+    assert.equal(await amara.locator('.sheet .mood-i img').count(), 1);
+    await amara.waitForSelector('.sheet .sb-txt >> text=chunky knitwear');
+    await amara.waitForSelector('.sheet .bubble.them >> text=parking is round the back');
+    assert.doesNotMatch(await amara.textContent('.sheet'), /Jade|£180/);
+    await amara.click('.sheet [data-a=ask-change]');
+    await amara.fill('#f-askchange [name=day_rate]', '280');
+    await amara.fill('#f-askchange [name=note]', 'Knitwear needs a fitting the day before.');
+    await shot(amara, '18a-ask-change-phone');
+    await amara.click('button[form=f-askchange]');
+    await amara.waitForSelector('.sheet .chcard >> text=You asked for a change');
+    assert.equal(await amara.locator('.sheet [data-a=ask-change]').count(), 0);
+    await amara.locator('.sheet .chcard').scrollIntoViewIfNeeded();
+    await shot(amara, '18-talent-shoot-offer-phone');
+    // the brand sees the change card in her chat and updates the offer: same fee rules, new agreement
+    const [{ total_p: sentTotal, fee_rate: feeRate }] = await sql(`select total_p, fee_rate::float fee_rate from bookings where id = $1`, [amaraB]);
+    await phone.click('.shootthread .pchip:has-text("Amara")');
+    await phone.waitForSelector('.shootthread .chcard.open >> text=£280 a day');
+    await shot(phone, '19-shoot-thread-change-phone');
+    await phone.click('.shootthread [data-a=change-answer][data-yes="1"]');
+    await phone.waitForSelector('.dialog >> text=Update the offer to £280 a day?');
+    await phone.click('[data-a=cd-yes]');
+    await toastHas(phone, /Offer updated/);
+    await phone.waitForSelector('.shootthread .chcard >> text=Offer updated to £280 a day');
+    const [up] = await sql(`select day_rate, talent_fee_p, total_p, status, agreement_text like '%£280%' agr from bookings where id = $1`, [amaraB]);
+    assert.deepEqual([up.day_rate, up.talent_fee_p, up.total_p, up.status, up.agr], [280, 28000, 28000 + Math.round(28000 * feeRate), 'offer', true]);
+    // she accepts the updated offer; Jade accepts hers
+    await amara.goto(`${BASE}/booking/${amaraB}`);
+    await amara.click('.sheet button[data-a=accept]');
+    await amara.waitForSelector('#f-accept >> xpath=.. >> text=/£280/');
+    await amara.check('#f-accept [name=agree]');
+    await amara.click('button[form=f-accept]');
+    await amara.waitForSelector('.sheet .st:has-text("Accepted, awaiting deposit")');
+    await sql(`update talents set stripe_account = 'acct_jade_test' where name = 'Jade Park'`);
+    await sql(`update bookings set status = 'accepted', talent_agreed_at = now() where id = $1`, [jadeB]);
+    // one sticky pay bar for the shoot, then one checkout with every deposit, the cancellation timeline and the protections
+    await phone.click('.shootthread .pchip:has-text("Amara")');
+    await phone.waitForSelector('.shootthread .paybar >> text=Pay 2 deposits');
+    await shot(phone, '19b-shoot-thread-pay-phone');
+    await phone.click('.shootthread .paybar');
+    await phone.waitForSelector('.sheet.scheck');
+    assert.equal(await phone.locator('.scheck .ck-row').count(), 2);
+    const ck = await phone.textContent('.scheck .bd');
+    const deps = await sql(`select deposit_p from bookings where id in ($1, $2)`, [amaraB, jadeB]);
+    const money = (p) => '£' + (p / 100).toLocaleString('en-GB', p % 100 ? { minimumFractionDigits: 2 } : {});
+    const [{ deposit_p: depA }] = await sql(`select deposit_p from bookings where id = $1`, [amaraB]);
+    const [{ deposit_p: depJ }] = await sql(`select deposit_p from bookings where id = $1`, [jadeB]);
+    assert.ok(ck.includes(money(depA)) && ck.includes(money(depJ)), ck);
+    void deps; assert.match(ck, /Cancel anyone for a full refund/); assert.match(ck, /50% of their session fee/);
+    assert.match(ck, /Stripe holds each deposit/); assert.match(ck, /waiting for solicitor review/);
+    assert.ok((await phone.textContent('.scheck .ft')).includes(money(depA + depJ)));
+    assert.match(await phone.textContent('.scheck .ft'), /Pay Amara's deposit first/);
+    await shot(phone, '20-shoot-checkout-phone');
+    await phone.locator('.scheck .prot').scrollIntoViewIfNeeded();
+    await shot(phone, '20b-shoot-checkout-terms-phone');
+    // each deposit is still its own Stripe Checkout, run one after the other from the shoot checkout
+    await phone.click('.scheck [data-a=shoot-pay-go]');
+    await phone.waitForURL(/__fake_stripe\/checkout/);
+    assert.ok((await phone.textContent('h1')).includes((depA / 100).toFixed(2)));
+    await phone.click('#pay');
+    await phone.waitForSelector('.sheet.scheck >> text=1 deposit paid. 1 more to go.');
+    await phone.click('.scheck [data-a=shoot-pay-go]');
+    await phone.waitForURL(/__fake_stripe\/checkout/);
+    assert.ok((await phone.textContent('h1')).includes((depJ / 100).toFixed(2)));
+    await phone.click('#pay');
+    await toastHas(phone, /Every deposit is paid/);
+    const paidRows = await sql(`select status from bookings where id in ($1, $2) order by id`, [amaraB, jadeB]);
+    assert.deepEqual(paidRows.map((r) => r.status), ['confirmed', 'confirmed']);
+    await phone.goto(`${BASE}/bookings`);
+    await phone.waitForSelector('h2:has-text("Shoots") + .list .item >> text=Autumn campaign');
+    await shot(phone, '21-brand-bookings-shoots-phone');
+    ok('Shoot Thread: one brief with a moodboard, message everyone, a creative asks for a change, the brand updates the offer, and one shoot checkout takes each deposit in turn');
+    await phone.goto(`${BASE}/board`);
     const rows = await sql(`select t.name, b.title, b.shoot_date::text d, b.location, b.call_time, b.status, b.role, b.total_p from bookings b join talents t on t.id = b.talent_id where b.title = 'Autumn campaign' order by t.name`);
     assert.equal((await sql(`select count(*)::int n from bookings`))[0].n, before + 2);
     assert.deepEqual(rows.map((r) => [r.name, r.d, r.location, r.call_time, r.status, r.role]),
-      [['Amara Okafor', iso(30), 'Mayfield Depot', '8am', 'offer', 'Model'], ['Jade Park', iso(30), 'Mayfield Depot', '8am', 'offer', 'Make-up artist']]);
-    const sumP = rows.reduce((n, r) => n + r.total_p, 0);
+      [['Amara Okafor', iso(30), 'Mayfield Depot', '8am', 'confirmed', 'Model'], ['Jade Park', iso(30), 'Mayfield Depot', '8am', 'confirmed', 'Make-up artist']]);
+    // the roster total was for the offers as sent (Amara's rate changed to £280 afterwards)
+    const sumP = rows.reduce((n, r) => n + r.total_p, 0) - (rows[0].total_p - sentTotal);
     assert.equal('£' + (sumP / 100).toLocaleString('en-GB', sumP % 100 ? { minimumFractionDigits: 2 } : {}), total);
     await phone.close();
     ok('Shoot Roster sends one offer per creative with the shared date, place and call time; the total matches the two offers');
