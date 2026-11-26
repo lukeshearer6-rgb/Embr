@@ -5,6 +5,7 @@ import { rpc, photoUrl, roleRules, modelOptions } from '../api.js';
 import { specsFields, readSpecs, specsTxt, DRESS, SUITS } from './model.js';
 import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CATS, CITIES, USAGE, TERMS, toast, openLayer, closeLayer, replaceLayer, formData, loading, plural, first, whenTxt, rolesOf, rolesTxt, rolePlural, travelTxt } from '../ui.js';
 import { ICON, RICON } from '../icons.js';
+import { creativeCard } from './card.js';
 import { comp, thumb, bookingItem, groupBookings, calendar, gallery, stHTML, workByRole } from './common.js';
 
 const V = VIEWS.brand;
@@ -132,19 +133,8 @@ A['board-cat'] = async (el) => {
   await runSearch();
 };
 
-// talent cards for the board: photo first with the day rate on a small black pill,
-// then name, roles and where they're based in plain text below (Peerspace, Airbnb)
-function feedCard(t) {
-  const ph = photoUrl(t.photo);
-  const rs = rolesOf(t);
-  return `<div class="fcard"><button class="comp" data-a="talent" data-id="${t.id}" aria-label="${esc(t.name)}, ${esc(rolesTxt(t))}, ${esc(t.city)}${t.day_rate ? ', ' + pounds(t.day_rate) + ' a day' : ''}">
-    <div class="shot" style="${ph ? `background-image:url('${ph}')` : ''}">${ph ? '' : `<span class="tname">${esc(t.name).replace(' ', '<br>')}</span>`}${t.day_rate ? `<span class="rate">${pounds(t.day_rate)} a day</span>` : ''}</div>
-    <div class="nm">${esc(t.name)}${t.verified ? ICON.tick : ''}</div>
-    <div class="fmeta">${esc(rolesTxt(t))}</div>
-    <div class="fmeta">${[esc(t.city), rs.includes('Model') && t.height ? esc(t.height) : ''].filter(Boolean).join(' · ')}</div>
-    ${t.rebooked_by ? `<div class="fmeta rebook">Rebooked by ${plural(t.rebooked_by, 'brand')}</div>` : ''}</button>
-    <button class="save" data-a="save" data-id="${t.id}" aria-pressed="${!!t.saved}" aria-label="${t.saved ? 'Remove from shortlist' : 'Save to shortlist'}">${ICON.heart}</button></div>`;
-}
+// talent cards for the board: the shared CreativeCard (src/views/card.js)
+const feedCard = (t) => creativeCard(t);
 function results(list) {
   if (!list.length) return `<div class="empty">No one matches yet. Try another date, city or rate. Embr is invite-only during the pilot, so the board is still filling up.${activeCount(f) ? '<div class="mt16"><button class="btn" data-a="board-reset">Clear filters</button></div>' : ''}</div>`;
   const here = list.filter((t) => !t.away), away = list.filter((t) => t.away);

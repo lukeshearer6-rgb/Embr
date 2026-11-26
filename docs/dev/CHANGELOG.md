@@ -2,6 +2,14 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-25: CreativeCard: swipeable photos, video preview and "Add to shoot" on board cards (held for the final UI round)
+- Brands swipe through up to 5 photos on each board card, with dots below. A creative with a video link gets a black play tile as the last slide and a play badge on the card.
+- "Add to shoot" on each card (brands only) opens a short sheet with the brand's open briefs and "A new shoot"; picking one opens the offer form filled from the brief.
+- A star rating shows only when real reviews exist (none yet); otherwise "Rebooked by N brands" sits beside the name.
+- Notes, Mobbin references and before/after: docs/dev/creative-card.md.
+- Files: `src/views/card.js` (new), `src/views/brand.js`, `src/style.css`, `supabase/migrations/20261125000006_card_media.sql`, `tests/e2e.test.mjs`.
+- Tests: e2e 40, db 77.
+
 ## 2026-11-25: Brand board rebuilt as a native phone screen (held for the final UI round)
 - Brands switch roles with a sideways row of pills (All, Model, UGC creator …, each with an icon) instead of a dropdown in a sentence.
 - Applied filters show as pills (Filters with a count, date, city, day rate); each opens one filter sheet with Availability, Location, Day rate and, for models, sizes and height. The sheet's button shows how many people match before applying; "Clear all" resets.

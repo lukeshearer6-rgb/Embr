@@ -709,20 +709,49 @@ header.top .viewas{color:#a7a9ae} header.top .viewas button[aria-pressed=true]{b
 .fpill.fbtn{color:var(--ink);border-color:var(--ink)}
 .fbadge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--ink);color:#fff;font-size:11px;font-weight:700}
 .fcount{margin:16px 0 12px}
-/* cards: photo first, day rate on a small black pill, text below the photo (Peerspace, Airbnb) */
+/* CreativeCard (src/views/card.js, docs/dev/creative-card.md): swipeable media with dots (Airbnb),
+   play badge and black showreel tile for video (TikTok, Behance), day rate pill and 48px heart (PR 27),
+   name with rating or trust line on the right (Airbnb), one "Add to shoot" action (brands only) */
 .feed{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:28px 16px}
-.fcard{position:relative;animation:rise .45s cubic-bezier(.2,.8,.2,1) both}
-.fcard .shot{aspect-ratio:4/5;position:relative;border-radius:var(--r)}
-.fcard .shot .tname{font-size:22px;left:12px;right:12px}
-.fcard .rate{position:absolute;left:8px;bottom:8px;padding:5px 9px;background:var(--ink);color:#fff;font-size:12px;font-weight:700;border-radius:var(--r)}
-.fcard .nm{margin-top:10px;font-size:15px;gap:6px}
-.fcard .nm .verified{width:14px;height:14px}
-.fcard .fmeta{font-size:13px;color:var(--graphite);line-height:1.4}
-.fcard .fmeta.rebook{color:var(--ok);font-weight:600;margin-top:2px}
-.fcard .save{position:absolute;top:4px;right:4px;width:48px;height:48px;display:grid;place-items:center;color:var(--ink)}
-.fcard .save:before{content:"";position:absolute;inset:8px;border-radius:50%;background:var(--paper)}
-.fcard .save svg{position:relative;width:16px;height:16px}
-.fcard .save[aria-pressed=true] svg{fill:var(--embr);stroke:var(--embr)}
+.cc{position:relative;display:flex;flex-direction:column;min-width:0;cursor:pointer;animation:rise .45s cubic-bezier(.2,.8,.2,1) both}
+.cc-frame{position:relative;border-radius:var(--r);overflow:hidden;background:var(--backdrop)}
+.cc-media{display:flex;aspect-ratio:4/5;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain}
+.cc-media::-webkit-scrollbar{display:none}
+.cc-slide{flex:0 0 100%;height:100%;scroll-snap-align:start;position:relative}
+.cc-slide img{width:100%;height:100%;object-fit:cover;display:block;user-select:none}
+.cc-empty .tname{position:absolute;left:12px;right:12px;bottom:14px;font-variation-settings:var(--wide);font-weight:800;font-size:22px;line-height:.9;letter-spacing:-.03em}
+.cc-video{background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:16px;text-align:center}
+.cc-play{display:grid;place-items:center;width:56px;height:56px;border-radius:50%;background:#fff;color:#000;margin-bottom:6px}
+.cc-play svg{width:22px;height:22px;margin-left:3px}
+.cc-vt{font-weight:700;font-size:15px}
+.cc-vh{font-size:12px;color:rgba(255,255,255,.7)}
+.cc-badge{position:absolute;left:8px;top:8px;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.72);color:#fff;pointer-events:none}
+.cc-badge svg{width:12px;height:12px;margin-left:2px}
+.cc-rate{position:absolute;left:8px;bottom:8px;padding:5px 9px;background:var(--ink);color:#fff;font-size:12px;font-weight:700;border-radius:var(--r);pointer-events:none}
+.cc-dots{position:absolute;right:10px;bottom:13px;display:flex;gap:4px;pointer-events:none}
+.cc-dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 0 2px rgba(0,0,0,.35);transition:background .2s,transform .2s}
+.cc-dots i.on{background:#fff;transform:scale(1.15)}
+.cc .save{position:absolute;top:4px;right:4px;width:48px;height:48px;display:grid;place-items:center;color:var(--ink)}
+.cc .save:before{content:"";position:absolute;inset:8px;border-radius:50%;background:var(--paper)}
+.cc .save svg{position:relative;width:16px;height:16px}
+.cc .save[aria-pressed=true] svg{fill:var(--embr);stroke:var(--embr)}
+.cc .save{transition:transform .15s} .cc .save:active{transform:scale(.85)}
+.cc-body{padding-top:10px;min-width:0}
+.cc-top{display:flex;align-items:baseline;gap:8px;justify-content:space-between}
+.cc-nm{font-weight:700;font-size:15px;min-width:0;text-align:left;padding:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cc-nm .verified{width:14px;height:14px}
+.cc-rating{flex:none;display:inline-flex;align-items:center;gap:3px;font-size:13px;font-weight:600}
+.cc-rating svg{width:12px;height:12px}
+.cc-rating .cc-n{color:var(--graphite);font-weight:400}
+.cc-trust{flex:none;font-size:12px;font-weight:600;color:var(--ok);white-space:nowrap}
+.cc-role{font-size:13px;color:var(--ink);line-height:1.4;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cc:hover .cc-nm{text-decoration:underline;text-underline-offset:3px}
+.cc-meta{font-size:13px;color:var(--graphite);line-height:1.4}
+.cc-add.btn{margin-top:10px;height:48px;font-size:13px}
+/* "Add to shoot" sheet: full-width rows with a chevron (DESIGN_RULES 2.2, Fiverr F4, Peerspace P3) */
+.shoot-row{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:10px 0;border-bottom:1px solid var(--line);text-align:left}
+.shoot-row .ttl{display:block;font-weight:600}
+.shoot-row .s{display:block}
 /* filter sheet: rounded top and grabber on phones, sections split by lines, sticky footer (Airbnb, Fiverr, Klook) */
 .fsheet .bd{padding-top:4px}
 .fsec{padding:20px 0;border-bottom:1px solid var(--line)}

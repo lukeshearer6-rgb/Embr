@@ -222,10 +222,18 @@ try {
   await rivet.fill('#f-onboard [name=contact_name]', 'Sam');
   await rivet.click('#f-onboard button[type=submit]');
   await rivet.waitForSelector('h1:has-text("Find talent")');
-  await rivet.waitForSelector('.comp >> text=Amara Okafor');
+  await rivet.waitForSelector('.cc >> text=Amara Okafor');
   // photos lead on the board: the day rate sits on a small pill on the photo, name, roles and city below it
-  assert.match(await rivet.textContent('.feed .fcard .rate'), /£250 a day/);
-  assert.match(await rivet.textContent('.feed .fcard'), /Amara Okafor.*Model and UGC creator.*Manchester/s);
+  assert.match(await rivet.textContent('.feed .cc .cc-rate'), /£250 a day/);
+  assert.match(await rivet.textContent('.feed .cc .cc-body'), /Amara Okafor.*Model and UGC creator.*Manchester/s);
+  // CreativeCard: her 3 photos swipe, then her first video link as a black play tile, with a dot for each
+  assert.equal(await rivet.locator('.feed .cc >> nth=0 >> .cc-slide img').count(), 3);
+  assert.match(await rivet.textContent('.feed .cc .cc-video'), /Skincare ad.*TikTok/s);
+  assert.equal(await rivet.locator('.feed .cc >> nth=0 >> .cc-dots i').count(), 4);
+  assert.equal(await rivet.locator('.feed .cc >> nth=0 >> .cc-badge').count(), 1);
+  // no reviews exist yet, so no star rating is shown (no made-up numbers)
+  assert.equal(await rivet.locator('.feed .cc-rating').count(), 0);
+  assert.match(await rivet.textContent('.feed .cc .cc-add'), /Add to shoot/);
   assert.equal(await rivet.locator('.band [name=q]').count(), 1);
   assert.equal(await rivet.getAttribute('.cats [data-cat=""]', 'aria-pressed'), 'true');
   assert.match(await rivet.textContent('#frow'), /Filters.*Any date.*Manchester.*Any day rate/s);
@@ -233,9 +241,9 @@ try {
   ok('brand joins and finds talent on the board');
   await rivet.click('.cats [data-cat="UGC creator"]');
   await rivet.waitForFunction(() => document.querySelector('.cats [data-cat="UGC creator"]').getAttribute('aria-pressed') === 'true');
-  await rivet.waitForSelector('.comp >> text=Amara Okafor');
+  await rivet.waitForSelector('.cc >> text=Amara Okafor');
   assert.equal(await rivet.getAttribute('.cats [data-cat=""]', 'aria-pressed'), 'false');
-  await rivet.click('.comp >> text=Amara Okafor');
+  await rivet.click('.cc >> text=Amara Okafor');
   await rivet.waitForSelector('.sheet .role-sec h3:has-text("UGC creator")');
   await rivet.waitForSelector('.sheet .linkcard >> text=Skincare ad');
   await rivet.waitForSelector('.sheet .rolebadges >> text=Model');
@@ -254,8 +262,8 @@ try {
     const phone = await person('rivet-phone', true);
     await phone.goto(`${BASE}/signin`);
     await signIn(phone, 'sam@rivet.test', '12345678');
-    await phone.waitForSelector('.feed .fcard');
-    for (const sel of ['.cats .cat', '.frow .fpill', '.fcard .save']) assert.ok((await phone.locator(sel).first().boundingBox()).height >= 48, sel + ' is at least 48px tall');
+    await phone.waitForSelector('.feed .cc');
+    for (const sel of ['.cats .cat', '.frow .fpill', '.cc .save', '.cc .cc-add']) assert.ok((await phone.locator(sel).first().boundingBox()).height >= 48, sel + ' is at least 48px tall');
     await phone.click('.frow [data-sec=rate]');
     await phone.waitForSelector('.dialog.fsheet [data-a=fapply]:has-text("Show 1 person")');
     const sheet = await phone.evaluate(() => { const d = document.querySelector('.dialog.fsheet'); return { radius: getComputedStyle(d).borderTopLeftRadius, grabber: getComputedStyle(d, '::before').display }; });
@@ -302,6 +310,33 @@ try {
   await rivet.locator('.sheet button[data-a=offer]').scrollIntoViewIfNeeded();
   await shot(rivet, '05-brief-best-fit');
   ok('brand posts a brief and Embr ranks who fits, with the reasons beside each person');
+  {
+    // "Add to shoot" on the card: a short sheet with the brand's open briefs; picking one opens the offer form filled from it
+    const phone = await person('rivet-phone2', true);
+    await phone.goto(`${BASE}/signin`);
+    await signIn(phone, 'sam@rivet.test', '12345678');
+    await phone.waitForSelector('.feed .cc');
+    // swiping the photos moves the dots
+    await phone.locator('.feed .cc >> nth=0 >> .cc-media').evaluate((m) => { m.scrollLeft = m.clientWidth * 3; });
+    await phone.waitForFunction(() => document.querySelectorAll('.feed .cc .cc-dots i')[3]?.classList.contains('on'));
+    await shot(phone, '04d-creative-card-reel-phone');
+    await phone.locator('.feed .cc >> nth=0 >> .cc-media').evaluate((m) => { m.scrollLeft = 0; });
+    await phone.waitForFunction(() => document.querySelectorAll('.feed .cc .cc-dots i')[0]?.classList.contains('on'));
+    await shot(phone, '04e-creative-card-phone');
+    await phone.click('.feed .cc >> nth=0 >> .cc-add');
+    await phone.waitForSelector('.dialog.shootsheet >> text=Add Amara to a shoot');
+    await phone.waitForSelector('.shootsheet .shoot-row >> text=Drop 4 lookbook');
+    await phone.waitForSelector('.shootsheet .shoot-row >> text=A new shoot');
+    assert.ok((await phone.locator('.shootsheet .shoot-row').first().boundingBox()).height >= 48);
+    await shot(phone, '04f-add-to-shoot-phone');
+    await phone.click('.shootsheet .shoot-row >> text=Drop 4 lookbook');
+    await phone.waitForSelector('#f-offer');
+    assert.equal(await phone.locator('.dialog.shootsheet').count(), 0);
+    assert.equal(await phone.inputValue('#f-offer [name=title]'), 'Drop 4 lookbook');
+    assert.equal(await phone.inputValue('#f-offer [name=shoot_date]'), iso(10));
+    await phone.close();
+    ok('brands add a creative to a shoot from the card: the sheet lists open briefs and opens the offer form filled from the brief');
+  }
   await rivet.click('.sheet button[data-a=offer]');
   await rivet.waitForSelector('#f-offer');
   await rivet.waitForSelector('#quote >> text=Embr fee, 10%');
