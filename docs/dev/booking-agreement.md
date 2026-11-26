@@ -123,8 +123,7 @@ These are only points that can be seen in the text above. They are questions, no
 7. **Countries.** "Posts on the Client's own pages can be seen from anywhere; paid ads and posters are aimed at" the chosen area. Is that workable?
 8. **AI.** "No AI changes to the Talent's face, body or voice, and nothing used to train AI, unless both sides agree in writing in Embr." Is "in writing in Embr" (a message) enough?
 9. **Who owns the images.** The text grants permission to use the Talent's likeness but says nothing about copyright, which usually sits with the photographer. Should it?
-10. **Usage fee if not used.** Luke's real contracts pay no usage fee if the Talent is cut from the edit. Embr currently charges the usage fee with the booking. Should section 5 say anything about this?
-11. **Automatic sign-off, cancellation, the 12-month clause and messages.** As in the 2026-11-24 export: is it clear what the Client gives up at automatic sign-off; are other cancellation cases worth covering; is section 9 enforceable without a stated consequence; can messages change the agreement?
-12. **Self-employed line.** Section 1 now has the Talent confirm they are self-employed and handle their own tax. Is that appropriate here, given Embr's agency position?
-13. **Governing law.** Section 11 picks England and Wales. Is that right for Talent or Clients in Scotland or Northern Ireland?
-14. **The draft line.** Should "Draft for the invite-only pilot, waiting for review by a solicitor. Not legal advice." stay during the pilot?
+10. **Automatic sign-off, cancellation, the 12-month clause and messages.** As in the 2026-11-24 export: is it clear what the Client gives up at automatic sign-off; are other cancellation cases worth covering; is section 9 enforceable without a stated consequence; can messages change the agreement?
+11. **Self-employed line.** Section 1 now has the Talent confirm they are self-employed and handle their own tax. Is that appropriate here, given Embr's agency position?
+12. **Governing law.** Section 11 picks England and Wales. Is that right for Talent or Clients in Scotland or Northern Ireland?
+13. **The draft line.** Should "Draft for the invite-only pilot, waiting for review by a solicitor. Not legal advice." stay during the pilot?
