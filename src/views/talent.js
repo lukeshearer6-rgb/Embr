@@ -8,6 +8,7 @@ import { statsForm } from './model.js';
 import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CITIES, rolesOf, rolesTxt, rolePlural, roleChips, pickedRoles, USAGE, TERMS, TRAVEL_RANGE, TRAVEL_COSTS, nearby, toast, openLayer, closeLayer, formData, plural, first, busy, confirmDialog } from '../ui.js';
 import { ICON } from '../icons.js';
 import { thumb, calendar, groupBookings, bookingItem, linkCards } from './common.js';
+import { rateCard, refreshDates } from './rates.js';
 import { bookingsView, inboxView } from './brand.js';
 
 const V = VIEWS.talent;
@@ -16,7 +17,8 @@ const appOrigin = () => location.origin;
 
 function readiness(t) {
   const steps = [
-    ['Add your name, rate and a Book-me name', !!(t.name && t.day_rate && t.handle), 'profile'],
+    ['Add your name and a Book-me name', !!(t.name && t.handle), 'profile'],
+    ['Set your day rate', !!t.day_rate, 'rates-edit'],
     ...((t.gaps && rolesOf(t).length) ? rolesOf(t).map((r) => {
       const g = t.gaps.find((x) => x.role === r);
       return [`${r} section${g ? ': add ' + g.missing.join(', ') : ''}`, !g, 'work'];
@@ -32,7 +34,7 @@ function readyPanel(t) {
   const left = s.filter((x) => !x[1]);
   if (!left.length) return '';
   return `<section class="panel mb24"><div class="row between"><h3>Get ready to be booked</h3><span class="s g">${s.length - left.length} of ${s.length}</span></div>
-    <div class="list mt12" style="border:0">${s.map(([l, ok, a]) => `<div class="item" style="padding:10px 0"><span class="st ${ok ? 'ok' : 'wait'}">${ok ? 'Done' : 'To do'}</span><span class="grow s">${l}</span>${ok ? '' : a === 'work' ? `<button class="btn sm" data-a="towork">${location.pathname === '/profile' ? 'Fill it in' : 'Open profile'}</button>` : a === 'profile' || (a === 'agency' && location.pathname !== '/profile') ? '<button class="btn sm" data-tab="profile">Open profile</button>' : a === 'agency' ? '<button class="btn sm primary" data-a="toagency">Confirm</button>' : `<button class="btn sm ${a === 'verify' ? 'primary' : ''}" data-a="${a}">${a === 'verify' ? 'Verify ID' : 'Set up payouts'}</button>`}</div>`).join('')}</div>
+    <div class="list mt12" style="border:0">${s.map(([l, ok, a]) => `<div class="item" style="padding:10px 0"><span class="st ${ok ? 'ok' : 'wait'}">${ok ? 'Done' : 'To do'}</span><span class="grow s">${l}</span>${ok ? '' : a === 'rates-edit' ? '<button class="btn sm" data-a="rates-edit">Set rates</button>' : a === 'work' ? `<button class="btn sm" data-a="towork">${location.pathname === '/profile' ? 'Fill it in' : 'Open profile'}</button>` : a === 'profile' || (a === 'agency' && location.pathname !== '/profile') ? '<button class="btn sm" data-tab="profile">Open profile</button>' : a === 'agency' ? '<button class="btn sm primary" data-a="toagency">Confirm</button>' : `<button class="btn sm ${a === 'verify' ? 'primary' : ''}" data-a="${a}">${a === 'verify' ? 'Verify ID' : 'Set up payouts'}</button>`}</div>`).join('')}</div>
     <p class="xs g mt8">${!t.published ? 'Your profile is hidden from brands until it has your name, rate, Book-me name, your agency status and every section for the things you do.' : 'Brands can see your profile. You need the ID check and payouts before you can accept an offer.'}</p></section>`;
 }
 
@@ -45,7 +47,7 @@ const POLISH = [
   [(t) => (t.tags || []).length >= 3, 5, 'Add three tags that describe your style.', 'profile'],
   [(t) => !!(t.comfort || '').trim(), 4, 'Say what content you\'re comfortable with, so brands know before they book.', 'profile'],
   [(t) => !!(t.instagram || '').trim(), 4, 'Add your Instagram or TikTok.', 'profile'],
-  [(t) => !!t.half_rate, 3, 'Add a half-day rate.', 'profile'],
+  [(t) => !!t.half_rate, 3, 'Add a half-day package.', 'rates-edit'],
   [(t, p) => !!p?.dates_confirmed_at && Date.now() - new Date(p.dates_confirmed_at) < 14 * 864e5, 6, 'Confirm your dates are up to date.', 'confirm-dates'],
 ];
 export function strength(t, pulse) {
@@ -87,6 +89,7 @@ function strengthPanel(t, p) {
   if (!steps.length) return `<section class="panel mb24"><div class="row between"><h3>Profile strength</h3><span class="st ok">Profile complete</span></div><p class="s g mt8">You're all set for now. Check back as bookings come in.</p></section>`;
   const [next, ...more] = steps;
   const btn = next.action === 'confirm-dates' ? '<button class="btn sm primary" data-a="confirm-dates">Confirm my dates</button>'
+    : next.action === 'rates-edit' ? '<button class="btn sm primary" data-a="rates-edit">Set rates</button>'
     : next.action === 'towork' ? '<button class="btn sm primary" data-a="towork">Open profile</button>' : '<button class="btn sm primary" data-tab="profile">Open profile</button>';
   return `<section class="panel mb24"><div class="row between"><h3>Profile strength</h3><span class="money">${score}%</span></div>
     <div class="meter mt12" role="progressbar" aria-valuenow="${score}" aria-valuemin="0" aria-valuemax="100" aria-label="Profile strength"><span style="width:${score}%"></span></div>
@@ -121,7 +124,7 @@ function datesPanel(t, p) {
   if (!t.published || !p) return '';
   const at = p.dates_confirmed_at ? Math.floor((Date.now() - new Date(p.dates_confirmed_at)) / 864e5) : null;
   const line = at === null ? 'Brands only see you for dates you\'re free. Check yours now.' : at === 0 ? 'Confirmed today.' : `Last confirmed ${plural(at, 'day')} ago.`;
-  return `<div class="panel"><h3>Your dates</h3><p class="s g mt8">${line}</p><div class="row mt12"><button class="btn sm ${at === 0 ? '' : 'primary'}" data-a="confirm-dates">Confirm my dates</button><button class="btn sm quiet" data-tab="profile">Edit dates</button></div></div>`;
+  return `<div class="panel"><h3>Your dates</h3><p class="s g mt8">${line}</p><div class="row mt12"><button class="btn sm ${at === 0 ? '' : 'primary'}" data-a="confirm-dates">Confirm my dates</button><button class="btn sm quiet" data-a="rates-edit">Edit dates</button></div></div>`;
 }
 A['confirm-dates'] = async (el) => { busy(el, true, 'Saving…'); await rpc('confirm_dates'); toast('Dates confirmed'); rerender(); };
 
@@ -230,8 +233,6 @@ V.profile = async () => {
     <label class="field span">Name<input class="in" name="name" required value="${esc(t.name)}"></label>
     ${roleChips(rolesOf(t), 'What you do')}
     <label class="field">Based in<select class="in" name="city">${opts(CITIES, t.city)}</select></label>
-    <label class="field">Day rate, £<input class="in" type="number" name="day_rate" min="5" step="5" required value="${t.day_rate ?? ''}"></label>
-    <label class="field">Half-day rate, £<input class="in" type="number" name="half_rate" min="5" step="5" value="${t.half_rate ?? ''}"></label>
     <label class="field">How far you'll travel<select class="in" name="travel_range">${TRAVEL_RANGE.map(([k, l]) => `<option value="${k}" ${(t.travel_range || 'local') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     <label class="field">Travel costs<select class="in" name="travel_costs">${TRAVEL_COSTS.map(([k, l]) => `<option value="${k}" ${(t.travel_costs || 'discuss') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     <p class="hint span" style="margin-top:-8px">Your usual preference. You still decide on every offer, so you can say yes to a trip one week and no the next. ${nearby(t.city).length ? `"Around my region" from ${esc(t.city)} means ${esc(nearby(t.city).join(' and '))}.` : 'Brands in other cities see you if you travel beyond your city.'}</p>
@@ -245,7 +246,7 @@ V.profile = async () => {
   <aside class="stack">
     <div class="panel"><div class="row between"><h3>ID check</h3>${idStatus}</div><p class="s g mt8">Embr is for talent aged 18 and over. Stripe checks your passport, driving licence or ID card and a selfie. Embr only receives the result and your date of birth.</p>${t.verified ? '' : t.identity_status === 'review' ? '<p class="s mt8">Your check went through. Embr will confirm your age shortly.</p><button class="btn sm mt12" data-a="idcheck">Check again</button>'
       : t.identity_status === 'processing' ? '<p class="s mt8">Finished the check with Stripe? Tap Check again. If you closed it part way, start again.</p><div class="row mt12"><button class="btn sm primary" data-a="idcheck">Check again</button><button class="btn sm quiet" data-a="verify">Start again</button></div>' : `<button class="btn primary sm mt12" data-a="verify">${t.identity_status ? 'Try again' : 'Verify ID'}</button>`}</div>
-    <div><h3 class="mb8">When you're free</h3><p class="s g mb12">Tap a day to mark it unavailable. Brands only see you for dates you're free.</p><div id="cal">${calendar(t, true)}</div></div>
+    ${rateCard(t)}
   </aside></div>`;
 };
 
@@ -350,7 +351,7 @@ A.rmphoto = async (el) => {
 A.cover = async (el) => { S.me = await rpc('cover_photo', { p_id: el.dataset.id }); await refreshWork(); };
 A.day = async (el) => {
   S.me = await rpc('toggle_off_day', { p_day: el.dataset.d });
-  $('#cal').innerHTML = calendar(S.me.talent, true);
+  refreshDates();
 };
 
 V.bookings = bookingsView;

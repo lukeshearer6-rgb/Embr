@@ -99,6 +99,8 @@ export function refreshTop(layer) { if (stack.length) { stack[stack.length - 1] 
 function drawLayers(focusNew) {
   const root = $('#layers');
   document.body.style.overflow = stack.length ? 'hidden' : '';
+  // a layer underneath keeps its scroll position when one opens or closes above it
+  const keep = [...root.querySelectorAll('.sheet,.dialog')].map((el) => el.querySelector('.bd')?.scrollTop || 0);
   root.innerHTML = stack.map((l, i) => {
     const over = i > 0 ? ' over' : '';
     const x = `<button class="xbtn" data-a="close" aria-label="Close">${ICON.x}</button>`;
@@ -109,6 +111,7 @@ function drawLayers(focusNew) {
     return `<div class="scrim${over}" data-a="close" style="z-index:${42 + i * 2}"></div><section class="dialog${l.lg ? ' lg' : ''}${l.cls ? ' ' + l.cls : ''}" role="dialog" aria-modal="true" style="z-index:${43 + i * 2}">
       <div class="hd">${l.head || ''}${x}</div><div class="bd">${l.body}</div>${l.foot ? `<div class="ft">${l.foot}</div>` : ''}</section>`;
   }).join('');
+  root.querySelectorAll('.sheet,.dialog').forEach((el, i) => { const bd = el.querySelector('.bd'); if (bd && keep[i] && (i < stack.length - 1 || !focusNew)) bd.scrollTop = keep[i]; });
   if (focusNew && stack.length) {
     const panel = root.querySelectorAll('.sheet,.dialog');
     const el = panel[panel.length - 1];

@@ -18,6 +18,7 @@ import { S, A, C, F, go } from '../state.js';
 import { rpc, photoUrl } from '../api.js';
 import { $, esc, gbp, pounds, dMed, today, addDays, opts, USAGE, TERMS, toast, openLayer, closeLayer, refreshTop, topLayer, first, plural, rolesOf } from '../ui.js';
 import { ICON, RICON } from '../icons.js';
+import { pkgOf, pkgNote, hoursTxt } from './rates.js';
 
 // ---------------------------------------------------------------- storage (a draft on this device)
 const key = () => `embr.roster.${S.me?.id || 'anon'}`;
@@ -48,10 +49,21 @@ const people = (n) => (n === 1 ? '1 person' : `${n} people`);
 const aRole = (r) => 'a ' + r.toLowerCase();
 
 // ---------------------------------------------------------------- adding people
-function addTo(shoot, t, briefRole) {
-  if (shoot.crew.some((c) => c.id === t.id)) return false;
+// A package picked on the creative's profile (Full day or Half day) sets their rate in the roster, and a
+// half day books one day whatever the shoot's length. It only fills the offer's day rate and days.
+const crewPkg = (t, key) => { const p = key ? pkgOf(t, key) : null; return p ? { key: p.key, label: p.label, hours: p.hours, includes: p.includes, days: p.days, price: p.price } : null; };
+export const crewDays = (c, s) => c.pkg?.days || +s.days || 1;
+function addTo(shoot, t, briefRole, pkgKey) {
+  const pkg = crewPkg(t, pkgKey);
+  const had = shoot.crew.find((c) => c.id === t.id);
+  if (had) {
+    if (!pkg || had.pkg?.key === pkg.key) return false;
+    Object.assign(had, { pkg, day_rate: pkg.price }); // picked another package: switch, don't add twice
+    shoot.updated = Date.now();
+    return 'switched';
+  }
   const rs = rolesOf(t);
-  shoot.crew.push({ id: t.id, name: t.name, photo: t.photo || null, roles: rs, role: rs.includes(briefRole) ? briefRole : rs[0] || '', day_rate: t.day_rate || 200, city: t.city, verified: !!t.verified });
+  shoot.crew.push({ id: t.id, name: t.name, photo: t.photo || null, roles: rs, role: rs.includes(briefRole) ? briefRole : rs[0] || '', day_rate: pkg?.price || t.day_rate || 200, pkg, city: t.city, verified: !!t.verified });
   shoot.updated = Date.now();
   return true;
 }
@@ -59,10 +71,10 @@ function addTo(shoot, t, briefRole) {
 // "Add to shoot" on the CreativeCard: a short sheet (DESIGN_RULES 3.1) listing the brand's shoot rosters,
 // then open briefs to start one from, then a new shoot. Picking adds the creative and keeps the brand browsing.
 A['add-shoot'] = async (el) => {
-  const { id, name } = el.dataset;
+  const { id, name, pkg = '' } = el.dataset;
   const r = roster();
   const briefs = (await rpc('my_briefs')).filter((b) => b.status === 'open' && b.shoot_date >= today() && !r.shoots.some((s) => s.brief_id === b.id));
-  const row = (attrs, ttl, sub) => `<button type="button" class="shoot-row" data-a="shoot-pick" data-id="${id}" ${attrs}><span class="grow"><span class="ttl">${ttl}</span><span class="s g">${sub}</span></span><span aria-hidden="true">›</span></button>`;
+  const row = (attrs, ttl, sub) => `<button type="button" class="shoot-row" data-a="shoot-pick" data-id="${id}" data-pkg="${esc(pkg)}" ${attrs}><span class="grow"><span class="ttl">${ttl}</span><span class="s g">${sub}</span></span><span aria-hidden="true">›</span></button>`;
   const rosters = r.shoots.map((s) => row(`data-shoot="${s.id}"`, esc(s.title || 'Untitled shoot'), `${s.date ? dMed(s.date) : 'No date yet'}${s.location ? ' · ' + esc(s.location) : ''} · ${people(s.crew.length)}${s.crew.some((c) => c.id === id) ? ' · already in' : ''}`)).join('');
   openLayer({
     kind: 'dialog',
@@ -75,7 +87,7 @@ A['add-shoot'] = async (el) => {
   });
 };
 A['shoot-pick'] = async (el) => {
-  const { id, shoot: sid, brief: bid } = el.dataset;
+  const { id, shoot: sid, brief: bid, pkg } = el.dataset;
   const r = roster();
   const t = await rpc('talent_detail', { p_id: id });
   let s = sid && shootOf(sid);
@@ -87,12 +99,14 @@ A['shoot-pick'] = async (el) => {
     r.shoots.unshift(s);
   }
   if (!s) { s = { id: newId(), brief_id: null, title: '', date: addDays(14), days: 1, location: '', call_time: '', usage_where: USAGE[0], usage_term: '12 months', content_agreed: '', notes: '', crew: [] }; r.shoots.unshift(s); }
-  const added = addTo(s, t, briefRole);
+  const added = addTo(s, t, briefRole, pkg);
   r.current = s.id;
   save(r);
   closeLayer();
   renderRosterBar();
-  toast(added ? `${first(t.name)} added to ${s.title || 'your new shoot'}` : `${first(t.name)} is already in this shoot`);
+  const p = s.crew.find((c) => c.id === t.id)?.pkg;
+  toast(added === 'switched' ? `${first(t.name)} is now booked for a ${p.label.toLowerCase()} in ${s.title || 'this shoot'}`
+    : added ? `${first(t.name)} added to ${s.title || 'your new shoot'}${p ? ` for a ${p.label.toLowerCase()}` : ''}` : `${first(t.name)} is already in this shoot`);
   if (!s.title) openRoster(s.id);
 };
 
@@ -135,6 +149,7 @@ function rosterLayer(s) {
     return `<div class="rrow" data-crew="${c.id}"><div class="thumb" style="${ph ? `background-image:url('${esc(ph)}')` : ''}">${ph ? '' : esc(c.name[0] || '')}</div>
       <div class="grow rr-main"><div class="rr-nm">${esc(c.name)}${c.verified ? ICON.tick : ''}</div>
         ${c.roles.length > 1 ? `<label class="rr-role"><span class="sr">Booking ${esc(first(c.name))} as</span><select class="in" data-change="roster-edit" data-crew="${c.id}" data-k="role">${opts(c.roles, c.role)}</select></label>` : `<div class="s g">${esc(c.role)}, ${esc(c.city)}</div>`}
+        ${c.pkg ? `<div class="xs rr-pkg">${esc(c.pkg.label)} · ${esc(hoursTxt(c.pkg.hours).toLowerCase())}${c.pkg.days ? ' · one day' : ''}</div>` : ''}
         ${c.err ? `<p class="xs rr-err" role="alert">${esc(c.err)}</p>` : ''}</div>
       ${c.sent ? `<button type="button" class="link s" data-a="booking" data-id="${c.sent}">Offer sent</button>`
         : `<label class="rr-rate"><span class="sr">${esc(first(c.name))}'s day rate in pounds</span><span aria-hidden="true">£</span><input class="in" type="number" inputmode="numeric" min="5" step="5" value="${esc(c.day_rate)}" data-input="roster-edit" data-crew="${c.id}" data-k="day_rate"></label>
@@ -183,12 +198,11 @@ async function quoteAll(sid) {
   const crew = s.crew.filter((c) => !c.sent);
   if (!crew.length) return;
   const seq = ++qSeq;
-  const qs = await Promise.all(crew.map((c) => rpc('quote', { p_talent: c.id, p_day_rate: +c.day_rate || 0, p_days: +s.days || 1, p_usage_fee: 0 }).catch(() => null)));
+  const qs = await Promise.all(crew.map((c) => rpc('quote', { p_talent: c.id, p_day_rate: +c.day_rate || 0, p_days: crewDays(c, s), p_usage_fee: 0 }).catch(() => null)));
   if (seq !== qSeq || !document.contains(box) || qs.some((q) => !q)) return;
   const sum = (k) => qs.reduce((n, q) => n + q[k], 0);
-  const d = +s.days || 1;
   box.innerHTML = `<div class="ledger">
-    ${crew.map((c, i) => `<div class="r"><span>${esc(c.name)}<span class="when">${esc(c.role)} · ${d} day${d > 1 ? 's' : ''} at ${pounds(c.day_rate)}</span></span><span>${gbp(qs[i].talent_fee_p)}</span></div>`).join('')}
+    ${crew.map((c, i) => `<div class="r"><span>${esc(c.name)}<span class="when">${esc(c.role)} · ${c.pkg?.days ? esc(c.pkg.label.toLowerCase()) : `${crewDays(c, s)} day${crewDays(c, s) > 1 ? 's' : ''}`} at ${pounds(c.day_rate)}</span></span><span>${gbp(qs[i].talent_fee_p)}</span></div>`).join('')}
     <div class="r"><span>Embr fees<span class="when">Set per person, the same as booking each one on their own</span></span><span>${gbp(sum('embr_fee_p'))}</span></div>
     <div class="r t"><span>Total for ${people(crew.length)}</span><span>${gbp(sum('total_p'))}</span></div>
     <div class="r sub"><span>Deposits, paid as each person accepts</span><span>${gbp(sum('deposit_p'))}</span></div>
@@ -255,8 +269,10 @@ export async function sendRoster(form) {
   for (const c of crew) {
     try {
       c.sent = await rpc('create_offer', { p: {
-        talent_id: c.id, brief_id: s.brief_id || null, title: s.title, shoot_date: s.date, days: +s.days || 1, day_rate: +c.day_rate,
-        usage, usage_fee: 0, location: s.location, call_time: s.call_time, content_agreed: s.content_agreed, notes: s.notes, agree: !!d.agree, role: c.role || null,
+        talent_id: c.id, brief_id: s.brief_id || null, title: s.title, shoot_date: s.date, days: crewDays(c, s), day_rate: +c.day_rate,
+        usage, usage_fee: 0, location: s.location, call_time: s.call_time, content_agreed: s.content_agreed,
+        // the package goes in their offer's notes, as long as the brand hasn't changed the rate from it
+        notes: [c.pkg && +c.day_rate === c.pkg.price ? pkgNote(c.pkg) : '', s.notes].filter(Boolean).join('\n'), agree: !!d.agree, role: c.role || null,
       } });
       c.err = null;
     } catch (e) { c.err = e.message; }

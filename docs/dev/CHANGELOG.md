@@ -2,6 +2,15 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-25: Rates and availability editor, and a brand-facing creative detail screen with a sticky "Add to shoot" bar (held for the final UI round)
+- Talent: Profile shows a Rates and availability card. Its full-screen editor sets a Full day and an optional Half day package (price, hours, what's included), previews how brands see them, and blocks a range of dates in one go (single days still tap on the grid).
+- Brands: a creative's profile opens as a full screen with photos edge to edge, a photo counter and heart, the packages as tappable rows, and a sticky bar with the picked package's price and "Add to shoot" (the Shoot Roster from PR 29). A half day goes into the roster and the offer form as one day at the half-day price.
+- Payments unchanged: a package only fills the offer's day rate and days; the package is written at the top of the offer's notes.
+- Database (final round): `20261125000007_rate_packages.sql` adds `talents.packages`, `save_rates()` and `set_off_range()`.
+- Notes, Mobbin references and before/after: docs/dev/rates-and-detail.md.
+- Files: `src/views/rates.js` (new), `src/views/brand.js`, `src/views/roster.js`, `src/views/talent.js`, `src/ui.js`, `src/style.css`, `supabase/migrations/20261125000007_rate_packages.sql`, `tests/db.test.mjs`, `tests/e2e.test.mjs`.
+- Tests: db 82 (ranges, packages, refusals, half-day quote), e2e 43 (editor, blocking, 48px targets, detail screen, package into roster and offer form).
+
 ## 2026-11-25: Shoot Roster: group creatives under one shoot and send their offers together (held for the final UI round)
 - "Add to shoot" now adds the creative to a shoot roster (from a brief or a new shoot) and keeps the brand on the board, with a black roster bar showing the shoot, head count and day rates.
 - The roster has one shared date, days, location and call time, a row per creative (role, day rate, remove), "Need a make-up artist?" prompts that open the board on that role and date, and the combined cost from the same per-person quotes.

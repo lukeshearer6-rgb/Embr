@@ -257,6 +257,39 @@ async function main() {
   await call(amara, 'toggle_off_day', today(16));
   res = await call(rivet, 'search_talent', { date: today(16) });
   assert.ok(!res.some((t) => t.name === 'Amara Okafor')); ok('days marked off hide talent from date searches');
+
+  // --- blocked date ranges (Rates and availability editor)
+  me = await call(amara, 'set_off_range', today(60), today(62), true);
+  assert.ok([60, 61, 62].every((n) => me.talent.off_days.includes(today(n))));
+  res = await call(rivet, 'search_talent', { date: today(61) });
+  assert.ok(!res.some((t) => t.name === 'Amara Okafor'));
+  await fails(call(rivet, 'create_offer', { talent_id: amara.id, title: 'Blocked', shoot_date: today(59), days: 2, day_rate: 250, agree: true }), /isn't free/);
+  ok('talent block a range of dates in one go, and brands can\'t search or offer into it');
+  me = await call(amara, 'set_off_range', today(60), today(62), false);
+  assert.ok(![60, 61, 62].some((n) => me.talent.off_days.includes(today(n))));
+  await fails(call(amara, 'set_off_range', today(-1), today(2), true), /passed/);
+  await fails(call(amara, 'set_off_range', today(5), today(3), true), /before the first/);
+  await fails(call(amara, 'set_off_range', today(1), today(120), true), /three months/);
+  await fails(call(rivet, 'set_off_range', today(60), today(62), true), /not allowed/i);
+  ok('freeing a range works; past, back-to-front, over-long and brand requests are refused');
+
+  // --- day-rate packages
+  me = await call(amara, 'save_rates', { day_rate: '260', half_rate: '160', full: { hours: '9', includes: 'Hair and make-up time included' }, half: { hours: '4', includes: ' ' } });
+  assert.equal(me.talent.day_rate, 260); assert.equal(me.talent.half_rate, 160);
+  assert.deepEqual(me.talent.packages, { full: { hours: 9, includes: 'Hair and make-up time included' }, half: { hours: 4 } });
+  const seen = await call(rivet, 'talent_detail', amara.id);
+  assert.deepEqual(seen.packages, me.talent.packages); assert.equal(seen.half_rate, 160);
+  ok('talent set full-day and half-day packages with hours and what\'s included, and brands see them');
+  await fails(call(amara, 'save_rates', { day_rate: '200', half_rate: '220' }), /less than your full-day/);
+  await fails(call(amara, 'save_rates', { day_rate: '', half_rate: '100' }), /full-day rate/);
+  await fails(call(amara, 'save_rates', { day_rate: '200', half_rate: '100', half: { hours: '9' } }), /half day is between 1 and 6/);
+  await fails(call(rivet, 'save_rates', { day_rate: '200' }), /not allowed/i);
+  me = await call(amara, 'save_rates', { day_rate: '250', half_rate: '' });
+  assert.equal(me.talent.half_rate, null); assert.equal(me.talent.packages.half, undefined); assert.equal(me.talent.packages.full.hours, 8);
+  me = await call(amara, 'save_rates', { day_rate: '250', half_rate: '150' });
+  ok('half days can be turned off; bad rates and hours and brand requests are refused');
+  const qh = await call(rivet, 'quote', amara.id, 150, 1, 0);
+  assert.equal(qh.session_p, 15000); ok('a half-day package is quoted through the same quote as any offer (rate × 1 day)');
   bk = await call(rivet, 'withdraw_offer', b2); assert.equal(bk.status, 'withdrawn');
 
   // --- booking links (talent's own enquiries)
