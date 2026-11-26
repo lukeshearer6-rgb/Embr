@@ -2,6 +2,12 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-26: Profile sits in the phone tab bar (Luke's snag list)
+- Creatives: the phone bar is now Bookings, Wallet, Messages, Profile, More. Today and Links are under More, and sign-in lands on Bookings. Luke will review what Today is for.
+- Brands: the phone bar is now Board, Bookings, Messages, Account, More, with Jobs and Shortlist under More (DESIGN_RULES 1.2 and 1.7: Account last).
+- Files: `src/state.js`, `tests/e2e.test.mjs`.
+- Tests: e2e 46, db 94, payments 11, agreement 9.
+
 ## 2026-11-25: Phone polish: one type scale, even card padding, safe areas, 48px targets, skeletons and empty states (held for the final UI round)
 - Brands and creatives: the new phone screens share one type scale, one card padding and one screen-title style; sheets clear the status bar and home indicator when installed; close buttons, chips, the shortlist heart and the moodboard controls are 48px to tap.
 - Brands: the board and creative profiles show card-shaped skeletons while loading, photos fade in over grey; no-results, empty-role and empty-roster screens each say why and offer the next step.
