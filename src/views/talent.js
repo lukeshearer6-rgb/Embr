@@ -5,8 +5,8 @@ import { VIEWS, A, F, C, S, go, refreshMe, rerender } from '../state.js';
 import { rpc, action, uploadPhoto, deletePhoto, photoUrl, roleRules, modelOptions, agencyText } from '../api.js';
 import { agencyBox } from './auth.js';
 import { statsForm } from './model.js';
-import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CITIES, rolesOf, rolesTxt, rolePlural, roleChips, pickedRoles, USAGE, TERMS, TRAVEL_RANGE, TRAVEL_COSTS, nearby, toast, openLayer, closeLayer, formData, plural, first, busy, confirmDialog, emptyState } from '../ui.js';
-import { usagePicker, readUsage, DRAFT_NOTE } from './contract.js';
+import { $, esc, gbp, pounds, pct, dMed, dLong, today, addDays, opts, CITIES, rolesOf, rolesTxt, rolePlural, roleChips, pickedRoles, USAGE, TERMS, TRAVEL_RANGE, TRAVEL_COSTS, nearby, toast, openLayer, closeLayer, formData, plural, first, busy, confirmDialog, emptyState, dRange } from '../ui.js';
+import { usagePicker, readUsage, DRAFT_NOTE, usageOk } from './contract.js';
 import { ICON, RICON } from '../icons.js';
 import { thumb, calendar, groupBookings, bookingItem, linkCards } from './common.js';
 import { rateCard, refreshDates } from './rates.js';
@@ -177,7 +177,7 @@ V.wallet = async () => {
   <div class="vault"><span class="l">Paid to you on Embr</span><span class="big">${gbp(tot)}</span><span class="l">${plural(list.filter((b) => b.status === 'completed').length, 'job')} · 0% commission</span>
     <div class="vault-row"><div><span>On the way</span><b>${gbp(onWay)}</b><em>Paid when the brand signs off</em></div>${held ? `<div><span>Paused</span><b>${gbp(held)}</b><em>While a problem is looked at</em></div>` : ''}</div></div>
   <div class="cols mt48"><section><h2 class="sec">Payments</h2>
-    ${paid.length ? `<div class="list">${paid.map((b) => `<button class="item" data-a="booking" data-id="${b.id}"><div class="grow"><div class="ttl">${esc(b.title)}</div><div class="meta"><span>${esc(b.brand.name)}</span><span>${dMed(b.shoot_date)}</span></div></div><div class="money" style="color:var(--ok)">+${gbp(b.talent_fee_p)}</div></button>`).join('')}</div>` : '<div class="empty">Payments will appear here.</div>'}
+    ${paid.length ? `<div class="list">${paid.map((b) => `<button class="item" data-a="booking" data-id="${b.id}"><div class="grow"><div class="ttl">${esc(b.title)}</div><div class="meta"><span>${esc(b.brand.name)}</span><span>${dRange(b.shoot_date, b.days)}</span></div></div><div class="money" style="color:var(--ok)">+${gbp(b.talent_fee_p)}</div></button>`).join('')}</div>` : '<div class="empty">Payments will appear here.</div>'}
   </section><aside class="stack">
     <div class="panel"><h3>Payouts</h3>${t.payouts_enabled
       ? `<p class="s g mt8"><span class="st ok">Set up</span> Embr pays you through Stripe, straight to your bank.</p><button class="btn sm mt12" data-a="stripe-dash">Open Stripe payouts</button>`
@@ -220,7 +220,7 @@ A.verify = async (el) => {
 V.profile = async () => {
   const q = new URLSearchParams(location.search);
   if (q.get('id')) { await action('identity_refresh').catch(() => null); history.replaceState({}, '', '/profile'); }
-  const [, rules, mo, agency] = await Promise.all([refreshMe(), roleRules(), modelOptions(), agencyText().catch(() => '')]);
+  const [, rules, mo, agency, ph] = await Promise.all([refreshMe(), roleRules(), modelOptions(), agencyText().catch(() => ''), rpc('my_phone').catch(() => ({}))]);
   const t = T();
   const idStatus = t.verified ? '<span class="st ok">Verified 18+</span>'
     : t.identity_status === 'processing' ? '<span class="st wait">Checking your ID…</span>'
@@ -248,8 +248,30 @@ V.profile = async () => {
   <aside class="stack">
     <div class="panel"><div class="row between"><h3>ID check</h3>${idStatus}</div><p class="s g mt8">Embr is for talent aged 18 and over. Stripe checks your passport, driving licence or ID card and a selfie. Embr only receives the result and your date of birth.</p>${t.verified ? '' : t.identity_status === 'review' ? '<p class="s mt8">Your check went through. Embr will confirm your age shortly.</p><button class="btn sm mt12" data-a="idcheck">Check again</button>'
       : t.identity_status === 'processing' ? '<p class="s mt8">Finished the check with Stripe? Tap Check again. If you closed it part way, start again.</p><div class="row mt12"><button class="btn sm primary" data-a="idcheck">Check again</button><button class="btn sm quiet" data-a="verify">Start again</button></div>' : `<button class="btn primary sm mt12" data-a="verify">${t.identity_status ? 'Try again' : 'Verify ID'}</button>`}</div>
+    ${phoneCard(ph)}
     ${rateCard(t)}
   </aside></div>`;
+};
+
+// Phone number (Luke's snag list, 2026-11-26): brands see it only once a booking with them is confirmed.
+// Optional, with its own consent tick, and removable. The rule lives in the database (_phone_open).
+function phoneCard(ph = {}) {
+  return `<form id="f-phone" class="panel phone-card"><h3>Phone number</h3>
+    <p class="s g mt8">For the shoot day. A brand only sees it once their booking with you is confirmed (deposit paid), and until 14 days after the shoot. It's never on your profile, your Book-me page or an offer.</p>
+    <label class="field mt12"><span class="sr">Phone number</span><input class="in" type="tel" name="phone" autocomplete="tel" inputmode="tel" placeholder="07700 900123" value="${esc(ph.phone || '')}"></label>
+    <label class="check mt12"><input type="checkbox" name="consent" ${ph.phone ? 'checked' : ''}> <span>Share this number with brands once a booking with them is confirmed.</span></label>
+    <div class="row mt12"><button class="btn sm ink" type="submit">${ph.phone ? 'Update number' : 'Save number'}</button>${ph.phone ? '<button class="btn sm quiet" type="button" data-a="phone-remove">Remove</button>' : ''}</div></form>`;
+}
+F['f-phone'] = async (form) => {
+  if (form.phone.value.trim() && !form.consent.checked) return toast('Tick the box to let brands with a confirmed booking see your number');
+  const r = await rpc('save_phone', { p_phone: form.phone.value, p_consent: form.consent.checked });
+  form.outerHTML = phoneCard(r);
+  toast(r.phone ? 'Saved. Brands see it once a booking is confirmed.' : 'Phone number removed');
+};
+A['phone-remove'] = async (el) => {
+  const r = await rpc('save_phone', { p_phone: '', p_consent: false });
+  el.closest('form').outerHTML = phoneCard(r);
+  toast('Phone number removed');
 };
 
 const MAXP = 24;
@@ -409,6 +431,7 @@ F['f-link'] = async (form) => {
   const d = formData(form);
   const usage_terms = readUsage(form);
   if (!usage_terms.where.length) throw new Error('Pick where the brand can use the photos');
+  if (!usageOk(usage_terms)) throw new Error('Type how many months the photos can be used for, from 1 to 120');
   const l = await rpc('create_link', { p: { title: d.title, role: d.role, shoot_date: d.shoot_date, note: d.note, days: +d.days, day_rate: +d.day_rate,
     usage_fee: +d.usage_fee || 0, usage_terms, day_hours: d.day_hours ? +d.day_hours : null, sign_name: d.sign_name } });
   closeLayer();

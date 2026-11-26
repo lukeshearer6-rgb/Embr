@@ -16,6 +16,10 @@ export const dMed = (d) => D(d).toLocaleDateString('en-GB', { weekday: 'short', 
 export const dLong = (d) => D(d).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 export const dWeekday = (d) => D(d).toLocaleDateString('en-GB', { weekday: 'long' });
 export const dShort = (d) => D(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+// a shoot's dates: "Wed 10 Dec" for one day, "Wed 10 Dec – Thu 11 Dec" for two or more (IHG and Trip.com stay headers)
+export const dRange = (d, n = 1) => (+n > 1 ? `${dMed(d)} – ${dMed(addDays(+n - 1, d))}` : dMed(d));
+export const dRangeLong = (d, n = 1) => (+n > 1 ? `${dLong(d)} to ${dLong(addDays(+n - 1, d))} (${n} days)` : dLong(d));
+export const andList = (a) => (a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a.at(-1));
 export const tShort = (d) => D(d).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 export const iso = (dt) => { const z = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000); return z.toISOString().slice(0, 10); };
 export const today = () => iso(new Date());

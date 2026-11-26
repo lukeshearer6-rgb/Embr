@@ -5,7 +5,7 @@
 // until the tick and the typed name are there (Target, Forest, Coinbase); full text one tap away (Vivid).
 import { A, C, F, S } from '../state.js';
 import { rpc } from '../api.js';
-import { $, esc, gbp, pounds, dMed, dLong, tShort, openLayer, closeLayer, toast, first } from '../ui.js';
+import { $, esc, gbp, pounds, dMed, dLong, tShort, openLayer, closeLayer, toast, first, dRangeLong, andList } from '../ui.js';
 
 // keep in step with _usage_label() and _usage_area() in the database
 export const USAGE_WHERE = [
@@ -18,7 +18,9 @@ export const USAGE_WHERE = [
   ['tv', 'TV and cinema', 'Ads on TV, streaming services and in cinemas.'],
   ['packaging', 'Packaging', 'On the product box or bag itself.'],
 ];
-export const USAGE_MONTHS = [3, 6, 12, 24];
+export const USAGE_MONTHS = [3, 6, 12, 24]; // presets; any whole number from 1 to 120 can be typed (custom)
+export const monthsTxt = (m) => `${m} month${+m === 1 ? '' : 's'}`;
+const okMonths = (m) => Number.isInteger(m) && m >= 1 && m <= 120;
 export const USAGE_AREA = [['uk', 'UK only', 'the UK'], ['europe', 'UK and Europe', 'the UK and Europe'], ['world', 'Worldwide', 'anywhere in the world']];
 export const DRAFT_NOTE = 'Draft terms for the invite-only pilot, waiting for solicitor review.';
 
@@ -39,29 +41,34 @@ export function usageFrom(v) {
   if (/poster|print/.test(s)) where.push('print');
   if (/all of it/.test(s)) where.push('social', 'paid_social', 'web', 'email', 'print');
   const m = +(s.match(/(\d+)\s*months?/) || [])[1];
-  return { where: where.length ? where : ['social'], months: USAGE_MONTHS.includes(m) ? m : 12, area: 'uk' };
+  return { where: where.length ? where : ['social'], months: okMonths(m) ? m : 12, area: 'uk' };
 }
 
 // The picker: where (several), how long (one), which countries (one), with a live sentence underneath.
 // Used on the brand offer form, the shoot roster and the talent's booking link form.
-export function usagePicker(v, { who = 'brand', hours = '' } = {}) {
+export function usagePicker(v, { who = 'brand', hours = '', noHours = false } = {}) {
   const u = usageFrom(v);
+  const custom = !USAGE_MONTHS.includes(u.months);
   const chip = (grp, k, txt, on) => `<button type="button" class="chip" data-a="usage-pick" data-grp="${grp}" data-k="${k}" aria-pressed="${on}">${esc(txt)}</button>`;
   return `<div class="usagepick">
     <fieldset class="fsec"><legend class="s">Where ${who === 'brand' ? 'you\'ll' : 'they can'} use the photos <span class="hint">Pick everything that applies</span></legend>
       <div class="chips mt8">${USAGE_WHERE.map(([k, l]) => chip('where', k, l, u.where.includes(k))).join('')}</div></fieldset>
     <fieldset class="fsec mt16"><legend class="s">For how long <span class="hint">From the day it first goes live</span></legend>
-      <div class="chips mt8">${USAGE_MONTHS.map((m) => chip('months', m, m + ' months', u.months === m)).join('')}</div></fieldset>
+      <div class="chips mt8">${USAGE_MONTHS.map((m) => chip('months', m, monthsTxt(m), u.months === m)).join('')}${chip('months', 'custom', 'Custom', custom)}</div>
+      <label class="field mt8 usage-custom" ${custom ? '' : 'hidden'}>Number of months <span class="hint">1 to 120, for example 5 or 18</span><input class="in" type="number" inputmode="numeric" name="usage_months" min="1" max="120" step="1" value="${custom ? u.months : ''}" placeholder="18" data-input="usage-say"></label></fieldset>
     <fieldset class="fsec mt16"><legend class="s">Which countries</legend>
       <div class="chips mt8">${USAGE_AREA.map(([k, l]) => chip('area', k, l, u.area === k)).join('')}</div></fieldset>
-    <label class="field mt16">Hours a day <span class="hint">Including breaks. Longer days are agreed in messages first.</span><input class="in" type="number" name="day_hours" min="1" max="16" placeholder="10" value="${esc(hours)}" data-input="usage-say"></label>
+    ${noHours ? '' : `<label class="field mt16">Hours a day <span class="hint">Including breaks. Longer days are agreed in messages first.</span><input class="in" type="number" name="day_hours" min="1" max="16" placeholder="10" value="${esc(hours)}" data-input="usage-say"></label>`}
     <div class="usage-say panel mt16" aria-live="polite">${usageSay(u, who)}</div>
   </div>`;
 }
 
+export const usageOk = (u) => hasTerms(u) && okMonths(u.months);
 export function readUsage(root) {
   const on = (g) => [...root.querySelectorAll(`[data-a=usage-pick][data-grp=${g}][aria-pressed=true]`)].map((b) => b.dataset.k);
-  return { where: on('where'), months: +(on('months')[0] || 12), area: on('area')[0] || 'uk' };
+  const pick = on('months')[0] || '12';
+  const months = pick === 'custom' ? Math.round(+root.querySelector('[name=usage_months]')?.value || 0) : +pick;
+  return { where: on('where'), months, area: on('area')[0] || 'uk' };
 }
 
 // What the talent reads. "you" is the talent; the brand reads the same with "the talent's".
@@ -70,7 +77,7 @@ export function usageLines(u) {
   const a = area(u.area)[2];
   return [
     ...u.where.map((k) => label(k)?.[2]).filter(Boolean),
-    `For ${u.months} months from the day it first goes live. If nothing has gone live 6 months after the shoot, the ${u.months} months start then.`,
+    `For ${monthsTxt(u.months)} from the day it first goes live. If nothing has gone live 6 months after the shoot, the ${monthsTxt(u.months)} start then.`,
     `In ${a}. Their own posts can be seen from anywhere.`,
     'Shorter edits, crops and stills from the video are included.',
     'When the time runs out, old posts can stay up, but nothing new goes out and paid ads stop.',
@@ -80,9 +87,10 @@ export function usageLines(u) {
 
 function usageSay(u, who) {
   if (!hasTerms(u)) return '<p class="s g">Pick at least one place to use the photos.</p>';
+  if (!okMonths(u.months)) return '<p class="s g">Type how many months, from 1 to 120.</p>';
   const names = u.where.map((k) => label(k)?.[1].toLowerCase()).filter(Boolean);
   const list = names.length < 2 ? names.join('') : names.slice(0, -1).join(', ') + ' and ' + names.at(-1);
-  return `<p class="s"><b>${who === 'brand' ? 'The talent will read' : 'The brand will read'}:</b> ${esc(list.charAt(0).toUpperCase() + list.slice(1))}, for ${u.months} months from the day it first goes live, in ${esc(area(u.area)[2])}. Old posts can stay up after that, but nothing new goes out.</p>
+  return `<p class="s"><b>${who === 'brand' ? 'The talent will read' : 'The brand will read'}:</b> ${esc(list.charAt(0).toUpperCase() + list.slice(1))}, for ${monthsTxt(u.months)} from the day it first goes live, in ${esc(area(u.area)[2])}. Old posts can stay up after that, but nothing new goes out.</p>
     <p class="xs g mt4">Anything else needs a new booking. ${DRAFT_NOTE}</p>`;
 }
 
@@ -90,6 +98,11 @@ A['usage-pick'] = (el) => {
   const root = el.closest('.usagepick');
   if (el.dataset.grp === 'where') el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') !== 'true');
   else root.querySelectorAll(`[data-a=usage-pick][data-grp=${el.dataset.grp}]`).forEach((b) => b.setAttribute('aria-pressed', b === el));
+  if (el.dataset.grp === 'months') {
+    const box = root.querySelector('.usage-custom');
+    box.hidden = el.dataset.k !== 'custom';
+    if (!box.hidden) box.querySelector('input').focus();
+  }
   sayAgain(root);
 };
 C['usage-say'] = (el) => sayAgain(el.closest('.usagepick'));
@@ -114,9 +127,10 @@ export function reviewSheet(b) {
     <p class="s g mt8 measure">This is your booking agreement with ${esc(b.brand.name)}. Check the summary, open the full terms if you want them, then sign with your name.</p>
     <div class="sign-sum mt24">
       <section class="cs-sec"><h4>What you're paid</h4><p class="t-24 money">${gbp(b.talent_fee_p)}</p>
-        <p class="s g">${b.days} day${b.days > 1 ? 's' : ''} at ${pounds(b.day_rate)}${b.usage_fee ? ' plus ' + pounds(b.usage_fee) + ' for usage' : ''}. Paid in full at sign-off, or automatically ${st.auto_signoff_hours} hours after you mark it wrapped. Embr takes 0%.</p></section>
+        <p class="s g">${b.days} day${b.days > 1 ? 's' : ''} at ${pounds(b.day_rate)}${b.usage_fee ? ' for your time, plus a ' + pounds(b.usage_fee) + ' usage fee for the photos' : ''}. Paid in full at sign-off, or automatically ${st.auto_signoff_hours} hours after you mark it wrapped. Embr takes 0%.</p></section>
       <section class="cs-sec"><h4>Your day</h4>${kv([
-        ['When', esc(dLong(b.shoot_date)) + (b.days > 1 ? ', ' + b.days + ' days' : '')],
+        ['When', esc(dRangeLong(b.shoot_date, b.days))],
+        b.roles?.length ? ['Booked as', esc(andList(b.roles))] : null,
         ['Hours', b.day_hours ? `Up to ${b.day_hours} a day, including breaks` : 'To agree in messages'],
         ['Where', esc(b.location) || 'To confirm in messages'],
         ['Call time', esc(b.call_time) || 'To confirm in messages'],
@@ -187,4 +201,21 @@ A['agreement-copy'] = async (el) => {
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   toast('Copy saved to your downloads');
+};
+
+// ---------------------------------------------------------------- skills on one booking
+// A creative who models and makes UGC can be booked for both in one offer (Luke's snag list, 2026-11-26).
+// Multi-select chips, the same control as "Where you'll use the photos"; at least one stays picked.
+export function skillPicker(roles, picked, { label = 'Booking them as', crew = '' } = {}) {
+  const on = picked?.length ? picked : roles.slice(0, 1);
+  return `<fieldset class="fsec skillpick"${crew ? ` data-crew="${esc(crew)}"` : ''}><legend class="s">${esc(label)} <span class="hint">Pick every skill you need from them on the day</span></legend>
+    <div class="chips mt8">${roles.map((r) => `<button type="button" class="chip" data-a="skill-pick" data-k="${esc(r)}" aria-pressed="${on.includes(r)}">${esc(r)}</button>`).join('')}</div></fieldset>`;
+}
+export const readSkills = (root) => [...root.querySelectorAll('[data-a=skill-pick][aria-pressed=true]')].map((b) => b.dataset.k);
+A['skill-pick'] = (el) => {
+  const box = el.closest('.skillpick');
+  const was = el.getAttribute('aria-pressed') === 'true';
+  if (was && readSkills(box).length === 1) return toast('Keep at least one skill picked');
+  el.setAttribute('aria-pressed', String(!was));
+  box.dispatchEvent(new CustomEvent('skillchange', { bubbles: true }));
 };

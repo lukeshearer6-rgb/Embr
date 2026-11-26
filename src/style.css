@@ -1124,3 +1124,23 @@ body.has-rbar main.shell{padding-bottom:180px}
 .fullterms summary::-webkit-details-marker{display:none}
 .fullterms .agreement{max-height:50vh;overflow:auto}
 .sign-in{font-size:18px;font-style:italic;letter-spacing:.01em}
+
+/* ===== brand snag list (2026-11-26): per-person days, skills, usage fee; phone after confirmation ===== */
+.rperson{border-bottom:1px solid var(--line);padding-bottom:12px}
+.rperson .rrow{border-bottom:0;padding-bottom:4px}
+.rr-more{padding-left:60px;display:flex;flex-direction:column;gap:12px}
+.rr-more .fsec{border:0;padding:0;margin:0}
+.rr-money{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rr-money .in{height:48px}
+.rrange{margin-top:-4px;font-weight:600}
+@media (max-width:560px){.rr-more{padding-left:0}}
+.phone-line{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.phone-line .btn svg{width:18px;height:18px;margin-right:6px}
+.sd-line{display:flex;align-items:center;gap:8px}
+.sd-line .sd-row{flex:1;min-width:0}
+.sd-tel{width:48px;height:48px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;flex:none;color:var(--ink)}
+.usage-custom .in{max-width:160px}
+.phone-card .in{max-width:260px}
+.skillpick legend{font-weight:700}.skillpick legend .hint{display:block;font-weight:400;margin-top:2px}
+.usagepick legend .hint{display:block;font-weight:400;margin-top:2px}
+.sd-line{border-bottom:1px solid var(--line)}.sd-line .sd-row{border-bottom:0}

@@ -2,8 +2,8 @@
 // talent and Embr staff, plus the payment actions.
 import { A, F, S, go, rerender, refreshMe } from '../state.js';
 import { rpc, action, photoUrl } from '../api.js';
-import { $, esc, gbp, pounds, pct, dMed, dLong, dShort, dWeekday, tShort, ago, today, toast, openLayer, closeLayer, refreshTop, topLayer, confirmDialog, formData, first, busy, whenTxt } from '../ui.js';
-import { ICON } from '../icons.js';
+import { $, esc, gbp, pounds, pct, dMed, dLong, dShort, dWeekday, tShort, ago, today, toast, openLayer, closeLayer, refreshTop, topLayer, confirmDialog, formData, first, busy, whenTxt, dRange, addDays, andList } from '../ui.js';
+import { ICON, RICON } from '../icons.js';
 import { thumb, status, stHTML } from './common.js';
 import { talentShootSec, talentChangeSec, continueShootPay } from './shoot.js';
 import { dirBtn } from './shootday.js';
@@ -11,8 +11,8 @@ import { reviewSheet, agreementDialog, signedRecord, usageLines } from './contra
 
 function money(b, r) {
   const rows = [
-    ['Session', `${b.days} day${b.days > 1 ? 's' : ''} at ${pounds(b.day_rate)}`, b.session_p],
-    ...(b.talent_fee_p > b.session_p ? [['Usage', '', b.talent_fee_p - b.session_p]] : []),
+    ['Day rate', `${b.days} day${b.days > 1 ? 's' : ''} at ${pounds(b.day_rate)}, for ${r === 'talent' ? 'your' : 'their'} time`, b.session_p],
+    ...(b.talent_fee_p > b.session_p ? [['Usage fee', 'For using the photos and video', b.talent_fee_p - b.session_p]] : []),
   ];
   if (r === 'talent') {
     return `<div class="ledger">${rows.map(([l, w, v]) => `<div class="r"><span>${l}<span class="when">${w}</span></span><span>${gbp(v)}</span></div>`).join('')}
@@ -36,7 +36,7 @@ function steps(b) {
     ['Offer sent', true, b.created_at],
     ['Accepted', !!b.talent_agreed_at, b.talent_agreed_at],
     ['Deposit paid', !!b.deposit_paid_at, b.deposit_paid_at],
-    ['Shoot day', b.status === 'wrapped' || b.status === 'completed', null, dMed(b.shoot_date)],
+    [b.days > 1 ? 'Shoot days' : 'Shoot day', b.status === 'wrapped' || b.status === 'completed', null, dRange(b.shoot_date, b.days)],
     ['Signed off and paid', b.status === 'completed', b.completed_at],
   ];
   const now = s.findIndex((x) => !x[1]);
@@ -71,6 +71,15 @@ function footFor(b, r, me) {
   return out.join('');
 }
 
+// The talent's phone number: brands see it once the deposit confirms the booking, until 14 days after the shoot
+// (rule kept in the database, _phone_open). Call button as on confirmed bookings in Trip.com, Uber Eats and Expedia.
+function phoneLine(b) {
+  if (b.talent_phone) return `<div class="phone-line mt8"><a class="btn sm" href="tel:${esc(b.talent_phone)}" data-tel>${RICON.phone}Call ${esc(first(b.talent.name))}</a><span class="s">${esc(b.talent_phone)}</span></div>`;
+  if (['offer', 'accepted'].includes(b.status)) return `<p class="xs g mt4">Their phone number shows here once the deposit confirms the booking.</p>`;
+  if (b.phone_open) return `<p class="xs g mt4">${esc(first(b.talent.name))} hasn't added a phone number. Message them here.</p>`;
+  return '';
+}
+
 function sheet(b, sh = null) {
   const r = S.me.role;
   const t = b.talent, br = b.brand;
@@ -91,13 +100,13 @@ function sheet(b, sh = null) {
     head: `<div class="grow row" style="gap:10px"><span class="st ${stc}">${esc(stl)}</span><span class="s g">${esc(b.ref)}</span></div>`,
     body: `${notes.length ? `<div class="stack mb24">${notes.join('')}</div>` : ''}
     <div class="cs-head"><div><p class="s g">${r === 'talent' ? esc(br.name) : r === 'ops' ? esc(br.name) + ' booking ' + esc(t.name) : 'Booking ' + esc(t.name)}</p><h2 class="display t-48 mt8">${esc(b.title)}</h2></div>
-      <div class="cs-date"><div class="d">${dShort(b.shoot_date)}</div><div class="s g">${dWeekday(b.shoot_date)}${b.days > 1 ? ', ' + b.days + ' days' : ''}</div></div></div>
+      <div class="cs-date"><div class="d">${dShort(b.shoot_date)}${b.days > 1 ? ' – ' + dShort(addDays(b.days - 1, b.shoot_date)) : ''}</div><div class="s g">${dWeekday(b.shoot_date)}${b.days > 1 ? ' to ' + dWeekday(addDays(b.days - 1, b.shoot_date)) + ', ' + b.days + ' days' : ''}</div></div></div>
     <div class="cs-grid"><div>
       ${sh?.shoot && r === 'brand' ? `<div class="cs-sec"><button class="btn sm" data-a="shoot" data-id="${sh.shoot.id}" data-who="${b.id}">Open the shoot thread</button></div>` : ''}
       ${r === 'talent' ? talentShootSec(b, sh) : ''}
       <div class="cs-sec"><h4>The day</h4><dl class="kv"><dt>Where</dt><dd>${esc(b.location) || '<span class="g">To confirm in messages</span>'}</dd><dt>Call time</dt><dd>${esc(b.call_time) || '<span class="g">To confirm in messages</span>'}</dd>${b.day_hours ? `<dt>Hours</dt><dd>Up to ${b.day_hours} a day, including breaks</dd>` : ''}${usageLines(b.usage_terms).length ? `<dt>Photo use</dt><dd><ul class="plain-list">${usageLines(b.usage_terms).slice(0, 3).map((l) => `<li>${esc(l)}</li>`).join('')}</ul>${b.usage_fee ? `<span class="s g">Usage fee ${pounds(b.usage_fee)}. </span>` : ''}<button class="link s" data-a="agreement" data-id="${b.id}">All the terms</button></dd>` : b.usage ? `<dt>Usage</dt><dd>${esc(b.usage)}${b.usage_fee ? ' (' + pounds(b.usage_fee) + ')' : ''}</dd>` : ''}${b.content_agreed ? `<dt>Content agreed</dt><dd>${esc(b.content_agreed)}</dd>` : ''}${b.notes ? `<dt>Notes</dt><dd style="white-space:pre-wrap">${esc(b.notes)}</dd>` : ''}</dl>${['accepted', 'confirmed', 'wrapped'].includes(b.status) ? `<div class="mt12">${dirBtn(b.location, 'sm')}</div>` : ''}</div>
       <div class="cs-sec"><h4>People</h4><div class="people">
-        <div class="person"><div class="thumb" style="${ph ? `background-image:url('${ph}')` : ''}">${ph ? '' : esc(t.name[0] || '')}</div><div><div style="font-weight:700">${esc(t.name)}${t.verified ? ICON.tick : ''}</div><div class="s g">${b.role ? "Booked as " + esc(b.role) : esc(t.category)}, ${esc(t.city)}</div></div></div>
+        <div class="person"><div class="thumb" style="${ph ? `background-image:url('${ph}')` : ''}">${ph ? '' : esc(t.name[0] || '')}</div><div><div style="font-weight:700">${esc(t.name)}${t.verified ? ICON.tick : ''}</div><div class="s g">${b.role ? "Booked as " + esc(andList(b.roles?.length ? b.roles : [b.role])) : esc(t.category)}, ${esc(t.city)}</div>${r !== 'talent' ? phoneLine(b) : ''}</div></div>
         <div class="person">${thumb(br, true)}<div><div style="font-weight:700">${esc(br.name)}</div><div class="s g">${esc(br.contact_name || '')}${br.instagram ? ' · ' + esc(br.instagram) : ''}</div></div></div></div></div>
       <div class="cs-sec" id="msgs"><h4>Messages</h4>
         ${r === 'talent' ? talentChangeSec(b, sh) : ''}

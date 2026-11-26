@@ -1,6 +1,6 @@
 # Embr booking agreement: text for solicitor review
 
-Version `pilot-2026-11-v2`, exported 2026-11-26 (replaces the 2026-11-24 export of `pilot-2026-11`). Source: the `_agreement` SQL function in `supabase/migrations/20261126000001_booking_contract.sql`, function at line 92, agreement text at lines 100 to 153, values filled in at lines 154 to 176. This is the latest migration that defines `_agreement`. The test `npm run test:agreement` checks that the text below still matches that function word for word.
+Version `pilot-2026-11-v2`, exported 2026-11-26, updated the same day for Luke's brand snag list (date ranges, every skill booked, day rate and usage fee named apart, any usage length from 1 to 120 months). Source: the `_agreement` SQL function in `supabase/migrations/20261126000002_brand_snags.sql`, function at line 92, agreement text at lines 100 to 153, values filled in at lines 154 to 176. This is the latest migration that defines `_agreement`. The test `npm run test:agreement` checks that the text below still matches that function word for word.
 
 **Status: DRAFT.** Waiting for the BPP Enterprise Clinic review (workflow-state D4). Not shown to real brands. Research behind this version: https://claude.ai/artifact/PNFUMcKEETLqD9a22oHoC8
 
@@ -14,12 +14,12 @@ What changed from `pilot-2026-11`: plain-English section headings; the Talent's 
 
 How each side agrees, from the app code:
 
-- **Client:** the offer is recorded as agreed by the Client when it is sent (`brand_agreed_at`, set in `_new_booking`, `supabase/migrations/20261126000001_booking_contract.sql`, line 180). The Client ticks "I accept the Embr booking agreement" on the offer form.
-- **Talent (offers):** before accepting, the Talent sees a plain-English summary (pay, the day, photo use, cancellation), can open the full text, types their full name and ticks "I've read the agreement and I'm 18 or over. Typing my name here is my signature, the same as signing on paper." (`src/views/contract.js`, `reviewSheet`). The database refuses an acceptance without a typed name of at least two letters (`respond_offer`, line 222).
-- **Talent (booking links):** the Talent sets the terms, types their name and ticks the same statement when creating the link (`create_link`, line 251). The agreement becomes binding when a Client books through the link.
+- **Client:** the offer is recorded as agreed by the Client when it is sent (`brand_agreed_at`, set in `_new_booking`, `supabase/migrations/20261126000002_brand_snags.sql`, line 197). The Client ticks "I accept the Embr booking agreement" on the offer form.
+- **Talent (offers):** before accepting, the Talent sees a plain-English summary (pay, the day, photo use, cancellation), can open the full text, types their full name and ticks "I've read the agreement and I'm 18 or over. Typing my name here is my signature, the same as signing on paper." (`src/views/contract.js`, `reviewSheet`). The database refuses an acceptance without a typed name of at least two letters (`respond_offer`, `supabase/migrations/20261126000001_booking_contract.sql`, line 222).
+- **Talent (booking links):** the Talent sets the terms, types their name and ticks the same statement when creating the link (`create_link`, same file, line 251). The agreement becomes binding when a Client books through the link.
 - **The record:** each booking keeps the typed name, the time, the agreement version and a SHA-256 fingerprint of the exact text signed (`talent_signed_name`, `talent_agreed_at`, `agreement_version`, `agreement_sha`). Both sides can reopen the text and save a copy (a text file with the signature record) from the booking at any time.
 
-One change is made after the text is generated: the Talent line in section 1 also names the role they were booked for, so it reads `Talent: {talent_name} (booked as: {role})`.
+The Talent line in section 1 names every skill the Talent is booked for, such as `Talent: {talent_name} (booked as: Model and UGC creator)`. A booking can cover several of a creative's skills.
 
 ## Where each filled-in part comes from
 
@@ -30,22 +30,22 @@ One change is made after the text is generated: the Talent line in section 1 als
 | `{booking_ref}` | Booking reference, such as EMB-ABC123 | Booking: generated reference |
 | `{agreement_version}` | Version label | Settings: `agreement_version` |
 | `{brand_name}`, `{talent_name}` | The two parties | Their Embr profiles |
+| `{booked_as}` | " (booked as: Model and UGC creator)": every skill on this booking | Booking: `roles` (`_and_list`) |
 | `{job_title}` | What the job is | Booking: typed by the Client |
-| `{shoot_date}` | Shoot date, like "Saturday 5 December 2026" | Booking |
-| `{days_phrase}` | " for 3 days" when longer than one day, otherwise blank | Booking |
+| `{dates}` | "Saturday 5 December 2026", or for longer bookings "Thursday 10 December 2026 to Friday 11 December 2026 (2 days)" | Booking: shoot date and days (`_date_range`) |
 | `{location}`, `{call_time}` | Where and when | Booking; if blank, "To be confirmed in Embr messages" |
 | `{hours}` | "Up to 10 hours a day, including breaks. Anything longer must be agreed in Embr messages first." | Booking: hours per day (1 to 16); if blank, "As agreed in Embr messages" |
 | `{session_fee}`, `{days}`, `{days_plural}`, `{day_rate}` | Day rate times days | Booking |
-| `{usage_with_fee}` | Short usage summary, such as "Own social posts, Website and shop · 12 months · UK", then the usage fee in brackets or "(included)" | Booking: `usage_terms` (or the older free-text `usage`) and usage fee |
+| `{usage_with_fee}` | The usage fee, then what it covers: "£150 for Own social posts, Website and shop · 18 months · UK", or "£0 (no separate usage fee) for …" | Booking: usage fee and `usage_terms` (or the older free-text `usage`) |
 | `{talent_fee}`, `{embr_fee}`, `{fee_rate}`, `{fee_label}`, `{total}` | The money | Worked out from the booking; fee tiers from Settings |
 | `{deposit_rate}`, `{deposit}`, `{balance}` | Deposit and balance | Settings (`deposit_rate`, 50%) and the booking |
 | `{auto_signoff_hours}` | Hours to sign off or report a problem | Settings (72) |
-| `{usage_terms}` | Section 5 in full: one line per place the photos can be used, then how long, where, what's included, what happens when it ends, archive use, AI, and that anything else needs a new booking | `_usage_clause`, line 72. Bookings made before this version show the old free-text usage instead |
+| `{usage_terms}` | Section 5 in full: one line per place the photos can be used (each named, never "all of it"), then how long, where, what's included, what happens when it ends, archive use, AI, and that anything else needs a new booking | `_usage_clause`, line 72. Bookings made before this version show the old free-text usage instead |
 | `{content_agreed}` | What the Talent agreed to do | Booking; if blank, "As described in the job above." |
 | `{free_cancel_days}`, `{late_cancel_share}`, `{late_cancel_amount}` | Cancellation | Settings (7 days, 50%) and the booking |
 | `{signing}` | How each side signed: by offer and typed name, or by booking link | Whether the booking came from a booking link |
 
-The fixed usage options and their wording (section 5): "Posts on the Client's own social media, such as Instagram and TikTok. Not paid ads." · "Paid ads on social media and other websites." · "The Client's website and online shop." · "The Client's emails and newsletters." · "In the Client's shops and in print, such as posters, lookbooks and flyers." · "Billboards, bus stops and other outdoor posters and screens." · "Ads on TV, streaming services and in cinemas." · "On the Client's product packaging." Periods: 3, 6, 12 or 24 months. Areas: the UK, the UK and Europe, anywhere in the world.
+The fixed usage options and their wording (section 5): "Posts on the Client's own social media, such as Instagram and TikTok. Not paid ads." · "Paid ads on social media and other websites." · "The Client's website and online shop." · "The Client's emails and newsletters." · "In the Client's shops and in print, such as posters, lookbooks and flyers." · "Billboards, bus stops and other outdoor posters and screens." · "Ads on TV, streaming services and in cinemas." · "On the Client's product packaging." Periods: any whole number of months from 1 to 120 (the app offers 3, 6, 12 and 24 as presets, plus a custom length). Areas: the UK, the UK and Europe, anywhere in the world.
 
 ## The agreement text
 
@@ -58,20 +58,20 @@ Pilot version {agreement_version}. Draft for the invite-only pilot, waiting for 
 
 1. Who this is between
 Client: {brand_name}
-Talent: {talent_name}
+Talent: {talent_name}{booked_as}
 Embr provides the booking software and takes payments through its payment provider, Stripe. Embr is not an agency: it does not find work for the Talent, and the Client chose and booked the Talent.
 The Talent confirms they are 18 or over, have passed Embr's ID check, and are self-employed and responsible for their own tax.
 
 2. The job
 {job_title}
-{shoot_date}{days_phrase}
+{dates}
 Location: {location}
 Call time: {call_time}
 Hours: {hours}
 
 3. The money
-Session: {session_fee} ({days} day{days_plural} at {day_rate})
-Usage: {usage_with_fee}
+Day rate for the Talent's time (basic studio fee): {session_fee} ({days} day{days_plural} at {day_rate})
+Usage fee for using the photos and video: {usage_with_fee}
 Talent fee: {talent_fee}. The Talent receives this in full. Embr takes no commission from the Talent.
 Embr booking fee, paid by the Client: {embr_fee} ({fee_rate}, {fee_label})
 Total for the Client: {total}
@@ -91,7 +91,7 @@ Nothing outside this may be asked of the Talent on the day. The Talent may bring
 
 7. If plans change
 a) Client cancels {free_cancel_days} or more days before the shoot: the deposit is refunded in full.
-b) Client cancels less than {free_cancel_days} days before the shoot: the Talent is paid {late_cancel_share} of the session fee ({late_cancel_amount}) from the deposit and the rest is refunded.
+b) Client cancels less than {free_cancel_days} days before the shoot: the Talent is paid {late_cancel_share} of the day rate ({late_cancel_amount}) from the deposit and the rest is refunded.
 c) Talent cancels: the Client's deposit is refunded in full.
 
 8. If something goes wrong

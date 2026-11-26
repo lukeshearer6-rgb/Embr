@@ -16,7 +16,7 @@
 // the final round would need). Directions open the phone's own maps app through a plain link, no map API.
 import { A, F } from '../state.js';
 import { rpc } from '../api.js';
-import { esc, dMed, dLong, today, toast, openLayer, refreshTop, topLayer, belowTop, closeLayer, formData, first, ago, whenTxt } from '../ui.js';
+import { esc, dMed, dLong, today, toast, openLayer, refreshTop, topLayer, belowTop, closeLayer, formData, first, ago, whenTxt, dRangeLong, andList, dRange } from '../ui.js';
 import { RICON } from '../icons.js';
 import { thumb, status } from './common.js';
 
@@ -61,12 +61,15 @@ function latest(s, n = 3) {
   return out.reverse();
 }
 
+// once confirmed, a Call button sits beside each person (Uber Eats, Hyatt and Expedia put Call on the confirmed
+// booking); the number comes from the database only from the deposit until 14 days after the shoot
 function rosterRow(p, s) {
   const [stl, stc] = status(p, 'brand');
   const call = p.call_time || s.call_time;
-  return `<button type="button" class="sd-row" data-a="shoot-who" data-id="${s.id}" data-who="${p.id}">
-    ${thumb(p.talent)}<span class="grow"><span class="sd-nm">${esc(p.talent.name)}${p.unread ? '<span class="flag" aria-label="new message"></span>' : ''}</span><span class="xs g">${esc(p.role || p.talent.category)}</span></span>
-    <span class="sd-r"><b class="sd-call">${call ? esc(call) : '<span class="g">Call time to confirm</span>'}</b><span class="st ${stc} xs">${esc(stl)}</span></span></button>`;
+  const tel = p.phone ? `<a class="sd-tel" href="tel:${esc(p.phone)}" aria-label="Call ${esc(p.talent.name)} on ${esc(p.phone)}">${RICON.phone}</a>` : '';
+  return `<div class="sd-line"><button type="button" class="sd-row" data-a="shoot-who" data-id="${s.id}" data-who="${p.id}">
+    ${thumb(p.talent)}<span class="grow"><span class="sd-nm">${esc(p.talent.name)}${p.unread ? '<span class="flag" aria-label="new message"></span>' : ''}</span><span class="xs g">${esc(p.roles?.length ? andList(p.roles) : p.role || p.talent.category)}${p.days > 1 || p.shoot_date !== s.shoot_date ? ' · ' + esc(dRange(p.shoot_date, p.days)) : ''}</span></span>
+    <span class="sd-r"><b class="sd-call">${call ? esc(call) : '<span class="g">Call time to confirm</span>'}</b><span class="st ${stc} xs">${esc(stl)}</span></span></button>${tel}</div>`;
 }
 
 // the post-shoot tracker. Every live step is read from the existing booking statuses.
@@ -110,7 +113,7 @@ function hubLayer(s) {
     kind: 'sheet', cls: 'shootday', shootday: s.id, label: s.title + ' shoot day',
     head: `<div class="grow st-hd"><b class="st-ttl">${esc(s.title)}</b><span class="xs g">Shoot day</span></div>`,
     body: `<section class="sd-band" aria-label="When and where">
-        <div class="sd-when"><span class="sd-tag">${whenLabel(s.shoot_date)}</span><span>${dLong(s.shoot_date)}${s.days > 1 ? `, ${s.days} days` : ''}</span></div>
+        <div class="sd-when"><span class="sd-tag">${whenLabel(s.shoot_date)}</span><span>${dRangeLong(s.shoot_date, s.days)}</span></div>
         <div class="sd-kv"><div><span class="xs">Call time</span><b>${call ? esc(call) : 'To confirm'}</b></div>
           <div><span class="xs">Location</span><b>${s.location ? esc(s.location) : 'To confirm'}</b></div></div>
         ${s.location ? `<div class="sd-acts">${dirBtn(s.location, 'onblack')}<button type="button" class="btn quiet onblack" data-a="copy-place" data-place="${esc(s.location)}">Copy</button></div>` : ''}
