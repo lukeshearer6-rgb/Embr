@@ -58,6 +58,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | D9 | Reusable mobile CreativeCard (swipeable photos, video tile, rating when real, Add to shoot) from Mobbin research, built on D8 | developer | needs-approval | e2e 40 and db 77 passed 2026-11-25; docs/dev/creative-card.md has Mobbin refs and before/after | Held for Luke's final UI round: merge after D8; needs `supabase db push` for the card media migration |
 | D10 | Shoot Roster: group creatives under one shoot date and place, combined cost, missing-role prompts, send every offer at once (one offer per creative, payments unchanged), built on D9 | developer | needs-approval | e2e 41 and db 77 passed 2026-11-25; docs/dev/shoot-roster.md has Mobbin refs and before/after | Held for Luke's final UI round: merge after D9. A single combined payment would need new payment work (not built) |
 | D11 | Rates and availability editor (full/half-day packages, blocked date ranges) and brand-facing creative detail screen with sticky "Add to shoot" bar, built on D10 | developer | needs-approval | db 82 and e2e 43 passed 2026-11-25; docs/dev/rates-and-detail.md has Mobbin refs and before/after | Held for Luke's final UI round: merge after D10, then `supabase db push` for 20261125000007_rate_packages.sql. Optional later: bookings.package column so half days are labelled on the booking screen |
+| D13 | Shoot Day Hub: confirmed roster, call times, map directions, group chat, post-shoot tracker over the existing wrap and sign-off, built on the Shoot Thread PR | developer | needs-approval | e2e 45 and db 94 passed 2026-11-25; docs/dev/shoot-day-hub.md has Mobbin refs and before/after | Held for Luke's final UI round: merge after the Shoot Thread PR. No migration. Deliverables and reviews need new tables (listed in the doc) |
 
 ### App build
 
@@ -84,6 +85,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 ## Session log
 
+- 2026-11-25 developer: D13 Shoot Day Hub on a PR stacked on the Shoot Thread PR (not merged); e2e 45, db 94; no database changes.
 - 2026-11-25 developer: Shoot Thread built on a branch stacked on PR 31 (shoot brief, offer and change cards, message everyone, one shoot checkout over the existing per-booking deposits); db 94 and e2e 44 pass; three questions added to Waiting on Luke (D8); not merged or deployed.
 
 Newest first. One line per session: date, agent, what happened.

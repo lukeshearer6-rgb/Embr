@@ -2,6 +2,13 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-25: Shoot Day Hub: roster, call times, directions, group chat and a post-shoot tracker (held for the final UI round)
+- Brands: once anyone is confirmed, a shoot opens on its day screen: when and where with one-tap Directions (Apple Maps on iPhone, Google Maps elsewhere, plain links), the confirmed roster with call times and status, the latest group messages with "message everyone", and a tracker (shoot day, wrapped, signed off and paid, then deliverables and review shown as not on Embr yet). Sign-off still happens on each booking.
+- Creatives: a Directions button on their booking once they've accepted.
+- Payments and database unchanged. Deliverables and reviews need new tables, listed in docs/dev/shoot-day-hub.md.
+- Files: `src/views/shootday.js` (new), `src/views/shoot.js`, `src/views/booking.js`, `src/icons.js`, `src/ui.js`, `src/style.css`, `tests/e2e.test.mjs`.
+- Tests: e2e 45, db 94.
+
 ## 2026-11-25: Shoot Thread: one shoot brief, offer cards in the chat, change requests and one shoot checkout (held for the final UI round)
 - Brands: the roster gets a shoot brief (moodboard images, link, notes). Sending saves the shoot and sends one offer per person with the shoot's shared details, then opens the Shoot Thread: brief pinned on top, people chips, each person's offer as a card in their chat, "message everyone", and an orange "Pay N deposits" bar opening one checkout with deposits, balances, a cancellation timeline and protections (draft wording from the booking agreement, marked for solicitor review).
 - Creatives: their offer shows the shoot brief and "Ask [brand] for a change" (day rate and a note) before they answer. Only the brand can change the offer; accepting re-prices it with the same fee rules and rewrites its agreement.

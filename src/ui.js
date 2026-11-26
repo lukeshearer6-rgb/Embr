@@ -93,6 +93,7 @@ export function closeLayer() {
 }
 export function closeAll() { while (stack.length) stack.pop()?.onClose?.(); drawLayers(false); }
 export const topLayer = () => stack[stack.length - 1];
+export const belowTop = () => stack[stack.length - 2];
 export const layerCount = () => stack.length;
 export function refreshTop(layer) { if (stack.length) { stack[stack.length - 1] = layer; drawLayers(false); } }
 
