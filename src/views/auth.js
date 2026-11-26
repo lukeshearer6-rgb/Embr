@@ -15,7 +15,7 @@ VIEWS.auth.welcome = (app) => {
   app.dataset.role = '';
   app.innerHTML = frame(`<img src="${LOGO}" alt="Embr" style="height:34px">
     <h1 class="display t-72 mt24">Unsigned, not unseen.</h1>
-    <p class="g mt16 measure">Brands book models and creatives directly, with the terms agreed in writing and a deposit paid up front. Talent keep everything they earn: Embr takes 0% of your fee.</p>
+    <p class="g mt16 measure">Brands book models and creatives directly, with the terms agreed in writing and a deposit paid up front.</p>
     <div class="choices" style="grid-template-columns:repeat(2,1fr)">
       <button class="choice" data-go="/signin?as=brand"><b>I'm a brand</b><div class="s g mt4">Find and book talent</div></button>
       <button class="choice" data-go="/signin?as=talent"><b>I'm talent</b><div class="s g mt4">Let work find you</div></button>
