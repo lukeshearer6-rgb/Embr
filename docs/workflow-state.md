@@ -28,7 +28,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | D6 | Add the talent agency-status declaration to the BPP review (docs/dev/agency-declaration.md, draft wording live in the test app only) | Legal wording needs the solicitor before real talent sign up |
 | D8 | Shoot Thread (PR held for the final UI round): decide whether creatives may send their own priced "Custom Offers" (built as "Ask for a change" instead), whether to build a true single shoot payment, and approve the draft cancellation and protection wording on the shoot checkout (docs/dev/shoot-thread.md) | Agency position, live-money design and legal wording are Luke's calls |
 | D16 | Add booking agreement v2 (plain-English usage, typed-name signing; docs/dev/booking-agreement.md, 13 questions) to the BPP review, and call the next final round when ready (PR held) | Legal wording and shipping are Luke's calls |
-| D18 | Go-ahead to deploy brand snag list 2 to embr-pilot.pages.dev (migration 20261126000003, then the site), run from Luke's Mac; add agreement v3 question 14 (48-hour cancellation) to the BPP review | Live deploy and legal wording are Luke's calls |
+| D18 | Add booking agreement v3 question 14 (48-hour cancellation, docs/dev/booking-agreement.md) to the BPP review | Legal wording is Luke's call |
 | D4 | Send the enquiry to BPP's free online business clinic (draft: docs/dev/bpp-enquiry-draft.md; form linked in docs/research/r3-agreement-review-shortlist.md) | Contacting BPP is Luke's to do |
 
 ## Backlog
@@ -63,7 +63,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | D14 | Phone polish: one type scale, card padding, safe areas and 48px targets across PRs 27-33; skeleton loaders for the board and creative profile; empty states for no results, an empty Shoot Roster and a new creator profile | developer | needs-approval | e2e 46, db 94, payments 11 passed 2026-11-25; docs/dev/mobile-polish.md has Mobbin refs and before/after | Held for Luke's final UI round: merge after the Shoot Day Hub PR. No migration. Tab bar restructure and the phone dialog grabber left for Luke's call |
 | D16 | Booking contract v2: plain-English usage chips (brand offer, roster, booking links), hours a day, talent Review and sign with typed name, signed record and saved copy | developer | needs-approval | db 101, e2e 49, agreement 9/9 passed 2026-11-26 | Luke adds it to the BPP review; ships with the next final round |
 | D17 | Brand snag list: several usages with custom months, separate usage fee on briefs and shoots, per-day booking on multi-day shoots, several skills per booking, date ranges, talent phone shown to brands after confirmation (built on D16) | developer | done | db 108, e2e 57, agreement 9, payments 11 passed 2026-11-26; merged in PR 41; migrations 000001 and 000002 pushed and embr-pilot.pages.dev serving the new build (200) 2026-11-26 12:40 UK, Luke's go; docs/dev/brand-snags.md | Run the test ID checks on the live build when that thread finishes |
-| D18 | Brand snag list 2: options (3 per spot, brand chooses the next), several roles per brief, day-rate ranges with in-range box, editable briefs, casting/gender, 48-hour cancellation (agreement v3), link-fee rule, Shoots tab and job roster button | developer | needs-approval | db 125, e2e 64, payments 12, agreement 9, office 13 passed 2026-11-26; docs/dev/brand-snags-2.md | Luke's go to deploy: `supabase db push` for 20261126000003 then the Pages build, from his Mac |
+| D18 | Brand snag list 2: options (3 per spot, brand chooses the next), several roles per brief, day-rate ranges with in-range box, editable briefs, casting/gender, 48-hour cancellation (agreement v3), link-fee rule, Shoots tab and job roster button | developer | done | db 125, e2e 64, payments 12, agreement 9, office 13 passed 2026-11-26; merged in PR 43; migration 20261126000003 pushed and embr-pilot.pages.dev serving the new build (200, new brand script checked) 2026-11-26 16:30 UK, Luke's go; docs/dev/brand-snags-2.md | Luke adds agreement v3 question 14 to the BPP review |
 
 ### App build
 
@@ -90,6 +90,8 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | M5 | Zero-cash growth experiments with one metric each | marketer | todo | No predicted results | Draft in marketing/experiments/ |
 
 ## Session log
+
+- 2026-11-26 developer: D18 deployed with Luke's go: Luke ran the 20261126000003 db push on his Mac, Pages deployed, live site checked.
 
 - 2026-11-26 developer: D18 brand snag list 2 built (options, multi-role briefs, ranges, edit brief, casting, 48h cancellation, link rule, Shoots tab); all suites pass; PR opened, live deploy waits for Luke.
 
