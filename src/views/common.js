@@ -1,7 +1,7 @@
 // Pieces used on several screens: talent cards, booking rows, status labels, calendar.
 import { S, A } from '../state.js';
 import { photoUrl } from '../api.js';
-import { toast, esc, gbp, pounds, pct, dMed, dLong, addDays, iso, initials, plural, whenTxt, rolesOf, rolesTxt } from '../ui.js';
+import { toast, esc, gbp, pounds, pct, dMed, dLong, addDays, iso, initials, plural, whenTxt, rolesOf, rolesTxt, dRange } from '../ui.js';
 import { ICON } from '../icons.js';
 import { statsHTML } from './model.js';
 
@@ -70,7 +70,7 @@ export function bookingItem(b) {
   const other = r === 'talent' ? b.brand : b.talent;
   const amt = r === 'talent' ? b.talent_fee_p : b.total_p;
   return `<button class="item" data-a="booking" data-id="${b.id}">${thumb(other, r === 'talent')}
-    <div class="grow"><div class="ttl">${esc(b.title)}</div><div class="meta"><span>${esc(r === 'ops' ? b.brand.name + ' → ' + b.talent.name : other.name)}</span><span>${dMed(b.shoot_date)}${b.days > 1 ? ', ' + b.days + ' days' : ''}</span>${b.unread ? '<span style="color:var(--embr-text);font-weight:600">New message</span>' : ''}${r === 'ops' ? `<span>${esc(b.ref)}</span>` : ''}</div></div>
+    <div class="grow"><div class="ttl">${esc(b.title)}</div><div class="meta"><span>${esc(r === 'ops' ? b.brand.name + ' → ' + b.talent.name : other.name)}</span><span>${dRange(b.shoot_date, b.days)}</span>${b.unread ? '<span style="color:var(--embr-text);font-weight:600">New message</span>' : ''}${r === 'ops' ? `<span>${esc(b.ref)}</span>` : ''}</div></div>
     <div class="amt"><div class="money">${gbp(amt)}</div><div class="mt4">${stHTML(b)}</div></div></button>`;
 }
 

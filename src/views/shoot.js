@@ -21,7 +21,7 @@
 // existing pay_deposit step, run one after another from the shoot checkout.
 import { S, A, F, go } from '../state.js';
 import { rpc, action, photoUrl } from '../api.js';
-import { $, esc, gbp, pounds, pct, dMed, dLong, ago, today, toast, openLayer, closeLayer, refreshTop, topLayer, confirmDialog, formData, first, plural, busy } from '../ui.js';
+import { $, esc, gbp, pounds, pct, dMed, dLong, ago, today, toast, openLayer, closeLayer, refreshTop, topLayer, confirmDialog, formData, first, plural, busy, dRange, dRangeLong, andList } from '../ui.js';
 import { ICON } from '../icons.js';
 import { thumb, status } from './common.js';
 import { openBooking } from './booking.js';
@@ -48,7 +48,7 @@ function briefCard(s) {
   return `<details class="sbrief" ${s.people.some((p) => p.messages.length) ? '' : 'open'}>
     <summary><span class="grow"><span class="sb-k">Shoot brief</span><span class="s g">Sent to ${people(live || s.people.length)} · ${dMed(s.shoot_date)}</span></span><span class="sb-chev" aria-hidden="true">›</span></summary>
     ${moodStrip(s, { edit: true })}
-    <dl class="kv mt12"><dt>When</dt><dd>${dLong(s.shoot_date)}${s.days > 1 ? `, ${s.days} days` : ''}</dd>
+    <dl class="kv mt12"><dt>When</dt><dd>${dRangeLong(s.shoot_date, s.days)}</dd>
       <dt>Where</dt><dd>${esc(s.location) || '<span class="g">To confirm in messages</span>'}</dd>
       <dt>Call time</dt><dd>${esc(s.call_time) || '<span class="g">To confirm in messages</span>'}</dd>
       ${s.usage ? `<dt>Usage</dt><dd>${esc(s.usage)}</dd>` : ''}
@@ -64,7 +64,7 @@ function offerCard(p, s, { compact = false } = {}) {
   const days = p.days > 1 ? `${p.days} days` : p.notes && /Half day/.test(p.notes) ? 'half day' : '1 day';
   return `<article class="ocard${compact ? ' compact' : ''}" aria-label="Offer to ${esc(p.talent.name)}">
     <header class="oc-hd"><span class="oc-k">Your offer</span><span class="st ${stc}">${esc(stl)}</span></header>
-    <div class="oc-who">${thumb(p.talent)}<div class="grow"><div class="oc-nm">${esc(p.talent.name)}</div><div class="s g">${esc(p.role || p.talent.category)} · ${dMed(p.shoot_date)}, ${days} at ${pounds(p.day_rate)}</div></div></div>
+    <div class="oc-who">${thumb(p.talent)}<div class="grow"><div class="oc-nm">${esc(p.talent.name)}</div><div class="s g">${esc(p.roles?.length ? andList(p.roles) : p.role || p.talent.category)} · ${dRange(p.shoot_date, p.days)}, ${days} at ${pounds(p.day_rate)}</div></div></div>
     ${compact ? `<div class="oc-sum"><span class="s g">Total with Embr fee</span><b class="money">${gbp(p.total_p)}</b></div>
       <button type="button" class="btn sm oc-open" data-a="shoot-who" data-id="${s.id}" data-who="${p.id}">Open chat${p.unread ? ' · new' : ''}${openChange(p) ? ' · change asked' : ''}</button>`
     : `<div class="ledger mt12">
@@ -124,7 +124,7 @@ function shootLayer(s, who) {
   const canMsg = who === 'all' ? s.people.some(LIVE) : p && !['declined', 'withdrawn'].includes(p.status);
   return {
     kind: 'sheet', cls: 'shootthread', shoot: s.id, who, label: s.title,
-    head: `<div class="grow st-hd"><b class="st-ttl">${esc(s.title)}</b><span class="xs g">${dMed(s.shoot_date)}${callTxt(s) ? ' · ' + esc(callTxt(s)) : ''}</span></div>`,
+    head: `<div class="grow st-hd"><b class="st-ttl">${esc(s.title)}</b><span class="xs g">${dRange(s.shoot_date, s.days)}${callTxt(s) ? ' · ' + esc(callTxt(s)) : ''}</span></div>`,
     body: `${hasDay(s) ? `<button type="button" class="sdlink" data-a="shootday" data-id="${s.id}"><span class="grow"><b>Shoot day</b><span class="xs g">Call times, directions, group chat and sign-off</span></span><span aria-hidden="true">›</span></button>` : ''}
       ${briefCard(s)}
       <nav class="speople" aria-label="Who you're talking to">
@@ -215,7 +215,7 @@ function checkoutLayer(s, round = 0) {
   const row = (p, right, sub) => `<div class="ck-row">${thumb(p.talent)}<div class="grow"><div class="oc-nm">${esc(p.talent.name)}</div><div class="xs g">${esc(p.role || '')}${sub ? ' · ' + sub : ''}</div></div>${right}</div>`;
   return {
     kind: 'sheet', cls: 'scheck', checkout: s.id, label: 'Pay for ' + s.title,
-    head: `<div class="grow st-hd"><b class="st-ttl">Pay for ${esc(s.title)}</b><span class="xs g">${dMed(s.shoot_date)}${s.location ? ' · ' + esc(s.location) : ''}</span></div>`,
+    head: `<div class="grow st-hd"><b class="st-ttl">Pay for ${esc(s.title)}</b><span class="xs g">${dRange(s.shoot_date, s.days)}${s.location ? ' · ' + esc(s.location) : ''}</span></div>`,
     body: `${round ? `<div class="callout ok-c mb16">${plural(round, 'deposit')} paid. ${d.length ? `${plural(d.length, 'more')} to go.` : 'All done.'}</div>` : ''}
       <h3 class="rsec" style="margin-top:0">Due now</h3>
       ${d.length ? d.map((p) => row(p, `<b class="money">${gbp(p.deposit_p)}</b>`, '50% deposit')).join('') : '<p class="s g">Nothing is due right now.</p>'}
@@ -281,7 +281,7 @@ export async function shootsSection() {
     const live = s.people.filter(LIVE);
     const tag = s.to_pay ? `<span class="st act">Pay ${plural(s.to_pay, 'deposit')}</span>` : s.changes ? `<span class="st act">${plural(s.changes, 'change')} asked</span>` : s.unread ? '<span class="st act">New message</span>' : `<span class="st wait">${live.filter((p) => p.status !== 'offer').length} of ${live.length} accepted</span>`;
     return `<button class="item" data-a="${hasDay(s) ? 'shootday' : 'shoot'}" data-id="${s.id}"><span class="pc-stack sh-faces" aria-hidden="true">${s.people.slice(0, 3).map((p) => thumb(p)).join('')}</span>
-      <div class="grow"><div class="ttl">${esc(s.title)}</div><div class="meta"><span>${dMed(s.shoot_date)}</span><span>${people(s.people.length)}</span>${s.location ? `<span>${esc(s.location)}</span>` : ''}</div></div>
+      <div class="grow"><div class="ttl">${esc(s.title)}</div><div class="meta"><span>${dRange(s.shoot_date, s.days)}</span><span>${people(s.people.length)}</span>${s.location ? `<span>${esc(s.location)}</span>` : ''}</div></div>
       <div class="amt">${tag}</div></button>`;
   }).join('')}</div>`;
 }

@@ -190,6 +190,19 @@ try {
   [tRow] = await sql("select travel_range, travel_costs, travels from talents where handle = 'amara'");
   assert.deepEqual(tRow, { travel_range: 'region', travel_costs: 'nearby_included', travels: true });
   ok('travel is saved as how far plus how costs work');
+  // phone number: optional, needs its own consent tick, and is never shown on the profile or Book-me page
+  await amara.fill('#f-phone [name=phone]', '07700 900123');
+  await amara.click('#f-phone button[type=submit]');
+  await toastHas(amara, /Tick the box/);
+  assert.equal((await sql("select phone from talents where handle = 'amara'"))[0].phone, null);
+  await amara.check('#f-phone [name=consent]');
+  await amara.click('#f-phone button[type=submit]');
+  await toastHas(amara, /Brands see it once a booking is confirmed/);
+  assert.equal((await sql("select phone from talents where handle = 'amara'"))[0].phone, '+447700900123');
+  assert.equal(await amara.inputValue('#f-phone [name=phone]'), '+447700900123');
+  await amara.locator('#f-phone').scrollIntoViewIfNeeded();
+  await shot(amara, '03d-talent-phone');
+  ok('talent add a phone number with a consent tick; it saves in UK +44 form');
   await amara.fill('#f-profile [name=instagram]', '@amara.unsaved');
   await amara.setInputFiles('[data-role-sec="Model"] input[type=file]', PHOTOS);
   await toastHas(amara, /Photos added/);
@@ -426,11 +439,22 @@ try {
   await rivet.fill('#f-job [name=height_max]', '183');
   await rivet.click('#f-job [data-name=dress][data-v="8"]');
   await rivet.click('#f-job [data-name=dress][data-v="10"]');
+  // usage on the brief: several uses at once, a custom length, and a usage fee apart from the day rate (Luke's snag list)
+  await rivet.click('#f-job [data-grp=where][data-k=web]');
+  await rivet.click('#f-job [data-grp=months][data-k=custom]');
+  await rivet.fill('#f-job [name=usage_months]', '5');
+  await rivet.waitForSelector('#f-job .usage-say >> text=/Own social posts and website and shop, for 5 months/');
+  assert.equal(await rivet.locator('#f-job [name=day_hours]').count(), 0);
+  await rivet.fill('#f-job [name=usage_fee]', '40');
+  await rivet.locator('#f-job .usagepick').scrollIntoViewIfNeeded();
+  await shot(rivet, '05b-brief-usage');
   await rivet.locator('#f-job [data-specs]').scrollIntoViewIfNeeded();
   await shot(rivet, '05a-brief-model-details');
   await rivet.click('button[form=f-job]');
   await rivet.waitForSelector('.sheet >> text=Womenswear · 172–183cm · dress UK 8, 10');
   await rivet.waitForSelector('h3:has-text("Best fit for this brief")');
+  await rivet.waitForSelector('.sheet >> text=Usage: Own social posts, Website and shop · 5 months · UK · usage fee £40 per person');
+  ok('a brief takes several usages, a custom 5-month length and a usage fee separate from the day rate');
   await rivet.waitForSelector('.sheet .comp >> text=Amara Okafor');
   // each person in the best-fit list says why they fit, checked against the brief
   const fit = await rivet.textContent('.sheet .fit');
@@ -479,15 +503,43 @@ try {
     await phone.waitForSelector('.sheet #f-roster');
     assert.equal(await phone.inputValue('#f-roster [name=title]'), 'Drop 4 lookbook');
     assert.equal(await phone.inputValue('#f-roster [name=date]'), iso(10));
-    assert.equal(await phone.inputValue('.rrow select'), 'Model');
+    assert.equal(await phone.getAttribute('.rperson .skillpick [data-k="Model"]', 'aria-pressed'), 'true');
     assert.equal(await phone.locator('.rrow').count(), 1);
+    assert.equal(await phone.inputValue('.rperson [data-k=usage_fee]'), '40');
+    assert.equal(await phone.getAttribute('#f-roster [data-grp=months][data-k=custom]', 'aria-pressed'), 'true');
+    ok('a roster from a brief carries its usage, custom length and each model\'s usage fee');
     const need = await phone.locator('.rneed b').allTextContents();
     assert.deepEqual(need, ['Need a photographer?', 'Need a make-up artist?', 'Need a hair stylist?']);
     await phone.waitForSelector('#rquote >> text=Total for 1 person');
+    await phone.fill('.rperson [data-k=usage_fee]', '0');
+    await phone.waitForFunction(() => /£275/.test(document.querySelector('.sheet .ft')?.textContent || ''));
     assert.match(await phone.textContent('.sheet .ft'), /£275.*Send offer/s);
-    for (const sel of ['.rneed', '.rr-x', '.rr-rate .in', '.sheet .ft .btn.primary']) assert.ok((await phone.locator(sel).first().boundingBox()).height >= 48, sel + ' is at least 48px tall');
+    for (const sel of ['.rneed', '.rr-x', '.rr-money .in', '.rperson .skillpick .chip', '.sheet .ft .btn.primary']) assert.ok((await phone.locator(sel).first().boundingBox()).height >= 48, sel + ' is at least 48px tall');
     await phone.fill('#f-roster [name=location]', 'Ancoats studio');
     await shot(phone, '04h-shoot-roster-phone');
+    // a two-day shoot: the dates read as a range, and each person is booked for the days picked under their name
+    await phone.fill('#f-roster [name=days]', '2');
+    await phone.dispatchEvent('#f-roster [name=days]', 'change');
+    await phone.waitForSelector('.rperson .rr-days .chip >> nth=1');
+    assert.match(await phone.textContent('#rrange'), / – /);
+    assert.match(await phone.textContent('#rosterbar'), / – /);
+    assert.equal(await phone.locator('.rperson .rr-days .chip[aria-pressed=true]').count(), 2);
+    await phone.waitForSelector('#rquote >> text=/2 days at £250/');
+    await phone.click('.rperson .rr-days .chip >> nth=0');
+    await phone.waitForSelector('#rquote >> text=/1 day at £250/');
+    assert.equal(await phone.locator('.rperson .rr-days .chip[aria-pressed=true]').count(), 1);
+    await phone.click('.rperson .skillpick [data-k="UGC creator"]');
+    await phone.waitForSelector('#rquote >> text=/Model and UGC creator/');
+    await phone.fill('.rperson [data-k=usage_fee]', '100');
+    await phone.waitForSelector('#rquote >> text=/£100 usage/');
+    for (const sel of ['.rr-days .chip']) assert.ok((await phone.locator(sel).first().boundingBox()).height >= 40, sel);
+    await phone.locator('.rperson').scrollIntoViewIfNeeded();
+    await shot(phone, '04i-roster-days-skills-phone');
+    ok('Shoot Roster: a two-day shoot shows its date range, books each person for the days picked, with several skills and their own usage fee');
+    // a UGC creator films themselves, so the photographer prompt only comes back once she's booked as a model alone
+    assert.ok(!(await phone.locator('.rneed b').allTextContents()).includes('Need a photographer?'));
+    await phone.click('.rperson .skillpick [data-k="UGC creator"]');
+    await phone.waitForSelector('.rneed >> text=Need a photographer?');
     // "Need a photographer?" goes back to the board on that role, free on the shoot date
     await phone.click('.rneed >> text=Need a photographer?');
     await phone.waitForFunction(() => document.querySelector('.cats [data-cat="Photographer"]')?.getAttribute('aria-pressed') === 'true');
@@ -554,12 +606,25 @@ try {
   await rivet.click('.sheet button[data-a=offer]');
   await rivet.waitForSelector('#f-offer');
   await rivet.waitForSelector('#quote >> text=Embr fee, 10%');
-  assert.equal(await rivet.inputValue('#f-offer [name=role]'), 'Model');
+  assert.equal(await rivet.getAttribute('#f-offer .skillpick [data-k="Model"]', 'aria-pressed'), 'true');
+  assert.equal(await rivet.getAttribute('#f-offer .skillpick [data-k="UGC creator"]', 'aria-pressed'), 'false');
+  assert.equal(await rivet.inputValue('#f-offer [name=usage_fee]'), '40');
+  assert.equal(await rivet.getAttribute('#f-offer [data-grp=months][data-k=custom]', 'aria-pressed'), 'true');
+  assert.equal(await rivet.inputValue('#f-offer [name=usage_months]'), '5');
+  ok('an offer from the brief starts with its usage, custom length and usage fee');
   await rivet.fill('#f-offer [name=day_rate]', '250');
   await rivet.fill('#f-offer [name=usage_fee]', '50');
   await rivet.fill('#f-offer [name=location]', 'Ancoats studio');
   await rivet.fill('#f-offer [name=call_time]', '9am');
   await rivet.fill('#f-offer [name=content_agreed]', 'Streetwear, no swimwear');
+  // usage in plain English: chips for where, how long and which countries, with the sentence the talent will read
+  assert.equal(await rivet.getAttribute('#f-offer [data-grp=where][data-k=social]', 'aria-pressed'), 'true');
+  await rivet.click('#f-offer [data-grp=where][data-k=web]');
+  await rivet.click('#f-offer [data-grp=where][data-k=paid_social]');
+  await rivet.click('#f-offer [data-grp=months][data-k="6"]');
+  await rivet.fill('#f-offer [name=day_hours]', '10');
+  await rivet.waitForSelector('#f-offer .usage-say >> text=/Own social posts and paid social ads, for 6 months from the day it first goes live, in the UK/');
+  ok('brands pick usage from plain-English chips and see the sentence the talent will read');
   await rivet.waitForFunction(() => /£330/.test(document.getElementById('quote')?.textContent || ''));
   await shot(rivet, '06-offer-form');
   ok('offer form shows the live quote: £300 to talent + 10% = £330');
@@ -567,6 +632,9 @@ try {
   await rivet.click('button[form=f-offer]');
   await rivet.waitForSelector('.sheet .st:has-text("Offer sent")');
   await rivet.waitForSelector('.sheet >> text=Booked as Model');
+  await rivet.waitForSelector('.sheet >> text=Their phone number shows here once the deposit confirms the booking.');
+  assert.doesNotMatch(await rivet.textContent('.sheet'), /7700/);
+  ok('the brand sees no phone number on an offer');
   ok('offer sent with the booking agreement, booking her as a model');
 
   // ---------------------------------------------------------------- talent accepts
@@ -579,10 +647,31 @@ try {
   await amara.locator('.sheet .ft button[data-a=accept]').waitFor();
   await shot(amara, '07-talent-offer-phone');
   await amara.click('.sheet button[data-a=accept]');
-  await amara.check('#f-accept [name=agree]');
-  await amara.click('button[form=f-accept]');
+  await amara.waitForSelector('.sheet >> text=Review and sign');
+  await amara.waitForSelector('.sheet >> text=Posts on their own Instagram, TikTok and similar. Not paid ads.');
+  await amara.waitForSelector('.sheet >> text=Up to 10 a day, including breaks');
+  assert.equal(await amara.isDisabled('#sign-btn'), true);
+  await amara.check('#f-sign [name=agree]');
+  assert.equal(await amara.isDisabled('#sign-btn'), true);
+  await amara.fill('#f-sign [name=sign_name]', 'Amara Okafor');
+  assert.equal(await amara.isDisabled('#sign-btn'), false);
+  await shot(amara, '07b-review-and-sign-phone');
+  ok('talent read a plain-English summary first; Sign and accept stays off until the box is ticked and the name typed');
+  await amara.click('#sign-btn');
   await amara.waitForSelector('.sheet .st:has-text("Accepted, awaiting deposit")');
-  ok('talent reviews the offer and accepts the agreement');
+  const [sig] = await sql("select talent_signed_name, agreement_sha, usage_terms, day_hours from bookings where title = 'Drop 4 lookbook'");
+  assert.equal(sig.talent_signed_name, 'Amara Okafor'); assert.ok(sig.agreement_sha);
+  assert.deepEqual(sig.usage_terms, { where: ['paid_social', 'social'], months: 6, area: 'uk' }); assert.equal(sig.day_hours, 10);
+  await amara.waitForSelector('.sheet >> text=/signed as “Amara Okafor”/');
+  ok('talent signs by typing their name; the booking shows who signed and when');
+  await amara.click('.sheet .cs-sec button[data-a=agreement]');
+  await amara.waitForSelector('.dialog >> text=Fingerprint of the signed text');
+  const [dl] = await Promise.all([amara.waitForEvent('download'), amara.click('.dialog button[data-a=agreement-copy]')]);
+  assert.match(dl.suggestedFilename(), /^Embr-EMB-[A-Z0-9]+-agreement\.txt$/);
+  const copy = await (await import('node:fs')).promises.readFile(await dl.path(), 'utf8');
+  assert.match(copy, /11\. Signing/); assert.match(copy, /Talent: signed as "Amara Okafor"/); assert.match(copy, /SHA-256/);
+  await amara.keyboard.press('Escape');
+  ok('either side can save a copy of the signed agreement, with the signature record');
 
   // ---------------------------------------------------------------- deposit
   await rivet.goto(`${BASE}/board`);
@@ -630,6 +719,11 @@ try {
   await amara.fill('#f-link [name=shoot_date]', iso(12));
   await amara.fill('#f-link [name=day_rate]', '220');
   await amara.click('button[form=f-link]');
+  await amara.waitForTimeout(200);
+  assert.equal(await amara.isVisible('text=Send your booking link'), false);
+  await amara.fill('#f-link [name=sign_name]', 'Amara Okafor');
+  await amara.check('#f-link [name=agree]');
+  await amara.click('button[form=f-link]');
   await amara.waitForSelector('text=Send your booking link');
   const linkUrl = await amara.inputValue('.dialog input[readonly]');
   ok('talent creates a booking link with a ready-written reply');
@@ -637,6 +731,7 @@ try {
   await cafe.goto(linkUrl);
   await cafe.waitForSelector('text=has invited you to book through Embr');
   await cafe.waitForSelector('text=£231');
+  await cafe.waitForSelector('text=has already signed these terms');
   await shot(cafe, '10-link-landing-phone');
   await cafe.click('button[data-a=pub-join]');
   await signIn(cafe, 'owner@cafe.test', '123456', true); // "I already have a code": no new email sent
@@ -844,9 +939,10 @@ try {
     // she accepts the updated offer; Jade accepts hers
     await amara.goto(`${BASE}/booking/${amaraB}`);
     await amara.click('.sheet button[data-a=accept]');
-    await amara.waitForSelector('#f-accept >> xpath=.. >> text=/£280/');
-    await amara.check('#f-accept [name=agree]');
-    await amara.click('button[form=f-accept]');
+    await amara.waitForSelector('.sheet:has(#f-sign) >> text=/£280/');
+    await amara.check('#f-sign [name=agree]');
+    await amara.fill('#f-sign [name=sign_name]', 'Amara Okafor');
+    await amara.click('#sign-btn');
     await amara.waitForSelector('.sheet .st:has-text("Accepted, awaiting deposit")');
     await sql(`update talents set stripe_account = 'acct_jade_test' where name = 'Jade Park'`);
     await sql(`update bookings set status = 'accepted', talent_agreed_at = now() where id = $1`, [jadeB]);
@@ -900,6 +996,10 @@ try {
     await phone.click('h2:has-text("Shoots") + .list .item:has-text("Autumn campaign")');
     await phone.waitForSelector('.sheet.shootday .sd-band >> text=In 30 days');
     assert.equal(await phone.locator('.shootday .sd-roster .sd-row').count(), 2);
+    assert.equal(await phone.locator('.shootday .sd-tel').count(), 1);
+    assert.equal(await phone.getAttribute('.shootday .sd-tel', 'href'), 'tel:+447700900123');
+    assert.ok((await phone.locator('.shootday .sd-tel').boundingBox()).height >= 48);
+    ok('once confirmed, the shoot day shows a Call button for each person who added a number');
     const band = await phone.textContent('.shootday .sd-band');
     assert.match(band, /8am/); assert.match(band, /Mayfield Depot/);
     assert.equal(await phone.getAttribute('.shootday .sd-band a.dirbtn', 'href'), 'https://www.google.com/maps/dir/?api=1&destination=Mayfield%20Depot');

@@ -185,10 +185,61 @@ async function main() {
   let bk = await call(amara, 'booking_detail', b1);
   assert.equal(bk.status, 'offer'); assert.match(bk.agreement_text, /Embr takes no commission from the Talent/);
   assert.match(bk.agreement_text, /£330/); ok('offer created with the booking agreement snapshot');
+  assert.match(bk.agreement_text, /Usage fee for using the photos and video: £50 for Instagram and TikTok, 12 months/); ok('an offer with old one-line usage still reads as before');
+  const uo = { talent_id: amara.id, title: 'Usage test', shoot_date: today(40), day_rate: 200, agree: true, day_hours: 10 };
+  await fails(call(rivet, 'create_offer', { ...uo, usage_terms: { where: ['billboards'], months: 12, area: 'uk' } }), /isn't available/);
+  await fails(call(rivet, 'create_offer', { ...uo, usage_terms: { where: [], months: 12 } }), /Pick where/);
+  await fails(call(rivet, 'create_offer', { ...uo, usage_terms: { where: ['social'], months: 121 } }), /1 to 120 months/);
+  await fails(call(rivet, 'create_offer', { ...uo, usage_terms: { where: ['social'], months: 0 } }), /1 to 120 months/);
+  await fails(call(rivet, 'create_offer', { ...uo, usage_terms: { where: ['social'], months: 'ever' } }), /how long/);
+  await fails(call(rivet, 'create_offer', { ...uo, usage_terms: { where: ['social'], months: 12, area: 'mars' } }), /which countries/);
+  await fails(call(rivet, 'create_offer', { ...uo, day_hours: 20, usage_terms: { where: ['social'], months: 12 } }), /between 1 and 16/);
+  ok('usage options and hours are checked by the database');
+  const ub = await call(rivet, 'create_offer', { ...uo, usage_terms: { where: ['paid_social', 'social', 'social'], months: 12, area: 'europe' } });
+  const ud = await call(rivet, 'booking_detail', ub);
+  assert.deepEqual(ud.usage_terms, { where: ['paid_social', 'social'], months: 12, area: 'europe' });
+  assert.equal(ud.usage, 'Paid social ads, Own social posts · 12 months · UK and Europe'); assert.equal(ud.day_hours, 10);
+  assert.match(ud.agreement_text, /- Posts on the Client's own social media, such as Instagram and TikTok\. Not paid ads\./);
+  assert.match(ud.agreement_text, /For how long: 12 months from the day the first one goes live\. If nothing has gone live 6 months after the shoot, the 12 months start then\./);
+  assert.match(ud.agreement_text, /Where: the UK and Europe\./); assert.match(ud.agreement_text, /Up to 10 hours a day, including breaks/);
+  assert.match(ud.agreement_text, /nothing used to train AI/); assert.match(ud.agreement_text, /law of England and Wales/);
+  ok('structured usage becomes plain sentences in the agreement, with a short summary for every screen');
+  await call(rivet, 'withdraw_offer', ub);
   assert.equal(bk.role, 'Model'); assert.match(bk.agreement_text, /booked as: Model/); ok('the role they are booked for is on the offer and the agreement');
   const bUgc = await call(rivet, 'create_offer', { talent_id: amara.id, title: 'UGC test', shoot_date: today(30), day_rate: 200, role: 'UGC creator', agree: true });
   assert.equal((await call(rivet, 'booking_detail', bUgc)).role, 'UGC creator');
   await call(rivet, 'withdraw_offer', bUgc); ok('a brand can book the same person for a different role');
+  const bBoth = await call(rivet, 'create_offer', { talent_id: amara.id, title: 'Model and UGC', shoot_date: today(31), day_rate: 300, roles: ['Model', 'UGC creator', 'Plumber', 'Model'], agree: true });
+  const dBoth = await call(rivet, 'booking_detail', bBoth);
+  assert.deepEqual(dBoth.roles, ['Model', 'UGC creator']); assert.equal(dBoth.role, 'Model');
+  assert.match(dBoth.agreement_text, /\(booked as: Model and UGC creator\)/);
+  await call(rivet, 'withdraw_offer', bBoth); ok('one booking can cover several of a creative\'s skills, and only skills on their profile');
+  const b2d = await call(rivet, 'create_offer', { talent_id: amara.id, title: 'Two days', shoot_date: today(33), days: 2, day_rate: 300, usage_fee: 150, agree: true,
+    usage_terms: { where: ['social', 'web', 'email', 'print', 'paid_social'], months: 18, area: 'uk' } });
+  const d2d = await call(rivet, 'booking_detail', b2d);
+  assert.match(d2d.agreement_text, / to .* \(2 days\)/); assert.equal(d2d.talent_fee_p, 75000);
+  assert.match(d2d.agreement_text, /Day rate for the Talent's time \(basic studio fee\): £600 \(2 days at £300\)/);
+  assert.match(d2d.agreement_text, /Usage fee for using the photos and video: £150 for /);
+  assert.match(d2d.agreement_text, /For how long: 18 months from the day/); assert.doesNotMatch(d2d.agreement_text, /all of it/i);
+  for (const w of ['Paid ads on social media', 'website and online shop', 'emails and newsletters', 'in print', 'own social media']) assert.ok(d2d.agreement_text.includes(w), w);
+  assert.match((await call(rivet, 'booking_detail', bUgc)).agreement_text, /booked as: UGC creator/);
+  await call(rivet, 'withdraw_offer', b2d);
+  ok('the agreement shows the date range, a custom usage length, every usage by name, and the day rate and usage fee apart');
+  const bu1 = await call(rivet, 'create_brief', { title: 'Five months', category: 'Model', city: 'Manchester', shoot_date: today(20), day_rate: 250, usage_fee: 75,
+    usage_terms: { where: ['social', 'web'], months: 5, area: 'uk' } });
+  const bud = await call(rivet, 'brief_detail', bu1);
+  assert.equal(bud.usage_fee, 75); assert.equal(bud.usage_terms.months, 5); assert.equal(bud.usage, 'Own social posts, Website and shop · 5 months · UK');
+  await fails(call(rivet, 'create_brief', { title: 'x', category: 'Model', city: 'Manchester', shoot_date: today(20), day_rate: 250, usage_fee: -5 }), /below £0/);
+  await call(rivet, 'close_brief', bu1);
+  ok('a brief keeps several usages, any length in months and a usage fee separate from the day rate');
+  await fails(call(amara, 'save_phone', '07700 900123', false), /Tick the box/);
+  await fails(call(amara, 'save_phone', '12345', true), /doesn't look like a phone number/);
+  await fails(call(rivet, 'save_phone', '07700 900123', true), /not allowed/i);
+  assert.equal((await call(amara, 'save_phone', '07700 900123', true)).phone, '+447700900123');
+  assert.ok(!JSON.stringify(await call(rivet, 'talent_detail', amara.id)).includes('7700900123'));
+  assert.ok(!JSON.stringify(await call(rivet, 'search_talent', {}).catch(() => [])).includes('7700900123'));
+  assert.equal((await call(rivet, 'booking_detail', b1)).talent_phone, null);
+  ok('talent add a phone number with consent; brands can\'t see it on profiles, the board or an offer');
   await fails(call(jay, 'booking_detail', b1), /not found/); ok('other talent can\'t see the booking');
   brief = await call(rivet, 'brief_detail', briefId);
   assert.equal(brief.ranked[0].offered, true);
@@ -209,8 +260,16 @@ async function main() {
   await call('service', 'svc_set_stripe_account', amara.id, 'acct_amara');
   await call('service', 'svc_account_updated', 'acct_amara', true);
   await fails(call(amara, 'respond_offer', b1, true, false, null), /agreement/);
-  bk = await call(amara, 'respond_offer', b1, true, true, null);
+  await fails(call(amara, 'respond_offer', b1, true, true, null, null), /Type your full name/);
+  await fails(call(amara, 'respond_offer', b1, true, true, null, ' A '), /Type your full name/);
+  ok('accepting needs a typed name as the signature');
+  bk = await call(amara, 'respond_offer', b1, true, true, null, '  Amara   Okafor ');
   assert.equal(bk.status, 'accepted'); ok('verified talent with payouts accepts and agrees');
+  assert.equal(bk.talent_signed_name, 'Amara Okafor'); assert.equal(bk.agreement_version, 'pilot-2026-11-v2');
+  const sha = (await db.query("select encode(sha256(convert_to(agreement_text, 'UTF8')), 'hex') h from bookings where id = $1", [b1])).rows[0].h;
+  assert.equal(bk.agreement_sha, sha); assert.match(bk.agreement_text, /11\. Signing/);
+  assert.match(bk.events.at(-1).text, /signed the booking agreement as “Amara Okafor”/);
+  ok('the signature keeps the typed name, the version and a fingerprint of the exact text signed');
   await fails(call(amara, 'svc_deposit_paid', b1, 'pi_1', 'ch_1', 'pm_1'), /permission denied/);
   ok('only the server can mark money as paid');
   assert.equal(await call('service', 'svc_lock', b1, ['accepted']), true);
@@ -218,6 +277,8 @@ async function main() {
   assert.equal(await call('service', 'svc_deposit_paid', b1, 'pi_1', 'ch_1', 'pm_1'), true);
   assert.equal(await call('service', 'svc_deposit_paid', b1, 'pi_1', 'ch_1', 'pm_1'), true); ok('deposit webhook is safe to repeat');
   bk = await call(rivet, 'booking_detail', b1); assert.equal(bk.status, 'confirmed');
+  assert.equal(bk.talent_phone, '+447700900123'); assert.equal((await call(amara, 'booking_detail', b1)).talent_phone, null);
+  ok('once the deposit confirms the booking, the brand sees the talent\'s phone number');
   await fails(call(amara, 'mark_wrapped', b1), /on or after the shoot day/); ok('can\'t wrap before the shoot');
   await db.query('update bookings set shoot_date = current_date where id = $1', [b1]);
   bk = await call(amara, 'mark_wrapped', b1);
@@ -229,6 +290,11 @@ async function main() {
   await call('service', 'svc_completed', b1, 'pi_2', 'ch_2', ['tr_1', 'tr_2'], 30000, 'auto');
   bk = await call(amara, 'booking_detail', b1);
   assert.equal(bk.status, 'completed'); assert.equal(bk.paid_to_talent_p, 30000); ok('completed: talent paid the full £300');
+  assert.equal((await call(rivet, 'booking_detail', b1)).talent_phone, '+447700900123');
+  await db.query("update bookings set shoot_date = current_date - 30 where id = $1", [b1]);
+  assert.equal((await call(rivet, 'booking_detail', b1)).talent_phone, null);
+  await db.query('update bookings set shoot_date = current_date where id = $1', [b1]);
+  ok('the number stays for 14 days after the shoot, then goes');
 
   // --- messages and notifications
   await call(rivet, 'send_message', b1, 'Thanks Amara!');
@@ -251,7 +317,7 @@ async function main() {
 
   // --- availability
   const b2 = await call(rivet, 'create_offer', { talent_id: amara.id, title: 'Clash test', shoot_date: today(15), day_rate: 250, agree: true });
-  await call(amara, 'respond_offer', b2, true, true, null);
+  await call(amara, 'respond_offer', b2, true, true, null, 'Amara Okafor');
   await fails(call(rivet, 'create_offer', { talent_id: amara.id, title: 'Clash', shoot_date: today(15), day_rate: 250, agree: true }), /isn't free/);
   ok('can\'t offer a date the talent is already booked');
   await call(amara, 'toggle_off_day', today(16));
@@ -295,7 +361,11 @@ async function main() {
   // --- booking links (talent's own enquiries)
   await fails(call(jay, 'create_link', { title: 'x', shoot_date: today(9), day_rate: 200 }), /Verify your ID/);
   ok('unverified talent can\'t make booking links');
-  const link = await call(amara, 'create_link', { title: 'Café menu shoot', shoot_date: today(12), days: 1, day_rate: 220, usage: 'Instagram, 6 months', note: 'Lovely to hear from you!' });
+  const linkP = { title: 'Café menu shoot', shoot_date: today(12), days: 1, day_rate: 220, note: 'Lovely to hear from you!',
+    usage_terms: { where: ['social', 'web'], months: 6, area: 'uk' }, day_hours: 4 };
+  await fails(call(amara, 'create_link', linkP), /Type your full name/); ok('a booking link needs the talent\'s typed signature');
+  const link = await call(amara, 'create_link', { ...linkP, sign_name: 'Amara Okafor' });
+  assert.equal(link.usage, 'Own social posts, Website and shop · 6 months · UK');
   const pub = await call('anon', 'public_link', link.code);
   assert.equal(pub.open, true); assert.equal(pub.fee_rate, 0.05); assert.equal(pub.total_p, 23100);
   ok('anyone with the link sees the terms and the 5% link price');
@@ -306,6 +376,10 @@ async function main() {
   bk = await call(walkin, 'booking_detail', b3);
   assert.equal(bk.status, 'accepted'); assert.equal(bk.fee_rate, 0.05); assert.equal(bk.via_link, true);
   ok('accepting a link creates an accepted booking at 5%');
+  assert.equal(bk.talent_signed_name, 'Amara Okafor'); assert.ok(bk.agreement_sha);
+  assert.match(bk.agreement_text, /signed them by typing their full name when they created the booking link/);
+  assert.match(bk.agreement_text, /Up to 4 hours a day/); assert.match(bk.agreement_text, /The Client's website and online shop/);
+  ok('a link booking carries the talent\'s signature, usage and hours into the agreement');
   await fails(call(rivet, 'accept_link', link.code, true, {}), /used or has expired/); ok('a link books once');
 
   // --- cancellation and disputes (state side)
@@ -357,12 +431,13 @@ async function main() {
   await fails(call(rivet, 'create_shoot', { title: 'Mood', shoot_date: today(75), board_link: 'javascript:alert(1)' }), /https/);
   ok('a moodboard only takes the brand\'s own uploads and https links');
   const shootId = await call(rivet, 'create_shoot', { title: 'Autumn shoot', shoot_date: today(75), days: 1, location: 'Mayfield Depot', call_time: '8am',
-    brief: 'Warm tones, knitwear', moodboard: [rivet.id + '/mood-1.jpg'], board_link: 'https://example.com/board', usage: 'Instagram, 12 months' });
+    brief: 'Warm tones, knitwear', moodboard: [rivet.id + '/mood-1.jpg'], board_link: 'https://example.com/board', usage_terms: { where: ['social'], months: 12, area: 'uk' }, day_hours: 8 });
   await fails(call(amara, 'shoot_offer', shootId, { talent_id: amara.id, day_rate: 250, agree: true }), /not allowed/i);
   const so1 = await call(rivet, 'shoot_offer', shootId, { talent_id: amara.id, day_rate: 250, role: 'Model', title: 'ignored', location: 'ignored', agree: true });
   const so2 = await call(rivet, 'shoot_offer', shootId, { talent_id: jay.id, day_rate: 200, agree: true });
   const sb1 = await call(rivet, 'booking_detail', so1);
-  assert.equal(sb1.title, 'Autumn shoot'); assert.equal(sb1.location, 'Mayfield Depot'); assert.equal(sb1.call_time, '8am'); assert.equal(sb1.usage, 'Instagram, 12 months');
+  assert.equal(sb1.title, 'Autumn shoot'); assert.equal(sb1.location, 'Mayfield Depot'); assert.equal(sb1.call_time, '8am'); assert.equal(sb1.usage, 'Own social posts · 12 months · UK');
+  assert.equal(sb1.day_hours, 8); assert.deepEqual(sb1.usage_terms, { where: ['social'], months: 12, area: 'uk' });
   ok('every offer in a shoot takes the shared title, date, place, call time and usage from the shoot');
   let sd = await call(rivet, 'shoot_detail', shootId);
   assert.equal(sd.people.length, 2); assert.equal(sd.moodboard[0], rivet.id + '/mood-1.jpg'); assert.equal(sd.free_cancel_days, 7);
@@ -398,9 +473,22 @@ async function main() {
   await call(rivet, 'answer_change', ch2.id, false);
   assert.equal((await call(rivet, 'booking_detail', so1)).day_rate, 280);
   ok('declining a change keeps the offer as it is');
+  const twoDay = await call(rivet, 'create_shoot', { title: 'Two-day shoot', shoot_date: today(90), days: 2, usage_terms: { where: ['social', 'web'], months: 18, area: 'uk' } });
+  await fails(call(rivet, 'shoot_offer', twoDay, { talent_id: jay.id, day_rate: 200, start_day: 1, days: 2, agree: true }), /inside the shoot/);
+  await fails(call(rivet, 'shoot_offer', twoDay, { talent_id: jay.id, day_rate: 200, usage_fee: -1, agree: true }), /below £0/);
+  const day2 = await call(rivet, 'shoot_offer', twoDay, { talent_id: jay.id, day_rate: 200, usage_fee: 120, start_day: 1, days: 1, roles: ['Photographer'], agree: true });
+  const both = await call(rivet, 'shoot_offer', twoDay, { talent_id: amara.id, day_rate: 250, agree: true, roles: ['Model', 'UGC creator'] });
+  const dd2 = await call(rivet, 'booking_detail', day2), db2 = await call(rivet, 'booking_detail', both);
+  assert.equal(dd2.shoot_date, today(91)); assert.equal(dd2.days, 1); assert.equal(dd2.usage_fee, 120); assert.equal(dd2.talent_fee_p, 32000);
+  assert.equal(db2.shoot_date, today(90)); assert.equal(db2.days, 2); assert.deepEqual(db2.roles, ['Model', 'UGC creator']);
+  assert.match(db2.usage, /18 months/);
+  const sd2 = await call(rivet, 'shoot_detail', twoDay);
+  assert.equal(sd2.people.find((p) => p.id === day2).usage_fee, 120); assert.equal(sd2.people.find((p) => p.id === day2).phone, null);
+  await call(rivet, 'withdraw_offer', day2); await call(rivet, 'withdraw_offer', both);
+  ok('on a two-day shoot each person can be booked for one day or both, with their own usage fee and several skills');
   await call('service', 'svc_identity_result', jay.id, 'vs_j', 'verified', '1997-01-01');
   await db.query('update talents set payouts_enabled = true, age_verified = true where id = $1', [jay.id]);
-  await call(jay, 'respond_offer', so2, true, true, null);
+  await call(jay, 'respond_offer', so2, true, true, null, 'Jay Patel');
   await fails(call(jay, 'ask_change', so2, { day_rate: 250 }), /before you answer/);
   ok('no changes once the offer is answered, so nothing changes after money can move');
   const n = await call(rivet, 'shoot_message_all', shootId, 'Call sheet attached: parking at the back');
@@ -409,7 +497,7 @@ async function main() {
   assert.ok(!(await call(jay, 'booking_detail', so2)).messages.some((m) => /fitting/.test(m.body)));
   ok('"message everyone" posts into each creative\'s own booking');
   const ms = await call(rivet, 'my_shoots');
-  assert.equal(ms[0].title, 'Autumn shoot'); assert.equal(ms[0].to_pay, 1);
+  const autumn = ms.find((x) => x.title === 'Autumn shoot'); assert.ok(autumn); assert.equal(autumn.to_pay, 1);
   sd = await call(rivet, 'update_shoot', shootId, { brief: 'Warm tones, chunky knitwear', moodboard: [rivet.id + '/mood-1.jpg', rivet.id + '/mood-2.jpg'] });
   assert.equal(sd.moodboard.length, 2); assert.equal((await call(rivet, 'booking_detail', so1)).call_time, '8am');
   ok('the brand can update the moodboard and brief; the agreed date, place and call time stay as agreed');

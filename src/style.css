@@ -1110,3 +1110,37 @@ body.has-rbar main.shell{padding-bottom:180px}
 /* an empty photo section: the add tile becomes the action (Zomato "You haven't uploaded any photos yet") */
 .phs .p.p-first{grid-column:1/-1;aspect-ratio:auto;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:6px;border-style:dashed;color:var(--ink);font-weight:600;font-size:var(--fs-body)}
 .phs .p.p-first .s{font-weight:400;color:var(--graphite)}
+
+/* booking contract: usage chips, plain-English lists, review and sign (contract.js) */
+.usagepick fieldset{border:0;padding:0;margin:0;min-width:0}
+.usagepick legend{padding:0;font-weight:600}
+.usagepick .chip{height:48px;padding:0 14px}
+.usage-say{background:var(--backdrop2);padding:14px 16px;border:0;border-radius:var(--r)}
+.plain-list{margin:0;padding-left:18px;display:grid;gap:4px}
+.plain-list li{font-size:14px;line-height:1.45}
+.sign-sum{display:grid;gap:4px}
+.sign-sum .money{margin:2px 0 4px}
+.fullterms summary{list-style:none;display:inline-flex;align-items:center;min-height:48px;cursor:pointer}
+.fullterms summary::-webkit-details-marker{display:none}
+.fullterms .agreement{max-height:50vh;overflow:auto}
+.sign-in{font-size:18px;font-style:italic;letter-spacing:.01em}
+
+/* ===== brand snag list (2026-11-26): per-person days, skills, usage fee; phone after confirmation ===== */
+.rperson{border-bottom:1px solid var(--line);padding-bottom:12px}
+.rperson .rrow{border-bottom:0;padding-bottom:4px}
+.rr-more{padding-left:60px;display:flex;flex-direction:column;gap:12px}
+.rr-more .fsec{border:0;padding:0;margin:0}
+.rr-money{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rr-money .in{height:48px}
+.rrange{margin-top:-4px;font-weight:600}
+@media (max-width:560px){.rr-more{padding-left:0}}
+.phone-line{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.phone-line .btn svg{width:18px;height:18px;margin-right:6px}
+.sd-line{display:flex;align-items:center;gap:8px}
+.sd-line .sd-row{flex:1;min-width:0}
+.sd-tel{width:48px;height:48px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;flex:none;color:var(--ink)}
+.usage-custom .in{max-width:160px}
+.phone-card .in{max-width:260px}
+.skillpick legend{font-weight:700}.skillpick legend .hint{display:block;font-weight:400;margin-top:2px}
+.usagepick legend .hint{display:block;font-weight:400;margin-top:2px}
+.sd-line{border-bottom:1px solid var(--line)}.sd-line .sd-row{border-bottom:0}

@@ -2,6 +2,25 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-26: Brand snag list: several usages with any length, a separate usage fee, per-day booking, several skills, date ranges, phone after confirmation
+- Brands: briefs, offers and the Shoot Roster pick several uses at once and the length on its own: 3, 6, 12 or 24 months, or a custom number (1 to 120). The agreement names every use; "all of it" is gone.
+- Brands: briefs have a usage fee per person, separate from the day rate (the talent's time, the basic studio fee). Offers and rosters started from a brief carry it, each roster person has their own usage fee, and shoot offers no longer force it to £0.
+- Brands: on a multi-day shoot, each roster person has day chips, so one model can do day 1, another day 2, and a third both. Dates show as a range everywhere ("Thu 10 Dec – Fri 11 Dec").
+- Brands: one booking can cover several of a creative's skills (for example Model and UGC creator); the agreement says "booked as: Model and UGC creator".
+- Creatives: an optional phone number on Profile, with its own consent tick. Brands see it on the booking (Call button) and the Shoot Day Hub only once the deposit confirms the booking, until 14 days after the shoot.
+- Database (migration 20261126000002): `briefs.usage_terms`, `briefs.usage_fee`, `bookings.roles`, `talents.phone`, `talents.phone_consent_at`; `_usage_clean` takes 1 to 120 months; `shoot_offer` takes `start_day`, `days` and `usage_fee`; new `save_phone`, `my_phone`; agreement text updated (draft, for BPP review). Payments unchanged.
+- Notes, Mobbin references and screens: docs/dev/brand-snags.md. Solicitor export updated: docs/dev/booking-agreement.md.
+- Files: `supabase/migrations/20261126000002_brand_snags.sql` (new), `src/ui.js`, `src/icons.js`, `src/style.css`, `src/views/contract.js`, `src/views/brand.js`, `src/views/roster.js`, `src/views/booking.js`, `src/views/shoot.js`, `src/views/shootday.js`, `src/views/talent.js`, `src/views/common.js`, `tests/db.test.mjs`, `tests/e2e.test.mjs`.
+- Tests: db 108, e2e 56, agreement 9, payments 11, office 13.
+
+## 2026-11-26: Plain-English usage and in-app signing for every booking (held for the final round; draft wording for BPP review)
+- Brands: the offer form, the Shoot Roster and the brief-to-offer flow pick usage from chips (where, how long from first use, which countries) plus hours a day, with a live sentence showing what the talent will read.
+- Creatives: "Accept offer" opens Review and sign: pay, the day, what the brand can do with the photos and cancellation in plain words, the full agreement one tap away, then type your full name and tick. Booking links are signed the same way when created.
+- Both: the booking shows who signed and when; "Read or save a copy" downloads the agreement with the signature record (name, time, version, SHA-256 fingerprint).
+- Database (migration 20261126000001): agreement version pilot-2026-11-v2 with plain-English headings, hours, structured usage (section 5) and a signing clause (section 11); `usage_terms`, `day_hours`, `talent_signed_name`, `agreement_sha` on bookings, links and shoots; `respond_offer` refuses an accept without a typed name. The old `usage` text is still filled in as a summary. Payments unchanged.
+- Research: https://claude.ai/artifact/PNFUMcKEETLqD9a22oHoC8. Solicitor export: docs/dev/booking-agreement.md.
+- Files: `supabase/migrations/20261126000001_booking_contract.sql` (new), `src/views/contract.js` (new), `src/views/booking.js`, `src/views/brand.js`, `src/views/roster.js`, `src/views/talent.js`, `src/views/public.js`, `src/style.css`, `docs/dev/booking-agreement.md`, `tests/db.test.mjs`, `tests/e2e.test.mjs`.
+- Tests: db 101, e2e 49, agreement 9, payments 11, office 13.
 ## 2026-11-26: Welcome screen drops the fee line
 - Everyone: the welcome screen no longer says "Talent keep everything they earn: Embr takes 0% of your fee". Luke asked for it to go, not be reworded (Decision (Luke, 2026-11-26)).
 - Files: `src/views/auth.js`, `tests/e2e.test.mjs`.

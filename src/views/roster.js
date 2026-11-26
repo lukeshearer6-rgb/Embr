@@ -16,7 +16,8 @@
 // Brand-only: talent never see it, and the database refuses offers from anyone but a brand.
 import { S, A, C, F, go } from '../state.js';
 import { rpc, photoUrl, uploadImage } from '../api.js';
-import { $, esc, gbp, pounds, dMed, today, addDays, opts, USAGE, TERMS, toast, openLayer, closeLayer, refreshTop, topLayer, first, plural, rolesOf, emptyState } from '../ui.js';
+import { $, esc, gbp, pounds, dMed, dRange, andList, today, addDays, opts, USAGE, TERMS, toast, openLayer, closeLayer, refreshTop, topLayer, first, plural, rolesOf, emptyState } from '../ui.js';
+import { usagePicker, readUsage, usageOk, skillPicker, readSkills } from './contract.js';
 import { ICON, RICON } from '../icons.js';
 import { pkgOf, pkgNote, hoursTxt } from './rates.js';
 
@@ -37,7 +38,7 @@ const newId = () => Math.random().toString(36).slice(2, 10);
 const ON_CAMERA = ['Model', 'Actor', 'UGC creator', 'Content creator'];
 const CAMERA = ['Photographer', 'Videographer'];
 export function missingRoles(crew) {
-  const have = new Set(crew.map((c) => c.role));
+  const have = new Set(crew.flatMap((c) => skillsOf(c)));
   const out = [];
   const onCam = ON_CAMERA.some((r) => have.has(r));
   if (!onCam && crew.length) out.push('Model');
@@ -52,7 +53,22 @@ const aRole = (r) => 'a ' + r.toLowerCase();
 // A package picked on the creative's profile (Full day or Half day) sets their rate in the roster, and a
 // half day books one day whatever the shoot's length. It only fills the offer's day rate and days.
 const crewPkg = (t, key) => { const p = key ? pkgOf(t, key) : null; return p ? { key: p.key, label: p.label, hours: p.hours, includes: p.includes, days: p.days, price: p.price } : null; };
-export const crewDays = (c, s) => c.pkg?.days || +s.days || 1;
+// Which of the shoot's days each person is booked for (Luke's snag list, 2026-11-26): a two-day shoot can have
+// one model on day 1, another on day 2, and a third on both. Days are indexes from 0 (the shoot's first day),
+// next to each other so each person still gets one offer and one booking. A half-day package is one day.
+// Pattern: Klook's row of date chips inside the booking sheet; IHG and Trip.com show the stay as a range.
+export const skillsOf = (c) => (c.picked?.length ? c.picked : [c.role].filter(Boolean));
+export function daysOf(c, s) {
+  const n = Math.max(1, +s.days || 1);
+  let d = (Array.isArray(c.dayset) ? c.dayset : []).filter((i) => i >= 0 && i < n);
+  if (c.pkg?.days) d = d.slice(0, 1);
+  if (!d.length) d = c.pkg?.days ? [0] : [...Array(n).keys()];
+  return [...new Set(d)].sort((a, b) => a - b);
+}
+export const crewDays = (c, s) => daysOf(c, s).length;
+export const crewStart = (c, s) => daysOf(c, s)[0];
+const dayGap = (c, s) => { const d = daysOf(c, s); return d.at(-1) - d[0] + 1 !== d.length; };
+const crewDate = (c, s) => (s.date ? addDays(crewStart(c, s), s.date) : '');
 function addTo(shoot, t, briefRole, pkgKey) {
   const pkg = crewPkg(t, pkgKey);
   const had = shoot.crew.find((c) => c.id === t.id);
@@ -63,7 +79,9 @@ function addTo(shoot, t, briefRole, pkgKey) {
     return 'switched';
   }
   const rs = rolesOf(t);
-  shoot.crew.push({ id: t.id, name: t.name, photo: t.photo || null, roles: rs, role: rs.includes(briefRole) ? briefRole : rs[0] || '', day_rate: pkg?.price || t.day_rate || 200, pkg, city: t.city, verified: !!t.verified });
+  const role = rs.includes(briefRole) ? briefRole : rs[0] || '';
+  shoot.crew.push({ id: t.id, name: t.name, photo: t.photo || null, roles: rs, role, picked: [role].filter(Boolean), day_rate: pkg?.price || t.day_rate || 200,
+    usage_fee: ON_CAMERA.includes(role) ? +shoot.usage_fee || 0 : 0, dayset: null, pkg, city: t.city, verified: !!t.verified });
   shoot.updated = Date.now();
   return true;
 }
@@ -75,7 +93,7 @@ A['add-shoot'] = async (el) => {
   const r = roster();
   const briefs = (await rpc('my_briefs')).filter((b) => b.status === 'open' && b.shoot_date >= today() && !r.shoots.some((s) => s.brief_id === b.id));
   const row = (attrs, ttl, sub) => `<button type="button" class="shoot-row" data-a="shoot-pick" data-id="${id}" data-pkg="${esc(pkg)}" ${attrs}><span class="grow"><span class="ttl">${ttl}</span><span class="s g">${sub}</span></span><span aria-hidden="true">›</span></button>`;
-  const rosters = r.shoots.map((s) => row(`data-shoot="${s.id}"`, esc(s.title || 'Untitled shoot'), `${s.date ? dMed(s.date) : 'No date yet'}${s.location ? ' · ' + esc(s.location) : ''} · ${people(s.crew.length)}${s.crew.some((c) => c.id === id) ? ' · already in' : ''}`)).join('');
+  const rosters = r.shoots.map((s) => row(`data-shoot="${s.id}"`, esc(s.title || 'Untitled shoot'), `${s.date ? dRange(s.date, s.days) : 'No date yet'}${s.location ? ' · ' + esc(s.location) : ''} · ${people(s.crew.length)}${s.crew.some((c) => c.id === id) ? ' · already in' : ''}`)).join('');
   openLayer({
     kind: 'dialog',
     cls: 'fsheet shootsheet',
@@ -95,7 +113,7 @@ A['shoot-pick'] = async (el) => {
   if (!s && bid) {
     const b = await rpc('brief_detail', { p_id: bid });
     briefRole = b.category;
-    s = { id: newId(), brief_id: b.id, title: b.title, date: b.shoot_date, days: b.days || 1, location: '', call_time: '', usage_where: (b.usage || '').split(',')[0] || USAGE[0], usage_term: '12 months', content_agreed: '', notes: b.description || '', crew: [] };
+    s = { id: newId(), brief_id: b.id, title: b.title, date: b.shoot_date, days: b.days || 1, location: '', call_time: '', usage_terms: b.usage_terms?.where ? b.usage_terms : null, usage_where: b.usage || USAGE[0], usage_fee: b.usage_fee || 0, content_agreed: '', notes: b.description || '', crew: [] };
     r.shoots.unshift(s);
   }
   if (!s) { s = { id: newId(), brief_id: null, title: '', date: addDays(14), days: 1, location: '', call_time: '', usage_where: USAGE[0], usage_term: '12 months', content_agreed: '', notes: '', crew: [] }; r.shoots.unshift(s); }
@@ -123,7 +141,7 @@ export function renderRosterBar() {
   const more = r.shoots.filter((x) => x !== s && x.crew.length).length;
   bar.innerHTML = `<button type="button" class="rbar" data-a="roster" data-shoot="${s.id}" aria-label="Shoot roster: ${esc(s.title || 'new shoot')}, ${people(s.crew.length)}, ${pounds(rates)} in day rates">
     <span class="rb-faces" aria-hidden="true">${s.crew.slice(0, 3).map((c) => `<i style="${c.photo ? `background-image:url('${esc(photoUrl(c.photo))}')` : ''}">${c.photo ? '' : esc(c.name[0] || '')}</i>`).join('')}</span>
-    <span class="grow rb-txt"><b>${esc(s.title || 'New shoot')}</b><span>${s.date ? dMed(s.date) + ' · ' : ''}${people(s.crew.length)}${more ? ` · ${plural(more, 'other shoot')}` : ''}</span></span>
+    <span class="grow rb-txt"><b>${esc(s.title || 'New shoot')}</b><span>${s.date ? dRange(s.date, s.days) + ' · ' : ''}${people(s.crew.length)}${more ? ` · ${plural(more, 'other shoot')}` : ''}</span></span>
     <span class="rb-sum"><b>${pounds(rates)}</b><span>day rates</span></span></button>`;
 }
 
@@ -153,16 +171,26 @@ function rosterLayer(s) {
   const others = r.shoots.filter((x) => x.id !== s.id);
   const miss = missingRoles(s.crew);
   const unsent = s.crew.filter((c) => !c.sent);
+  const nDays = Math.max(1, +s.days || 1);
   const person = (c) => {
     const ph = photoUrl(c.photo);
-    return `<div class="rrow" data-crew="${c.id}"><div class="thumb" style="${ph ? `background-image:url('${esc(ph)}')` : ''}">${ph ? '' : esc(c.name[0] || '')}</div>
+    const on = daysOf(c, s);
+    const dayChips = nDays > 1 && !c.sent ? `<fieldset class="fsec rr-days"><legend class="xs g">Booked for</legend><div class="chips mt4">${[...Array(nDays).keys()].map((i) => `<button type="button" class="chip" data-a="roster-day" data-crew="${c.id}" data-i="${i}" aria-pressed="${on.includes(i)}">${s.date ? dMed(addDays(i, s.date)) : 'Day ' + (i + 1)}</button>`).join('')}</div>
+      ${dayGap(c, s) ? `<p class="xs rr-err" role="alert">Pick days next to each other. For days apart, add them to a second roster.</p>` : c.pkg?.days ? '<p class="xs g mt4">Half-day package: one day.</p>' : ''}</fieldset>` : '';
+    return `<div class="rperson" data-crew="${c.id}"><div class="rrow"><div class="thumb" style="${ph ? `background-image:url('${esc(ph)}')` : ''}">${ph ? '' : esc(c.name[0] || '')}</div>
       <div class="grow rr-main"><div class="rr-nm">${esc(c.name)}${c.verified ? ICON.tick : ''}</div>
-        ${c.roles.length > 1 ? `<label class="rr-role"><span class="sr">Booking ${esc(first(c.name))} as</span><select class="in" data-change="roster-edit" data-crew="${c.id}" data-k="role">${opts(c.roles, c.role)}</select></label>` : `<div class="s g">${esc(c.role)}, ${esc(c.city)}</div>`}
+        <div class="s g">${esc(andList(skillsOf(c)))}, ${esc(c.city)}${s.date ? ' · ' + esc(dRange(crewDate(c, s), crewDays(c, s))) : ''}</div>
         ${c.pkg ? `<div class="xs rr-pkg">${esc(c.pkg.label)} · ${esc(hoursTxt(c.pkg.hours).toLowerCase())}${c.pkg.days ? ' · one day' : ''}</div>` : ''}
         ${c.err ? `<p class="xs rr-err" role="alert">${esc(c.err)}</p>` : ''}</div>
       ${c.sent ? `<button type="button" class="link s" data-a="booking" data-id="${c.sent}">Offer sent</button>`
-        : `<label class="rr-rate"><span class="sr">${esc(first(c.name))}'s day rate in pounds</span><span aria-hidden="true">£</span><input class="in" type="number" inputmode="numeric" min="5" step="5" value="${esc(c.day_rate)}" data-input="roster-edit" data-crew="${c.id}" data-k="day_rate"></label>
-        <button type="button" class="rr-x" data-a="roster-remove" data-crew="${c.id}" aria-label="Remove ${esc(c.name)}">${ICON.x}</button>`}</div>`;
+        : `<button type="button" class="rr-x" data-a="roster-remove" data-crew="${c.id}" aria-label="Remove ${esc(c.name)}">${ICON.x}</button>`}</div>
+      ${c.sent ? '' : `<div class="rr-more">
+        ${c.roles.length > 1 ? skillPicker(c.roles, skillsOf(c), { label: `Booking ${first(c.name)} as`, crew: c.id }) : ''}
+        ${dayChips}
+        <div class="rr-money">
+          <label class="field">Day rate, £ <span class="hint">Their time</span><input class="in" type="number" inputmode="numeric" min="5" step="5" value="${esc(c.day_rate)}" data-input="roster-edit" data-crew="${c.id}" data-k="day_rate"></label>
+          <label class="field">Usage fee, £ <span class="hint">Using the photos</span><input class="in" type="number" inputmode="numeric" min="0" step="5" value="${esc(c.usage_fee || 0)}" data-input="roster-edit" data-crew="${c.id}" data-k="usage_fee"></label>
+        </div></div>`}</div>`;
   };
   return {
     kind: 'sheet', roster: s.id, label: 'Shoot roster',
@@ -172,7 +200,8 @@ function rosterLayer(s) {
       <label class="field"><span class="sr">Shoot name</span><input class="in rtitle display" name="title" required value="${esc(s.title)}" placeholder="Name this shoot" data-input="roster-field" autocomplete="off"></label>
       <section class="rwhen" aria-label="When and where">
         <label class="field">Shoot date<input class="in" type="date" name="date" required min="${today()}" value="${esc(s.date)}" data-change="roster-field"></label>
-        <label class="field">Days<input class="in" type="number" name="days" min="1" max="14" value="${esc(s.days)}" data-input="roster-field"></label>
+        <label class="field">Days<input class="in" type="number" name="days" min="1" max="14" value="${esc(s.days)}" data-input="roster-field" data-change="roster-redraw"></label>
+        <p class="span s rrange" id="rrange">${s.date ? esc(dRange(s.date, s.days)) : ''}${nDays > 1 && s.crew.length ? '. Pick who works which day under each person.' : ''}</p>
         <label class="field span">Location<input class="in" name="location" value="${esc(s.location)}" placeholder="Studio or address" data-input="roster-field"></label>
         <label class="field span">Call time<input class="in" name="call_time" value="${esc(s.call_time)}" placeholder="9am" data-input="roster-field"></label>
       </section>
@@ -182,9 +211,9 @@ function rosterLayer(s) {
       ${miss.length && s.crew.length ? `<div class="rmiss" aria-label="Roles not in this shoot yet">${miss.map((m) => `<button type="button" class="rneed" data-a="roster-find" data-role="${esc(m)}" data-shoot="${s.id}">${RICON[m] || ICON.plus}<span class="grow"><b>Need ${aRole(m)}?</b><span class="s g">See who's free ${s.date ? 'on ' + dMed(s.date) : ''}</span></span><span aria-hidden="true">›</span></button>`).join('')}</div>` : ''}
       ${s.crew.length ? `<button type="button" class="btn sm mt12" data-a="roster-find" data-role="" data-shoot="${s.id}">${ICON.plus}Add someone else</button>` : ''}
 
-      <h3 class="rsec">Where you'll use the images</h3>
-      <div class="fgrid2"><label class="field">Where<select class="in" name="usage_where" data-change="roster-field">${opts(USAGE, s.usage_where)}</select></label>
-        <label class="field">For how long<select class="in" name="usage_term" data-change="roster-field">${opts(TERMS, s.usage_term)}</select></label></div>
+      <h3 class="rsec">Where you'll use the photos</h3>
+      <p class="s g mb8">Everyone in the shoot gets the same usage, written out in plain English before they sign. Each person's usage fee is set under their name, separate from their day rate.</p>
+      ${usagePicker(s.usage_terms || s.usage_where, { who: 'brand', hours: s.day_hours || '' })}
       <label class="field mt16">What you'll ask them to do <span class="hint">Nothing outside this can be asked on the day.</span><textarea class="in" name="content_agreed" rows="2" data-input="roster-field">${esc(s.content_agreed)}</textarea></label>
       <h3 class="rsec">Shoot brief</h3>
       <p class="s g mb8">Everyone gets the same brief with their offer, pinned at the top of the shoot thread.</p>
@@ -211,11 +240,11 @@ async function quoteAll(sid) {
   const crew = s.crew.filter((c) => !c.sent);
   if (!crew.length) return;
   const seq = ++qSeq;
-  const qs = await Promise.all(crew.map((c) => rpc('quote', { p_talent: c.id, p_day_rate: +c.day_rate || 0, p_days: crewDays(c, s), p_usage_fee: 0 }).catch(() => null)));
+  const qs = await Promise.all(crew.map((c) => rpc('quote', { p_talent: c.id, p_day_rate: +c.day_rate || 0, p_days: crewDays(c, s), p_usage_fee: +c.usage_fee || 0 }).catch(() => null)));
   if (seq !== qSeq || !document.contains(box) || qs.some((q) => !q)) return;
   const sum = (k) => qs.reduce((n, q) => n + q[k], 0);
   box.innerHTML = `<div class="ledger">
-    ${crew.map((c, i) => `<div class="r"><span>${esc(c.name)}<span class="when">${esc(c.role)} · ${c.pkg?.days ? esc(c.pkg.label.toLowerCase()) : `${crewDays(c, s)} day${crewDays(c, s) > 1 ? 's' : ''}`} at ${pounds(c.day_rate)}</span></span><span>${gbp(qs[i].talent_fee_p)}</span></div>`).join('')}
+    ${crew.map((c, i) => `<div class="r"><span>${esc(c.name)}<span class="when">${esc(andList(skillsOf(c)))} · ${s.date ? esc(dRange(crewDate(c, s), crewDays(c, s))) + ', ' : ''}${c.pkg?.days ? esc(c.pkg.label.toLowerCase()) : `${crewDays(c, s)} day${crewDays(c, s) > 1 ? 's' : ''}`} at ${pounds(c.day_rate)}${+c.usage_fee ? ` + ${pounds(c.usage_fee)} usage` : ''}</span></span><span>${gbp(qs[i].talent_fee_p)}</span></div>`).join('')}
     <div class="r"><span>Embr fees<span class="when">Set per person, the same as booking each one on their own</span></span><span>${gbp(sum('embr_fee_p'))}</span></div>
     <div class="r t"><span>Total for ${people(crew.length)}</span><span>${gbp(sum('total_p'))}</span></div>
     <div class="r sub"><span>Deposits, paid as each person accepts</span><span>${gbp(sum('deposit_p'))}</span></div>
@@ -228,6 +257,16 @@ async function quoteAll(sid) {
 // ---------------------------------------------------------------- editing
 let qT;
 const requote = (sid) => { clearTimeout(qT); qT = setTimeout(() => quoteAll(sid), 250); };
+// the usage chips and hours are saved with the draft, like every other roster field
+document.addEventListener('usagechange', (e) => {
+  const form = e.target.closest('#f-roster');
+  const s = form && shootOf(form.dataset.shoot);
+  if (!s) return;
+  s.usage_terms = readUsage(form);
+  s.day_hours = form.day_hours?.value || '';
+  s.updated = Date.now();
+  save(roster());
+});
 C['roster-field'] = (el) => {
   const s = shootOf(el.form.dataset.shoot);
   if (!s) return;
@@ -235,17 +274,45 @@ C['roster-field'] = (el) => {
   s.updated = Date.now();
   save(roster());
   renderRosterBar();
-  if (el.name === 'days') requote(s.id);
+  if (el.name === 'days') { requote(s.id); const rr = $('#rrange'); if (rr && s.date) rr.textContent = dRange(s.date, s[el.name]); }
+  if (el.name === 'date') openRoster(s.id);
 };
 C['roster-edit'] = (el) => {
   const s = shootOf(el.closest('form').dataset.shoot);
   const c = s?.crew.find((x) => x.id === el.dataset.crew);
   if (!c) return;
-  c[el.dataset.k] = el.dataset.k === 'day_rate' ? +el.value || 0 : el.value;
+  c[el.dataset.k] = ['day_rate', 'usage_fee'].includes(el.dataset.k) ? Math.max(0, +el.value || 0) : el.value;
   save(roster());
   renderRosterBar();
-  if (el.dataset.k === 'role') openRoster(s.id); else requote(s.id);
+  requote(s.id);
 };
+C['roster-redraw'] = (el) => { const s = shootOf(el.form.dataset.shoot); if (s) openRoster(s.id); };
+// a day chip: several days for a full-day booking, one for a half-day package; at least one stays picked
+A['roster-day'] = (el) => {
+  const s = shootOf(el.closest('form').dataset.shoot);
+  const c = s?.crew.find((x) => x.id === el.dataset.crew);
+  if (!c) return;
+  const i = +el.dataset.i;
+  let d = daysOf(c, s);
+  if (c.pkg?.days) d = [i];
+  else if (d.includes(i)) { if (d.length === 1) return toast('Keep at least one day picked'); d = d.filter((x) => x !== i); }
+  else d = [...d, i];
+  c.dayset = d;
+  save(roster());
+  openRoster(s.id);
+};
+// skills picked under a person: one offer covers all of them, and the missing-role prompts update
+document.addEventListener('skillchange', (e) => {
+  const form = e.target.closest('#f-roster');
+  const box = e.target.closest('.skillpick');
+  const s = form && shootOf(form.dataset.shoot);
+  const c = s?.crew.find((x) => x.id === box?.dataset.crew);
+  if (!c) return;
+  c.picked = readSkills(box);
+  c.role = c.picked[0];
+  save(roster());
+  openRoster(s.id);
+});
 A['roster-remove'] = (el) => {
   const s = shootOf(el.closest('form').dataset.shoot);
   s.crew = s.crew.filter((c) => c.id !== el.dataset.crew);
@@ -305,22 +372,26 @@ export async function sendRoster(form) {
   const d = Object.fromEntries(new FormData(form).entries());
   const crew = s.crew.filter((c) => !c.sent);
   if (!crew.length) return;
-  const usage = d.usage_where ? `${d.usage_where}, ${d.usage_term}` : '';
+  const usage_terms = readUsage(form);
+  if (!usage_terms.where.length) throw new Error('Pick where you\'ll use the photos');
+  if (!usageOk(usage_terms)) throw new Error('Type how many months the photos can be used for, from 1 to 120');
   if (!d.agree) throw new Error('Tick the box to accept the booking agreement');
   // the shared brief becomes a shoot (kept on the draft, so a resend after a failure reuses it),
   // then one offer per person through shoot_offer, which takes the shared details from the shoot
   if (!s.shoot_id) {
     s.shoot_id = await rpc('create_shoot', { p: { title: s.title, shoot_date: s.date, days: s.days, location: s.location, call_time: s.call_time,
-      usage, content_agreed: s.content_agreed, brief: s.notes, moodboard: s.mood || [], board_link: s.board_link || '', brief_id: s.brief_id || null } });
+      usage_terms, day_hours: d.day_hours ? +d.day_hours : null, content_agreed: s.content_agreed, brief: s.notes, moodboard: s.mood || [], board_link: s.board_link || '', brief_id: s.brief_id || null } });
     save(roster());
   }
+  const gap = crew.find((c) => dayGap(c, s));
+  if (gap) throw new Error(`Pick days next to each other for ${first(gap.name)}`);
   for (const c of crew) {
     try {
       c.sent = await rpc('shoot_offer', { p_shoot: s.shoot_id, p: {
-        talent_id: c.id, days: crewDays(c, s), day_rate: +c.day_rate,
+        talent_id: c.id, start_day: crewStart(c, s), days: crewDays(c, s), day_rate: +c.day_rate, usage_fee: +c.usage_fee || 0, roles: skillsOf(c),
         // the package goes in their offer's notes, as long as the brand hasn't changed the rate from it
         // (the shared notes travel as the shoot brief, so they aren't repeated here)
-        notes: c.pkg && +c.day_rate === c.pkg.price ? pkgNote(c.pkg) : '', agree: !!d.agree, role: c.role || null,
+        notes: c.pkg && +c.day_rate === c.pkg.price ? pkgNote(c.pkg) : '', agree: !!d.agree, role: skillsOf(c)[0] || null,
       } });
       c.err = null;
     } catch (e) { c.err = e.message; }
