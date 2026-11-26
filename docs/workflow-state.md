@@ -86,6 +86,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 ## Session log
 
+- 2026-11-26 orchestrator: final UI round shipped on Luke's go. PRs 27, 28, 29, 31, 32, 33, 34 merged with 35 (phone tab bar: Profile/Account in the bar, Today, Links, Jobs and Shortlist under More). Migrations 000006 to 000008 pushed to the pilot; Pages deployed from Luke's Mac (build 3915c7e, site returns 200 with the new assets). Tests: db 94, e2e 46, payments 11, agreement 9; CI green on every PR.
 - 2026-11-25 developer: D14 phone polish (type, padding, safe areas, skeletons, empty states) on a PR stacked on the Shoot Day Hub PR (not merged); e2e 46.
 - 2026-11-25 developer: D13 Shoot Day Hub on a PR stacked on the Shoot Thread PR (not merged); e2e 45, db 94; no database changes.
 - 2026-11-25 developer: Shoot Thread built on a branch stacked on PR 31 (shoot brief, offer and change cards, message everyone, one shoot checkout over the existing per-booking deposits); db 94 and e2e 44 pass; three questions added to Waiting on Luke (D8); not merged or deployed.
