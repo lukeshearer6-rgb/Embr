@@ -2,6 +2,14 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-25: Phone polish: one type scale, even card padding, safe areas, 48px targets, skeletons and empty states (held for the final UI round)
+- Brands and creatives: the new phone screens share one type scale, one card padding and one screen-title style; sheets clear the status bar and home indicator when installed; close buttons, chips, the shortlist heart and the moodboard controls are 48px to tap.
+- Brands: the board and creative profiles show card-shaped skeletons while loading, photos fade in over grey; no-results, empty-role and empty-roster screens each say why and offer the next step.
+- Creatives: a new profile with no photos shows "Show brands your work" with Add photos and Set your rates; empty photo sections become one "Add your first…" tile.
+- Payments and database unchanged. Notes, Mobbin references and before/after: docs/dev/mobile-polish.md.
+- Files: `src/style.css`, `src/ui.js`, `src/main.js`, `src/views/brand.js`, `src/views/roster.js`, `src/views/talent.js`, `src/views/rates.js`, `src/icons.js`, `tests/e2e.test.mjs`.
+- Tests: e2e 46, db 94, payments 11.
+
 ## 2026-11-25: Shoot Day Hub: roster, call times, directions, group chat and a post-shoot tracker (held for the final UI round)
 - Brands: once anyone is confirmed, a shoot opens on its day screen: when and where with one-tap Directions (Apple Maps on iPhone, Google Maps elsewhere, plain links), the confirmed roster with call times and status, the latest group messages with "message everyone", and a tracker (shoot day, wrapped, signed off and paid, then deliverables and review shown as not on Embr yet). Sign-off still happens on each booking.
 - Creatives: a Directions button on their booking once they've accepted.

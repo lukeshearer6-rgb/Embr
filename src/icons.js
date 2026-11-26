@@ -25,5 +25,8 @@ export const RICON = {
   filter: ri('<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'),
   pin: ri('<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>'),
   chat: ri('<path d="M4 5h16v11H9l-5 4z"/>'),
+  people: ri('<circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14c2.4.2 4 1.8 4.5 4.5"/>'),
+  camera: ri('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>'),
+  nosearch: ri('<circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5M9 9l4 4M13 9l-4 4"/>'),
   down: '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>',
 };

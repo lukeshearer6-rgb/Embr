@@ -16,7 +16,7 @@
 // Brand-only: talent never see it, and the database refuses offers from anyone but a brand.
 import { S, A, C, F, go } from '../state.js';
 import { rpc, photoUrl, uploadImage } from '../api.js';
-import { $, esc, gbp, pounds, dMed, today, addDays, opts, USAGE, TERMS, toast, openLayer, closeLayer, refreshTop, topLayer, first, plural, rolesOf } from '../ui.js';
+import { $, esc, gbp, pounds, dMed, today, addDays, opts, USAGE, TERMS, toast, openLayer, closeLayer, refreshTop, topLayer, first, plural, rolesOf, emptyState } from '../ui.js';
 import { ICON, RICON } from '../icons.js';
 import { pkgOf, pkgNote, hoursTxt } from './rates.js';
 
@@ -139,6 +139,15 @@ export function openRoster(sid) {
   if (topLayer()?.roster) refreshTop(layer); else openLayer(layer);
 }
 
+// an empty roster: the shoot's details are kept, and the next step is the board on the shoot date
+// (HBX and Nike empty bag: icon, one line, one black button; Warby Parker adds quick routes by type)
+function emptyCrew(s) {
+  const quick = ['Model', 'Photographer', 'Make-up artist'];
+  return emptyState({ cls: 'left', icon: RICON.people, title: 'No one on this shoot yet',
+    body: `Tap “Add to shoot” on anyone on the board. Each creative gets their own offer with ${s.date ? dMed(s.date) : 'this date'}${s.location ? ', ' + esc(s.location) : ''} and the brief below.`,
+    actions: [{ label: s.date ? `See who's free ${dMed(s.date)}` : 'Browse the board', a: 'roster-find', data: { role: '', shoot: s.id }, primary: true },
+      ...quick.map((r) => ({ label: r, a: 'roster-find', data: { role: r, shoot: s.id } }))] });
+}
 function rosterLayer(s) {
   const r = roster();
   const others = r.shoots.filter((x) => x.id !== s.id);
@@ -157,7 +166,7 @@ function rosterLayer(s) {
   };
   return {
     kind: 'sheet', roster: s.id, label: 'Shoot roster',
-    head: `<div class="grow s g">Shoot roster${others.length ? ` · ${plural(r.shoots.length, 'shoot')}` : ''}</div>`,
+    head: `<div class="grow st-hd"><b class="st-ttl">Shoot roster</b>${others.length ? `<span class="xs g">${plural(r.shoots.length, 'shoot')}</span>` : ''}</div>`,
     body: `${others.length ? `<nav class="chips rshoots mb16" aria-label="Your shoots">${r.shoots.map((x) => `<button type="button" class="chip" data-a="roster" data-shoot="${x.id}" aria-pressed="${x.id === s.id}">${esc(x.title || 'New shoot')}</button>`).join('')}</nav>` : ''}
     <form id="f-roster" data-shoot="${s.id}" class="rform">
       <label class="field"><span class="sr">Shoot name</span><input class="in rtitle display" name="title" required value="${esc(s.title)}" placeholder="Name this shoot" data-input="roster-field" autocomplete="off"></label>
@@ -169,9 +178,9 @@ function rosterLayer(s) {
       </section>
 
       <h3 class="rsec">Who's booked <span class="g">${s.crew.length}</span></h3>
-      <div class="rcrew">${s.crew.map(person).join('') || '<p class="s g">No one yet. Add people from the board with "Add to shoot".</p>'}</div>
-      ${miss.length ? `<div class="rmiss" aria-label="Roles not in this shoot yet">${miss.map((m) => `<button type="button" class="rneed" data-a="roster-find" data-role="${esc(m)}" data-shoot="${s.id}">${RICON[m] || ICON.plus}<span class="grow"><b>Need ${aRole(m)}?</b><span class="s g">See who's free ${s.date ? 'on ' + dMed(s.date) : ''}</span></span><span aria-hidden="true">›</span></button>`).join('')}</div>` : ''}
-      <button type="button" class="btn sm mt12" data-a="roster-find" data-role="" data-shoot="${s.id}">${ICON.plus}Add someone else</button>
+      <div class="rcrew">${s.crew.map(person).join('') || emptyCrew(s)}</div>
+      ${miss.length && s.crew.length ? `<div class="rmiss" aria-label="Roles not in this shoot yet">${miss.map((m) => `<button type="button" class="rneed" data-a="roster-find" data-role="${esc(m)}" data-shoot="${s.id}">${RICON[m] || ICON.plus}<span class="grow"><b>Need ${aRole(m)}?</b><span class="s g">See who's free ${s.date ? 'on ' + dMed(s.date) : ''}</span></span><span aria-hidden="true">›</span></button>`).join('')}</div>` : ''}
+      ${s.crew.length ? `<button type="button" class="btn sm mt12" data-a="roster-find" data-role="" data-shoot="${s.id}">${ICON.plus}Add someone else</button>` : ''}
 
       <h3 class="rsec">Where you'll use the images</h3>
       <div class="fgrid2"><label class="field">Where<select class="in" name="usage_where" data-change="roster-field">${opts(USAGE, s.usage_where)}</select></label>

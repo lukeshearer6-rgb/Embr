@@ -83,8 +83,7 @@ Screen key used below (all iOS, open on Mobbin):
 
 **Current app**
 - Meets the rules: `.btn` and `.in` are 48px tall (lines 458, 463); tab bar items 56px (line 489); tab bar, sheet footer and toast add `env(safe-area-inset-bottom)` (lines 488, 495, 532).
-- Below 48px: `.chip` is **30px** tall (line 469); the save heart on talent cards (`.comp-wrap .save`) is **34px** (line 543). Give both a 48px hit area.
-- The header only adds `env(safe-area-inset-top)` when installed to the home screen (line 541). In a normal browser tab this is fine, but check any new full-screen view (photo viewer, sheet) adds its own top inset.
+- Chips and the shortlist heart now have 48px hit areas, and full-screen sheets add their own top inset (docs/dev/mobile-polish.md, 2026-11-25).
 
 ## 3. Bottom sheets vs full-screen modals
 
