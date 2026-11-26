@@ -6,14 +6,15 @@
 //            video link (TikTok and Behance thumbnails mark video with a play icon)
 //   on top   day rate on a small black pill, heart top right (PR 27, DESIGN_RULES 4.4)
 //   below    name with the rating or trust line on the right (Airbnb), then role and city
-//   action   "Add to shoot" for brands only. Talent never see it and can't apply.
+//   action   "Add to shoot" for brands only, leading to the Shoot Roster. Talent never see it and can't apply.
 //
 // The card only shows a star rating when the data has one (t.rating and t.reviews).
 // Embr has no reviews yet, so today the right of the name shows "Rebooked by N brands"
 // when that is true, and nothing otherwise. No made-up numbers.
-import { S, A } from '../state.js';
-import { rpc, photoUrl } from '../api.js';
-import { esc, first, pounds, plural, dMed, today, rolesOf, rolesTxt, openLayer, closeLayer } from '../ui.js';
+import { S } from '../state.js';
+import { photoUrl } from '../api.js';
+import { esc, pounds, plural, rolesOf, rolesTxt } from '../ui.js';
+import './roster.js';
 import { ICON } from '../icons.js';
 
 const MAX_PHOTOS = 5;
@@ -92,24 +93,4 @@ if (typeof document !== 'undefined') {
   }, true);
 }
 
-// "Add to shoot": a short bottom sheet (DESIGN_RULES 3.1, Peerspace "Save to board") listing the
-// brand's open briefs and a new shoot. Picking one closes the sheet and opens the offer form as a
-// full screen, because an offer commits money (DESIGN_RULES 3.3, never a sheet on a sheet 3.5).
-A['add-shoot'] = async (el) => {
-  const { id, name } = el.dataset;
-  const briefs = (await rpc('my_briefs')).filter((b) => b.status === 'open' && b.shoot_date >= today());
-  const row = (brief, ttl, sub) => `<button type="button" class="shoot-row" data-a="shoot-pick" data-id="${id}" data-brief="${brief}"><span class="grow"><span class="ttl">${ttl}</span><span class="s g">${sub}</span></span><span aria-hidden="true">›</span></button>`;
-  openLayer({
-    kind: 'dialog',
-    cls: 'fsheet shootsheet',
-    head: `<h2 class="t-24">Add ${esc(first(name))} to a shoot</h2>`,
-    body: `${briefs.length ? `<h3 class="s g mb8">Your open briefs</h3>${briefs.map((b) => row(b.id, esc(b.title), `${dMed(b.shoot_date)} · ${esc(b.category)} · ${pounds(b.day_rate)} a day`)).join('')}` : ''}
-      ${row('', 'A new shoot', 'Set the date, rate and usage yourself')}
-      <p class="xs g mt16">Next you set the terms and send an offer. ${esc(first(name))} accepts or declines, and you pay nothing until they accept.</p>`,
-  });
-};
-A['shoot-pick'] = (el) => {
-  const dataset = { id: el.dataset.id, ...(el.dataset.brief ? { brief: el.dataset.brief } : {}) };
-  closeLayer();
-  A.offer({ dataset, closest: () => null });
-};
+// "Add to shoot" leads to the Shoot Roster: the sheet and the roster live in src/views/roster.js.

@@ -329,13 +329,48 @@ try {
     await phone.waitForSelector('.shootsheet .shoot-row >> text=A new shoot');
     assert.ok((await phone.locator('.shootsheet .shoot-row').first().boundingBox()).height >= 48);
     await shot(phone, '04f-add-to-shoot-phone');
+    // Shoot Roster: picking the brief starts a roster for it, adds her, and keeps the brand on the board with a roster bar
     await phone.click('.shootsheet .shoot-row >> text=Drop 4 lookbook');
-    await phone.waitForSelector('#f-offer');
+    await phone.waitForSelector('#rosterbar .rbar >> text=Drop 4 lookbook');
     assert.equal(await phone.locator('.dialog.shootsheet').count(), 0);
-    assert.equal(await phone.inputValue('#f-offer [name=title]'), 'Drop 4 lookbook');
-    assert.equal(await phone.inputValue('#f-offer [name=shoot_date]'), iso(10));
+    assert.match(await phone.textContent('#rosterbar'), /1 person.*£250.*day rates/s);
+    assert.ok((await phone.locator('#rosterbar .rbar').boundingBox()).height >= 48);
+    // the bar sits above the tab bar, not over it
+    const [bar, nav] = await Promise.all([phone.locator('#rosterbar').boundingBox(), phone.locator('.botnav').boundingBox()]);
+    assert.ok(bar.y + bar.height <= nav.y, 'roster bar clears the tab bar');
+    await shot(phone, '04g-roster-bar-phone');
+    // adding her again says so instead of adding her twice; the sheet now lists the roster first
+    await phone.click('.feed .cc >> nth=0 >> .cc-add');
+    await phone.waitForSelector('.shootsheet h3:has-text("Your shoot rosters")');
+    await phone.click('.shootsheet .shoot-row >> text=already in');
+    await toastHas(phone, /already in this shoot/);
+    // the roster: shared date from the brief, her as a model, missing roles, the combined cost
+    await phone.click('#rosterbar .rbar');
+    await phone.waitForSelector('.sheet #f-roster');
+    assert.equal(await phone.inputValue('#f-roster [name=title]'), 'Drop 4 lookbook');
+    assert.equal(await phone.inputValue('#f-roster [name=date]'), iso(10));
+    assert.equal(await phone.inputValue('.rrow select'), 'Model');
+    assert.equal(await phone.locator('.rrow').count(), 1);
+    const need = await phone.locator('.rneed b').allTextContents();
+    assert.deepEqual(need, ['Need a photographer?', 'Need a make-up artist?', 'Need a hair stylist?']);
+    await phone.waitForSelector('#rquote >> text=Total for 1 person');
+    assert.match(await phone.textContent('.sheet .ft'), /£275.*Send offer/s);
+    for (const sel of ['.rneed', '.rr-x', '.rr-rate .in', '.sheet .ft .btn.primary']) assert.ok((await phone.locator(sel).first().boundingBox()).height >= 48, sel + ' is at least 48px tall');
+    await phone.fill('#f-roster [name=location]', 'Ancoats studio');
+    await shot(phone, '04h-shoot-roster-phone');
+    // "Need a photographer?" goes back to the board on that role, free on the shoot date
+    await phone.click('.rneed >> text=Need a photographer?');
+    await phone.waitForFunction(() => document.querySelector('.cats [data-cat="Photographer"]')?.getAttribute('aria-pressed') === 'true');
+    assert.equal(await phone.locator('.sheet #f-roster').count(), 0);
+    await phone.waitForFunction(() => /0 people/.test(document.getElementById('count').textContent));
+    // the roster kept what was typed
+    await phone.click('#rosterbar .rbar');
+    assert.equal(await phone.inputValue('#f-roster [name=location]'), 'Ancoats studio');
+    await phone.click('.rdel');
+    await toastHas(phone, /Roster deleted/);
+    assert.equal(await phone.locator('#rosterbar').count(), 0);
     await phone.close();
-    ok('brands add a creative to a shoot from the card: the sheet lists open briefs and opens the offer form filled from the brief');
+    ok('Shoot Roster: "Add to shoot" starts a roster from a brief, the bar shows head count and day rates, and the roster flags missing roles');
   }
   await rivet.click('.sheet button[data-a=offer]');
   await rivet.waitForSelector('#f-offer');
@@ -541,6 +576,55 @@ try {
   await amara.waitForSelector('text=This is the Embr admin website');
   assert.equal(await amara.locator('text=18+ verified').count(), 0);
   ok('talent and brands can\'t use the admin website');
+
+  {
+    // Shoot Roster: two creatives, one date and place, one "Send 2 offers"; under the hood one offer each
+    const jade = '00000000-0000-4000-8000-00000000aa01';
+    await sql(`insert into auth.users (id, email) values ($1, 'jade@test.com')`, [jade]);
+    await sql(`insert into profiles (id, role, email) values ($1, 'talent', 'jade@test.com')`, [jade]);
+    await sql(`insert into talents (id, handle, name, category, roles, city, day_rate, published, age_verified, payouts_enabled, agency_declared_at)
+               values ($1, 'jade', 'Jade Park', 'Make-up artist', '{Make-up artist}', 'Manchester', 180, true, true, true, now())`, [jade]);
+    const before = (await sql(`select count(*)::int n from bookings`))[0].n;
+    const phone = await person('rivet-phone3', true);
+    await phone.goto(`${BASE}/signin`);
+    await signIn(phone, 'sam@rivet.test', '12345678');
+    await phone.waitForSelector('.feed .cc >> text=Jade Park');
+    await phone.click('.feed .cc:has-text("Amara Okafor") .cc-add');
+    await phone.click('.shootsheet .shoot-row >> text=A new shoot');
+    // a new shoot opens the roster straight away to name it and set the day
+    await phone.waitForSelector('.sheet #f-roster');
+    await phone.fill('#f-roster [name=title]', 'Autumn campaign');
+    await phone.fill('#f-roster [name=date]', iso(30));
+    await phone.fill('#f-roster [name=location]', 'Mayfield Depot');
+    await phone.fill('#f-roster [name=call_time]', '8am');
+    await phone.keyboard.press('Escape');
+    await phone.waitForSelector('#rosterbar >> text=Autumn campaign');
+    await phone.click('.feed .cc:has-text("Jade Park") .cc-add');
+    await phone.click('.shootsheet .shoot-row >> text=Autumn campaign');
+    await phone.waitForFunction(() => /2 people.*£430/s.test(document.getElementById('rosterbar')?.textContent || ''));
+    await phone.click('#rosterbar .rbar');
+    await phone.waitForSelector('#rquote >> text=Total for 2 people');
+    // a make-up artist is in, so she is no longer suggested; a photographer still is
+    const need = await phone.locator('.rneed b').allTextContents();
+    assert.ok(need.includes('Need a photographer?') && !need.includes('Need a make-up artist?'), need.join());
+    const total = (await phone.textContent('#rquote .r.t')).match(/£[\d,.]+/)[0];
+    assert.equal(await phone.textContent('#rtotal'), total);
+    assert.match(await phone.textContent('.sheet .ft .btn.primary'), /Send 2 offers/);
+    await shot(phone, '16-shoot-roster-two-phone');
+    await phone.check('#f-roster [name=agree]');
+    await phone.click('.sheet .ft .btn.primary');
+    await toastHas(phone, /2 offers sent for Autumn campaign/);
+    await phone.waitForSelector('h1:has-text("Bookings")');
+    assert.equal(await phone.locator('#rosterbar').count(), 0);
+    const rows = await sql(`select t.name, b.title, b.shoot_date::text d, b.location, b.call_time, b.status, b.role, b.total_p from bookings b join talents t on t.id = b.talent_id where b.title = 'Autumn campaign' order by t.name`);
+    assert.equal((await sql(`select count(*)::int n from bookings`))[0].n, before + 2);
+    assert.deepEqual(rows.map((r) => [r.name, r.d, r.location, r.call_time, r.status, r.role]),
+      [['Amara Okafor', iso(30), 'Mayfield Depot', '8am', 'offer', 'Model'], ['Jade Park', iso(30), 'Mayfield Depot', '8am', 'offer', 'Make-up artist']]);
+    const sumP = rows.reduce((n, r) => n + r.total_p, 0);
+    assert.equal('£' + (sumP / 100).toLocaleString('en-GB', sumP % 100 ? { minimumFractionDigits: 2 } : {}), total);
+    await phone.close();
+    ok('Shoot Roster sends one offer per creative with the shared date, place and call time; the total matches the two offers');
+  }
 
   if (errors.length) { console.log('\nBrowser errors:\n' + errors.join('\n')); throw new Error(errors.length + ' browser errors'); }
   console.log(`\n${passed} checks passed. Screenshots in ${SHOTS}`);

@@ -2,6 +2,14 @@
 
 Newest first. One entry per change: date, what changed for users, files, and tests.
 
+## 2026-11-25: Shoot Roster: group creatives under one shoot and send their offers together (held for the final UI round)
+- "Add to shoot" now adds the creative to a shoot roster (from a brief or a new shoot) and keeps the brand on the board, with a black roster bar showing the shoot, head count and day rates.
+- The roster has one shared date, days, location and call time, a row per creative (role, day rate, remove), "Need a make-up artist?" prompts that open the board on that role and date, and the combined cost from the same per-person quotes.
+- "Send N offers" sends one offer per creative through create_offer. Payments, deposits and holds are unchanged; each person accepts and is paid through their own booking.
+- Notes, Mobbin references and before/after: docs/dev/shoot-roster.md.
+- Files: `src/views/roster.js` (new), `src/views/card.js`, `src/views/brand.js`, `src/main.js`, `src/style.css`, `tests/e2e.test.mjs`.
+- Tests: e2e 41 (roster from a brief, bar position, missing roles, board on the missing role, sending two offers with shared details), db 77.
+
 ## 2026-11-25: CreativeCard: swipeable photos, video preview and "Add to shoot" on board cards (held for the final UI round)
 - Brands swipe through up to 5 photos on each board card, with dots below. A creative with a video link gets a black play tile as the last slide and a play badge on the card.
 - "Add to shoot" on each card (brands only) opens a short sheet with the brand's open briefs and "A new shoot"; picking one opens the offer form filled from the brief.

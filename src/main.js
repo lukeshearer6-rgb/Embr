@@ -16,6 +16,7 @@ A['spec-chip'] = (el) => el.setAttribute('aria-pressed', el.getAttribute('aria-p
 import './views/auth.js';
 import './views/brand.js';
 import './views/booking.js';
+import { renderRosterBar } from './views/roster.js';
 // the app never loads the staff screens; the admin site never loads the talent or public ones
 if (SITE === 'admin') await import('./views/ops.js');
 else await Promise.all([import('./views/talent.js'), import('./views/public.js')]);
@@ -82,6 +83,7 @@ async function render() {
     console.error(e);
     main.innerHTML = `<div class="callout bad mt24">Couldn't load this page: ${esc(e.message)}. <button class="link" data-a="reload">Try again</button></div>`;
   }
+  if (SITE === 'app') renderRosterBar();
   if (openBooking && layerCount() === 0) A.booking({ dataset: { id: openBooking } });
 }
 onRoute(render);
