@@ -56,3 +56,7 @@ Locked decisions from Luke. Change one only when Luke says so, and record the da
 ## Usage fee when talent are cut from the edit (2026-11-26)
 
 - No "no usage fee if the talent doesn't make the final cut" rule for now. It only applies to commercials where talent miss the final cut, and Embr isn't for productions that size at first. The usage fee stays charged with the booking. Decision (Luke, 2026-11-26).
+
+## Pilot money and copy (2026-11-26)
+- Incorporation and domain: Luke pays when he is ready. Until then Embr keeps running as a pilot; don't ask about this spend again. Decision (Luke, 2026-11-26).
+- The welcome screen carries no fee claim ("Embr takes 0% of your fee" removed, not reworded). Decision (Luke, 2026-11-26).

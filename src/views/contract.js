@@ -127,7 +127,7 @@ export function reviewSheet(b) {
     <p class="s g mt8 measure">This is your booking agreement with ${esc(b.brand.name)}. Check the summary, open the full terms if you want them, then sign with your name.</p>
     <div class="sign-sum mt24">
       <section class="cs-sec"><h4>What you're paid</h4><p class="t-24 money">${gbp(b.talent_fee_p)}</p>
-        <p class="s g">${b.days} day${b.days > 1 ? 's' : ''} at ${pounds(b.day_rate)}${b.usage_fee ? ' for your time, plus a ' + pounds(b.usage_fee) + ' usage fee for the photos' : ''}. Paid in full at sign-off, or automatically ${st.auto_signoff_hours} hours after you mark it wrapped. Embr takes 0%.</p></section>
+        <p class="s g">${b.days} day${b.days > 1 ? 's' : ''} at ${pounds(b.day_rate)}${b.usage_fee ? ' for your time, plus a ' + pounds(b.usage_fee) + ' usage fee for the photos' : ''}. Paid in full at sign-off, or automatically ${st.auto_signoff_hours} hours after you mark it wrapped.</p></section>
       <section class="cs-sec"><h4>Your day</h4>${kv([
         ['When', esc(dRangeLong(b.shoot_date, b.days))],
         b.roles?.length ? ['Booked as', esc(andList(b.roles))] : null,

@@ -21,6 +21,10 @@ Newest first. One entry per change: date, what changed for users, files, and tes
 - Research: https://claude.ai/artifact/PNFUMcKEETLqD9a22oHoC8. Solicitor export: docs/dev/booking-agreement.md.
 - Files: `supabase/migrations/20261126000001_booking_contract.sql` (new), `src/views/contract.js` (new), `src/views/booking.js`, `src/views/brand.js`, `src/views/roster.js`, `src/views/talent.js`, `src/views/public.js`, `src/style.css`, `docs/dev/booking-agreement.md`, `tests/db.test.mjs`, `tests/e2e.test.mjs`.
 - Tests: db 101, e2e 49, agreement 9, payments 11, office 13.
+## 2026-11-26: Welcome screen drops the fee line
+- Everyone: the welcome screen no longer says "Talent keep everything they earn: Embr takes 0% of your fee". Luke asked for it to go, not be reworded (Decision (Luke, 2026-11-26)).
+- Files: `src/views/auth.js`, `tests/e2e.test.mjs`.
+- Tests: e2e adds a check that the welcome screen makes no fee claim.
 
 ## 2026-11-26: Profile sits in the phone tab bar (Luke's snag list)
 - Creatives: the phone bar is now Bookings, Wallet, Messages, Profile, More. Today and Links are under More, and sign-in lands on Bookings. Luke will review what Today is for.

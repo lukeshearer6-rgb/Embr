@@ -23,8 +23,6 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 | ID | What Luke needs to do | Why |
 |---|---|---|
-| B5 | Approve rewording the sign-in line "Talent keep everything they earn: Embr takes 0% of your fee" (src/views/auth.js line 18) so it says brands pay Embr's fee, per CAP Code 3.3 and 3.17 (docs/research/r6-cap-code-checklist.md) | Pricing claim in user-facing copy |
-| R2 | Approve the incorporation and domain spend (verified: £100 Companies House + £52 ICO tier 1 + $5.66 .co.uk at Porkbun; docs/research/r2-incorporation-and-domain.md). Check the ICO tier 1 price on its fee form and whether embr.co.uk is free | Spending money is Luke's call |
 | B2 | Create Supabase, Stripe (test mode), Resend and Cloudflare accounts (docs/builds/SETUP.md). Supabase signed up 2026-11-24; Stripe CLI installed on Luke's Mac (~/Documents/EMBR/tools/stripe-cli), login pending | Only Luke can sign up and hold the passwords |
 | D7 | Approve the brand-facing line "Talent can see how many brands viewed or saved their profile, never which brand" (talent Today screen, docs/dev/talent-engagement.md) before real brands join; it also belongs in the privacy notice | Public copy and a UK GDPR privacy-notice item |
 | D6 | Add the talent agency-status declaration to the BPP review (docs/dev/agency-declaration.md, draft wording live in the test app only) | Legal wording needs the solicitor before real talent sign up |
@@ -39,7 +37,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | ID | Task | Agent | Status | Verify by | Next action |
 |---|---|---|---|---|---|
 | R1 | Check Cloudflare Pages free-plan terms allow a commercial app | researcher | done | Every quote re-read on the live pages 2026-11-24; brief docs/research/r1-cloudflare-pages-free-plan.md | Unclear, leaning allowed; keep talent photos in Supabase Storage |
-| R2 | Incorporation and domain: steps, official fees, cheapest compliant option | researcher | done | Figures re-read on gov.uk, ICO and Porkbun 2026-11-25; docs/research/r2-incorporation-and-domain.md | Luke approves spend; ICO tier 1 price conflicts (£52 vs £40) |
+| R2 | Incorporation and domain: steps, official fees, cheapest compliant option | researcher | done | Figures re-read on gov.uk, ICO and Porkbun 2026-11-25; docs/research/r2-incorporation-and-domain.md | Deferred: Luke pays when ready; run as a pilot until then (Decision (Luke, 2026-11-26)). ICO tier 1 price conflicts (£52 vs £40) |
 | R3 | Routes to a specialist agency-law opinion at zero or low cost (law clinics, pro bono, founder schemes) | researcher | done | Quotes re-read on live pages 2026-11-24; docs/research/r3-agreement-review-shortlist.md | Luke chooses who to contact |
 | R4 | Competitor brief: UK platforms where brands book unsigned models and creatives | researcher | done | Claims re-read on each platform's live pages 2026-11-26; docs/research/r4-competitor-brief.md | Marketer reads it; no comparative claims in public copy without Luke |
 | R5 | Brand interview kit: Manchester independent brand target list and interview script | researcher | todo | Public sources for each brand | Draft only; Luke makes contact |
@@ -92,6 +90,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 ## Session log
 
 - 2026-11-26 developer: D17 brand snag list (usage, usage fee, per-day booking, skills, date ranges, phone) on a branch built on D16; db 108, e2e 56; not merged, migrations not pushed.
+- 2026-11-26 orchestrator: removed the welcome-screen fee line on Luke's word (e2e 47 passed); incorporation and domain spend deferred until Luke is ready.
 - 2026-11-26 daily run: R4 competitor brief (claims re-read live) and B5 release checklist (83 items, 12 evidenced) done; new task B9 for the missing pilot terms and privacy notice; sign-in fee line flagged for Luke.
 - 2026-11-26 orchestrator: final UI round shipped on Luke's go. PRs 27, 28, 29, 31, 32, 33, 34 merged with 35 (phone tab bar: Profile/Account in the bar, Today, Links, Jobs and Shortlist under More). Migrations 000006 to 000008 pushed to the pilot; Pages deployed from Luke's Mac (build 3915c7e, site returns 200 with the new assets). Tests: db 94, e2e 46, payments 11, agreement 9; CI green on every PR.
 - 2026-11-26 developer: D16 booking contract v2 (plain-English usage, typed-name signing, saved copy) on a PR stacked on PR 34; research page published; db 101, e2e 49; not merged or deployed.

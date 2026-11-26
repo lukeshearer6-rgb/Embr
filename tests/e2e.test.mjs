@@ -64,6 +64,8 @@ try {
   await luke.waitForSelector('text=Unsigned, not unseen.');
   assert.equal(await luke.locator('text=/staff|work at Embr/i').count(), 0);
   ok('the app\'s welcome screen offers brand and talent only, no staff option');
+  assert.equal(await luke.locator('text=/0% of your fee|keep everything they earn/i').count(), 0);
+  ok('the welcome screen makes no fee claim (Luke, 2026-11-26)');
   await luke.goto(`${BASE}/admin/join?invite=${opsCode}`);
   await luke.waitForSelector('h1:has-text("Embr admin")');
   await signIn(luke, 'luke@embr.test');
