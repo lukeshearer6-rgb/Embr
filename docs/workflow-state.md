@@ -4,7 +4,7 @@ This file is the single source of truth for what's happening. Every session read
 
 Statuses: `todo`, `doing`, `blocked`, `needs-approval`, `done`. Agents: `researcher`, `developer`, `app-builder`, `marketer`, `luke`, `orchestrator`.
 
-Last updated: 2026-11-26
+Last updated: 2026-11-27
 
 ## Current focus
 
@@ -14,7 +14,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 | Agent | Working on | Status |
 |---|---|---|
-| researcher | B9 Pilot terms and privacy notice drafts | todo |
+| researcher | R7 Book now, pay later brief | todo |
 | developer | No unblocked task (D2, D3, D5 waiting) | blocked |
 | app-builder | B5 Release checklist (tick as work lands) | doing |
 | marketer | M1 Positioning pack | todo |
@@ -23,6 +23,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 | ID | What Luke needs to do | Why |
 |---|---|---|
+| B9 | Answer the open items in the legal drafts (docs/legal/): data retention periods, the support contact address and reply time, whether the photo bucket stays public, how accounts get deleted, what brands may do with a talent's phone number, and whether the ICO fee is deferred with incorporation | Legal and privacy choices are Luke's, then BPP reviews |
 | B2 | Create Supabase, Stripe (test mode), Resend and Cloudflare accounts (docs/builds/SETUP.md). Supabase signed up 2026-11-24; Stripe CLI installed on Luke's Mac (~/Documents/EMBR/tools/stripe-cli), login pending | Only Luke can sign up and hold the passwords |
 | D7 | Approve the brand-facing line "Talent can see how many brands viewed or saved their profile, never which brand" (talent Today screen, docs/dev/talent-engagement.md) before real brands join; it also belongs in the privacy notice | Public copy and a UK GDPR privacy-notice item |
 | D6 | Add the talent agency-status declaration to the BPP review (docs/dev/agency-declaration.md, draft wording live in the test app only) | Legal wording needs the solicitor before real talent sign up |
@@ -41,7 +42,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | R2 | Incorporation and domain: steps, official fees, cheapest compliant option | researcher | done | Figures re-read on gov.uk, ICO and Porkbun 2026-11-25; docs/research/r2-incorporation-and-domain.md | Deferred: Luke pays when ready; run as a pilot until then (Decision (Luke, 2026-11-26)). ICO tier 1 price conflicts (£52 vs £40) |
 | R3 | Routes to a specialist agency-law opinion at zero or low cost (law clinics, pro bono, founder schemes) | researcher | done | Quotes re-read on live pages 2026-11-24; docs/research/r3-agreement-review-shortlist.md | Luke chooses who to contact |
 | R4 | Competitor brief: UK platforms where brands book unsigned models and creatives | researcher | done | Claims re-read on each platform's live pages 2026-11-26; docs/research/r4-competitor-brief.md | Marketer reads it; no comparative claims in public copy without Luke |
-| R5 | Brand interview kit: Manchester independent brand target list and interview script | researcher | todo | Public sources for each brand | Draft only; Luke makes contact |
+| R5 | Brand interview kit: Manchester independent brand target list and interview script | researcher | done | 14 brands, Tier A Manchester links re-read on their own sites 2026-11-27; docs/research/r5-brand-interview-kit.md | Draft only; Luke chooses who to contact |
 | R7 | Book now, pay later: how talent get paid at sign-off before the brand pays. Cover credit risk and who carries it, Embr's cash position (zero), UK B2B pay-later and invoice-finance partners (e.g. Kriya, Two) and their terms, fit with Stripe Connect, whether it's FCA-regulated, and partner fees and who absorbs them | researcher | todo | Every figure and rule cited to the provider's pages, FCA or legislation.gov.uk | Write brief; Luke picks a partner to approach |
 | R6 | CAP Code checklist for launch claims ("0% of your earnings", fee claims) | researcher | done | Rule numbers and quotes re-read on asa.org.uk 2026-11-25; docs/research/r6-cap-code-checklist.md | Marketer uses the checklist for M1-M5 |
 
@@ -74,7 +75,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | B3 | Deploy database, functions and app in test mode | app-builder | blocked | Build log saved, admin site loads | Waits on B2; needs approval |
 | B4 | Run five full test-mode bookings, including a cancellation and a refund | app-builder | blocked | Build log with each booking's result | Waits on B3 |
 | B5 | Release checklist for opening the invite-only pilot | app-builder | doing | Every item ticked with evidence | docs/builds/release-checklist.md written 2026-11-26 (83 items, 12 evidenced, IDs and paths checked); tick items as B2, B3, B4 and B9 land |
-| B9 | Write the pilot terms and privacy notice the sign-in screen already links to (src/views/auth.js line 48), plus a support route and incident routine. Must cover the talent phone number (D17): shared with a brand from the deposit until 14 days after the shoot, consent tick, how to remove it | researcher | todo | Each clause traced to decisions, UK GDPR/ICO guidance or the BPP advice | Draft only; legal wording goes to Luke and BPP before real users |
+| B9 | Write the pilot terms and privacy notice the sign-in screen already links to (src/views/auth.js line 48), plus a support route and incident routine. Must cover the talent phone number (D17): shared with a brand from the deposit until 14 days after the shoot, consent tick, how to remove it | researcher | done | Drafts in docs/legal/ (terms, privacy notice, support and breach routine); code cites spot-checked and ICO 72-hour rule re-read 2026-11-27 | Luke answers the open items (Waiting on Luke), then send to BPP with the agreement |
 | B6 | Domain and Resend sender on the domain | app-builder | blocked | Test email arrives from the domain | Waits on R2 and spend approval |
 | B7 | Stripe restricted key for ID-check date of birth (STRIPE_IDENTITY_KEY: "Identity Verification Results" + "Recent Detailed Verification Results", Read). Not offered in the test sandbox on 2026-11-25; until then passed checks go to admin People, "ID checks to confirm" | luke | blocked | A passed test ID check shows Verified 18+ without staff | Retry when Identity is activated for the account, before launch |
 | B8 | Move payout account creation to Stripe Accounts v2 (POST /v2/core/accounts, recipient config, express dashboard). New Stripe platforms block v1 account creation unless "Accounts v1 support" is switched on (test sandbox: switched on 2026-11-25 as a stopgap). Check v1 account links, transfers, accounts.retrieve and account.updated still work for v2 accounts; every money change needs a test | developer | doing | payments tests pass with a v2-created account; live sandbox payout onboarding works with v1 support switched off | Code switched to v2 2026-11-25 (payments 11/11). Recipient accounts need losses_collector 'application', which Stripe only allows once the Connect platform profile is finished (Luke asked 2026-11-25 18:30); confirm transfers and account.updated on the first live-sandbox booking |
@@ -91,6 +92,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 ## Session log
 
+- 2026-11-27 daily run: B9 legal drafts (pilot terms, privacy notice, breach routine) and R5 brand interview kit (14 Manchester brands) done and checked; open legal choices added to Waiting on Luke.
 - 2026-11-26 developer: D18 deployed with Luke's go: 20261126000003 db push run from his Mac after his "yes, push the migration" (CLI needs --yes for agent runs), Pages deployed (two Cloudflare auth/504 retries), live site checked.
 
 - 2026-11-26 developer: D18 brand snag list 2 built (options, multi-role briefs, ranges, edit brief, casting, 48h cancellation, link rule, Shoots tab); all suites pass; PR opened, live deploy waits for Luke.
