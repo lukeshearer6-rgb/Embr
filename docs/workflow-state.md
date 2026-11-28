@@ -4,7 +4,7 @@ This file is the single source of truth for what's happening. Every session read
 
 Statuses: `todo`, `doing`, `blocked`, `needs-approval`, `done`. Agents: `researcher`, `developer`, `app-builder`, `marketer`, `luke`, `orchestrator`.
 
-Last updated: 2026-11-27
+Last updated: 2026-11-28
 
 ## Current focus
 
@@ -14,7 +14,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 
 | Agent | Working on | Status |
 |---|---|---|
-| researcher | R7 Book now, pay later brief | todo |
+| researcher | No unblocked research task | idle |
 | developer | No unblocked task (D2, D3, D5 waiting) | blocked |
 | app-builder | B5 Release checklist (tick as work lands) | doing |
 | marketer | M1 Positioning pack | todo |
@@ -30,6 +30,8 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | D8 | Shoot Thread (PR held for the final UI round): decide whether creatives may send their own priced "Custom Offers" (built as "Ask for a change" instead), whether to build a true single shoot payment, and approve the draft cancellation and protection wording on the shoot checkout (docs/dev/shoot-thread.md) | Agency position, live-money design and legal wording are Luke's calls |
 | D16 | Add booking agreement v2 (plain-English usage, typed-name signing; docs/dev/booking-agreement.md, 13 questions) to the BPP review, and call the next final round when ready (PR held) | Legal wording and shipping are Luke's calls |
 | D18 | Add booking agreement v3 question 14 (48-hour cancellation, docs/dev/booking-agreement.md) to the BPP review | Legal wording is Luke's call |
+| R7 | Decide on book now, pay later (docs/research/r7-book-now-pay-later.md): whether to approach a partner, which option (Stripe-listed Billie, early-access Kriya or Mondu, or a direct partner such as Hokodo, Two or iwocaPay), who pays the fee, who carries disputes, and whether BPP or a specialist checks the FCA position | Partner contact, fees and regulatory questions are Luke's calls |
+| M5 | Confirm the zero-cash experiments (marketing/experiments/zero-cash-experiments.md): "free" stays out of public copy, and talent sharing their own booking page is fine | Public copy and talent-facing promotion are Luke's calls |
 | D4 | Send the enquiry to BPP's free online business clinic (draft: docs/dev/bpp-enquiry-draft.md; form linked in docs/research/r3-agreement-review-shortlist.md) | Contacting BPP is Luke's to do |
 
 ## Backlog
@@ -43,7 +45,7 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | R3 | Routes to a specialist agency-law opinion at zero or low cost (law clinics, pro bono, founder schemes) | researcher | done | Quotes re-read on live pages 2026-11-24; docs/research/r3-agreement-review-shortlist.md | Luke chooses who to contact |
 | R4 | Competitor brief: UK platforms where brands book unsigned models and creatives | researcher | done | Claims re-read on each platform's live pages 2026-11-26; docs/research/r4-competitor-brief.md | Marketer reads it; no comparative claims in public copy without Luke |
 | R5 | Brand interview kit: Manchester independent brand target list and interview script | researcher | done | 14 brands, Tier A Manchester links re-read on their own sites 2026-11-27; docs/research/r5-brand-interview-kit.md | Draft only; Luke chooses who to contact |
-| R7 | Book now, pay later: how talent get paid at sign-off before the brand pays. Cover credit risk and who carries it, Embr's cash position (zero), UK B2B pay-later and invoice-finance partners (e.g. Kriya, Two) and their terms, fit with Stripe Connect, whether it's FCA-regulated, and partner fees and who absorbs them | researcher | todo | Every figure and rule cited to the provider's pages, FCA or legislation.gov.uk | Write brief; Luke picks a partner to approach |
+| R7 | Book now, pay later: how talent get paid at sign-off before the brand pays. Cover credit risk and who carries it, Embr's cash position (zero), UK B2B pay-later and invoice-finance partners (e.g. Kriya, Two) and their terms, fit with Stripe Connect, whether it's FCA-regulated, and partner fees and who absorbs them | researcher | done | Every quote re-read on Stripe, provider, FCA and legislation.gov.uk pages 2026-11-28; docs/research/r7-book-now-pay-later.md | Luke picks a partner to approach (Waiting on Luke) |
 | R6 | CAP Code checklist for launch claims ("0% of your earnings", fee claims) | researcher | done | Rule numbers and quotes re-read on asa.org.uk 2026-11-25; docs/research/r6-cap-code-checklist.md | Marketer uses the checklist for M1-M5 |
 
 ### Development
@@ -88,10 +90,11 @@ Get the pilot online in Stripe test mode, run five full test bookings, then open
 | M2 | Founding talent invite DMs and brand invite emails | marketer | todo | Copy rules checked | Drafts only; Luke sends |
 | M3 | Landing and waitlist copy (not public until B5) | marketer | todo | Claims checked against R6 | Draft in marketing/landing/ |
 | M4 | Instagram launch posts for Luke's account | marketer | todo | Canva drafts, claims checked | Drafts only; Luke posts |
-| M5 | Zero-cash growth experiments with one metric each | marketer | todo | No predicted results | Draft in marketing/experiments/ |
+| M5 | Zero-cash growth experiments with one metric each | marketer | done | No predicted results; claims checked against decisions and R6 2026-11-28; marketing/experiments/zero-cash-experiments.md | Luke confirms the copy points (Waiting on Luke) |
 
 ## Session log
 
+- 2026-11-28 daily run: R7 book now, pay later brief (Billie, Kriya, Mondu, direct partners, FCA perimeter) and M5 zero-cash experiments done and checked; decisions added to Waiting on Luke.
 - 2026-11-27 daily run: B9 legal drafts (pilot terms, privacy notice, breach routine) and R5 brand interview kit (14 Manchester brands) done and checked; open legal choices added to Waiting on Luke.
 - 2026-11-26 developer: D18 deployed with Luke's go: 20261126000003 db push run from his Mac after his "yes, push the migration" (CLI needs --yes for agent runs), Pages deployed (two Cloudflare auth/504 retries), live site checked.
 
